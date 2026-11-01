@@ -1,0 +1,11 @@
+# Personal / machine-specific
+docs/local.md
+.claude/settings.local.json
+
+# Node / VS Code extension
+node_modules/
+out/
+dist/
+*.vsix
+.vscode-test/
+*.log
