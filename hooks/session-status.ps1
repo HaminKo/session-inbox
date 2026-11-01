@@ -35,14 +35,22 @@ if ($event -eq 'SessionEnd') {
     exit 0
 }
 
-# The one-line message for the states that have one. Copied (not imported) from notify.ps1:
-# importing it would run its popup. For Stop, the first meaningful line of the reply; for a
-# question, the question itself.
+# One Markdown line as plain text. A word-for-word copy of Plain-Line in notify.ps1 (not
+# imported: importing it would run its popup); keep the two the same.
+function Plain-Line([string]$line) {
+    ($line -replace '^\s*(#+|>|[-*]|\d+\.)\s+', '' -replace '!?\[([^\]]+)\]\([^)]*\)', '$1' -replace '\*\*|`', '').Trim()
+}
+
+# The message for Stop: only the first meaningful line of the reply (a list row has room for one
+# line; the popup shows more). Never cut between the two halves of an emoji.
 function First-Line([string]$text) {
     foreach ($line in ($text -split "`r?`n")) {
-        $plain = ($line -replace '^\s*(#+|>|[-*]|\d+\.)\s+', '' -replace '\*\*|`', '').Trim()
+        $plain = Plain-Line $line
         if ($plain) {
-            if ($plain.Length -gt 140) { $plain = $plain.Substring(0, 139) + [char]0x2026 }
+            if ($plain.Length -gt 140) {
+                $cut = if ([char]::IsHighSurrogate($plain[138])) { 138 } else { 139 }
+                $plain = $plain.Substring(0, $cut) + [char]0x2026
+            }
             return $plain
         }
     }

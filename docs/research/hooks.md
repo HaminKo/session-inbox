@@ -12,7 +12,7 @@ deleting them.
   state is driven by `PermissionRequest`, not `Notification`. (Measured on this machine's setup; if
   a future Claude Code version starts firing `Notification`, revisit.)
 - **`PermissionRequest`** fires on a permission prompt. It also fires for Claude's questions
-  (`AskUserQuestion`) — source: `notify.ps1` line 47, measured 2026-10-31. For `AskUserQuestion`
+  (`AskUserQuestion`) — source: the comment in `notify.ps1`'s `PermissionRequest` branch, measured 2026-10-31. For `AskUserQuestion`
   the first question is at `tool_input.questions[0].question`; otherwise `tool_name` is the tool
   needing permission.
 - **`Stop`** fires when a reply finishes. Payload has `last_assistant_message`.
@@ -62,7 +62,10 @@ This avoids launching `git` on every `PostToolUse`. The worktree's name can be t
 Path: `~/.claude/session-status/<session_id>.json`. Suggested fields: `session_id`, `cwd`,
 `folder`, `worktree`, `worktree_name`, `state` (`waiting`/`working`/`done`), `message`,
 `tool_name`, `timestamp` (ISO-8601: when this state began for `waiting` and `done`, which fire once;
-for `working` it is refreshed on every tool call, so it means "last activity" there).
+for `working` it is refreshed on every tool call, so it means "last activity" there). `message`
+for `done` is the reply's first line only (at most 140 characters, Markdown removed by `Plain-Line`,
+a word-for-word copy of the one in `notify.ps1`); the `notify.ps1` popup shows more of the reply
+(since 2026-11-01, see docs/decisions.md).
 
 Written UTF-8 without a BOM, to `<session_id>.json.<pid>.tmp` first and then swapped in with
 `File.Replace` (or `File.Move` for a new file), so a reader never sees a half-written file.
@@ -103,6 +106,20 @@ Get-Content "$env:USERPROFILE/.claude/session-status/test123.json"   # state: wa
 Get-Content "$env:USERPROFILE/.claude/session-status/test123.json"   # state: done
 Remove-Item "$env:USERPROFILE/.claude/session-status/test123.json"
 ```
+
+## Editing files in `~/.claude/hooks/` (reset incident, 2026-11-01)
+
+Measured: `notify.ps1`, changed in place with Claude's Edit tool, was put back to its exact original
+(same bytes, and the original timestamp 01:37:14) within 80 seconds after a turn ended, while the
+user reverted nothing. In that window no other Claude session wrote the file (their transcripts show
+no write), and every other file edited in the same turns stayed changed. Claude Code's file history
+held that exact original as this session's snapshot, and a copy back from it keeps the timestamp.
+VS Code also kept reporting diagnostics for the original text after the edits.
+Likely cause (not confirmed): the VS Code extension restored that one file, which is outside the open
+workspace, from the session's checkpoint.
+What to do: build a hook change in a separate file and install it with a shell copy (`Copy-Item`),
+keep backups in `~/.claude/hooks/backups/`, and afterwards compare the installed file's hash with
+the backup. (The reinstalled version, written this way, is the test of this theory.)
 
 ## Sources
 - `~/.claude/hooks/notify.ps1` (author's existing hook; comments carry dated measurements).

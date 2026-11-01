@@ -20,7 +20,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
 - One to-do per chat, built with the /build-todo skill (`/build-todo N`, or
   `/build-todo N, step B` for one step of a bigger to-do). New to-dos via /add-todo.
 - Commit after each working step. End a step with the finish-step skill.
-- Extend the existing notification hook (`~/.claude/hooks/notify.ps1`); never modify or replace it.
+- Extend the existing notification hook (`~/.claude/hooks/notify.ps1`); never modify or replace it
+  in project work. (One exception, asked for by the user: taller popups, docs/decisions.md 2026-11-01.)
 
 ## Build specifics
 - **Checks** (run from the `extension/` folder once it exists):
@@ -33,7 +34,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
 - **Docs to update when behaviour changes:** README.md (headline features, install/run steps,
   Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md once it exists.
-- **Must keep working:** the existing `notify.ps1` popups must still fire unchanged; the
+- **Must keep working:** the existing `notify.ps1` popups must still fire (taller since
+  2026-11-01, see docs/decisions.md); the
   status-writer must stay fast (it runs on every PostToolUse).
 - **Review checklist:** none yet — use the built-in code-review skill. Add docs/review.md once
   the project has its own rules.

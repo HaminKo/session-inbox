@@ -3,6 +3,24 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Exception: `notify.ps1` popups are taller and show more of the reply
+- Decision: `notify.ps1` was edited in place. The `Stop` popup now shows the start of the reply:
+  the first line (the headline) on its own line, then the next lines as one paragraph, up to 280
+  characters, stopping at a code block, an insight block or a table. The popup fits its text: 2 to 4
+  body lines, 420×96 to 420×132 px at 100% scale (it was always 420×96 with 2 lines; a fixed 4 lines
+  left short messages mostly empty). The log stays one line per call. The rule "never modify
+  `notify.ps1`" still holds for regular project work.
+- Reason: the user wanted more information in the popup, next to the persona opening line. It is
+  the user's own hook.
+- Decided by: the user (approved editing it, and Claude's suggested size).
+- Rejected: a much bigger popup (popups of several projects stack on the side monitor); dropping
+  the "persona + headline" first-line rule in the user's output styles (without it, extra lines
+  would mostly show more flavor and Markdown).
+- Backups (the file is untracked): `~/.claude/hooks/backups/notify.ps1.original-2026-11-01` and
+  `notify.ps1.taller-2026-11-01`. Install a new version with a shell copy, not the Edit tool: the
+  first in-place edit was silently reset to the original once (docs/research/hooks.md, "Editing
+  files in `~/.claude/hooks/`").
+
 ## 2026-11-01 — The status hook runs synchronously, not `async`
 - Reason: a turn fires `PostToolUse` (`working`) and then `Stop` (`done`). With `async: true`, a
   slow `working` process can finish after `done` and leave a finished session stuck as `working`.
