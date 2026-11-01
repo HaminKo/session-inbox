@@ -1,10 +1,20 @@
 // Unit tests for the status-folder reader. Plain Node, no VS Code: `npm test`.
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, test } from "node:test";
-import { countStates, readStatuses, statusDir, summarize, watchFolder } from "../../src/statusFolder.ts";
+import {
+  countStates,
+  onlyLive,
+  readLiveSessionIds,
+  readStatuses,
+  sessionsDir,
+  statusDir,
+  summarize,
+  watchFolder,
+} from "../../src/statusFolder.ts";
 
 let root: string;
 
@@ -52,6 +62,54 @@ void test("reads status files and skips everything else", async () => {
   writeFileSync(join(root, "notes.txt"), "not a status file");
   const ids = (await readStatuses(root)).map((status) => status.session_id).sort();
   assert.deepEqual(ids, ["a", "b", "c"]);
+});
+
+// A PID that just exited: a child process that ran and finished.
+function deadPid(): number {
+  const pid = spawnSync(process.execPath, ["-e", ""]).pid;
+  assert.ok(pid);
+  return pid;
+}
+
+function writeSession(dir: string, pid: number, sessionId: string): void {
+  writeFileSync(join(dir, `${pid}.json`), JSON.stringify({ pid, sessionId, kind: "interactive" }));
+}
+
+void test("sessionsDir uses the override, else ~/.claude/sessions", () => {
+  assert.equal(sessionsDir({ SESSION_INBOX_SESSIONS_DIR: root }), root);
+  assert.match(sessionsDir({}), /[\\/]\.claude[\\/]sessions$/);
+});
+
+void test("live sessions are those whose process is running", async () => {
+  writeSession(root, process.pid, "alive");
+  writeSession(root, deadPid(), "gone");
+  writeFileSync(join(root, "notes.txt"), "not a session file");
+  assert.deepEqual(await readLiveSessionIds(root), new Set(["alive"]));
+});
+
+void test("a sessions folder that can't be trusted hides nothing", async () => {
+  assert.equal(await readLiveSessionIds(join(root, "missing")), undefined, "missing folder");
+  assert.equal(await readLiveSessionIds(root), undefined, "empty folder");
+  writeSession(root, process.pid, "alive");
+  writeFileSync(join(root, "1.json"), '{"pid":1,"sess');
+  assert.equal(await readLiveSessionIds(root), undefined, "a file mid-write");
+  writeFileSync(join(root, "1.json"), JSON.stringify({ processId: 1, id: "renamed-fields" }));
+  assert.equal(await readLiveSessionIds(root), undefined, "a file in another format");
+  writeFileSync(join(root, "1.json"), JSON.stringify({ pid: 0, sessionId: "bad-pid" }));
+  assert.equal(await readLiveSessionIds(root), undefined, "a PID that isn't a process id");
+  const statuses = [{ session_id: "a", state: "done" as const }];
+  assert.deepEqual(onlyLive(statuses, undefined), statuses);
+});
+
+void test("onlyLive drops status files whose chat is gone", () => {
+  const statuses = [
+    { session_id: "alive", state: "done" as const },
+    { session_id: "gone", state: "done" as const },
+  ];
+  assert.deepEqual(
+    onlyLive(statuses, new Set(["alive"])).map((status) => status.session_id),
+    ["alive"],
+  );
 });
 
 void test("counts by state", () => {

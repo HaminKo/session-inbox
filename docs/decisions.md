@@ -3,6 +3,27 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Leftover status files are hidden when their chat process is gone
+- Decision: the extension reads Claude Code's own `~/.claude/sessions/<pid>.json` files (`pid`,
+  `sessionId`) and counts a status file only if its session has a running process (checked with
+  `process.kill(pid, 0)`). It hides, never deletes. Fail-safe: if that folder is missing or empty, or
+  any of its files can't be read (mid-write) or lacks a valid `pid`/`sessionId`, nothing is
+  hidden on that refresh. It watches that folder too (a process that
+  exits removes its file) and re-checks every 30 s (a killed process may leave its file). No age
+  limit; no manual "clear" now (fits the sidebar, to-do #5). Tests use
+  `SESSION_INBOX_SESSIONS_DIR`.
+- Reason: a process check works however a chat ended (tab, window, quit, crash), so the close
+  paths that skip `SessionEnd` don't have to be known; hiding means a wrong guess never loses an
+  open chat. Research: docs/research/hooks.md.
+- Decided by: the user, on Claude's suggestions (to-do #10).
+- Rejected: the hook recording its own `claude.exe` PID by walking up its parent processes
+  (independent of Claude's internal format, but a process lookup on every `PostToolUse`, est. a
+  few hundred ms, not measured); matching `--resume=` on the command line (new chats don't have
+  it); an age limit for `done` files (a chat left open overnight really is waiting); deleting the
+  files (a wrong guess would lose a live chat's status).
+- Risk: `~/.claude/sessions/` is undocumented and may change in a Claude Code update; the fail-safe
+  then shows leftovers again rather than hiding live chats.
+
 ## 2026-11-01 — GUI test: Playwright drives a pinned VS Code
 - Decision: `@vscode/test-electron` only downloads VS Code `1.144.0` (pinned, bumped by hand);
   `playwright-core` launches it with the extension and checks and screenshots the real workbench
@@ -122,6 +143,7 @@ what was rejected and why.
 - Rejected: building a standalone app now.
 
 ## 2026-11-01 — The status bar watches the status folder; leftover files are not handled yet
+(Leftover files: handled since to-do #10, see "Leftover status files are hidden" above.)
 - Decision: the extension watches `~/.claude/session-status/` with Node's `fs.watch` and re-reads
   the whole folder ~100 ms after a change. While the folder is missing it checks every 5 s. The
   item shows `$(warning) N waiting` on the yellow warning background, or `$(check) all clear`; the

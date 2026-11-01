@@ -103,6 +103,43 @@ recorded. Closing a single tab is known to delete the file (see above), so the l
 window close or VS Code quit that never fires `SessionEnd`; not measured yet. Effect: the status bar
 counts them as waiting forever, until the file is deleted by hand.
 
+**Is the chat still running? (to-do #10 research, 2026-11-01, measured on Claude Code 2.1.314)**
+- Each chat in the VS Code extension is its own `claude.exe` process (the extension's
+  `resources/native-binary/claude.exe`, child of a `Code.exe` extension host). Hooks run as
+  `claude.exe -> bash.exe -> bash.exe -> powershell.exe` (seen with `notify.ps1` mid-run).
+- Claude Code keeps **`~/.claude/sessions/<pid>.json`** per running process:
+  `{"pid", "sessionId", "cwd", "startedAt", "procStart", "version", "kind": "interactive",
+  "entrypoint": "claude-vscode", "status": "idle", "updatedAt", ...}`. Undocumented, internal
+  format. At 18:30 there were 11 such files, each with a live PID, and they matched the 11 status
+  files one to one. No stale `<pid>.json` was left from earlier chats that day (including chats
+  open before a VS Code restart at 15:41), so Claude removes or cleans them up; whether a killed
+  process leaves one behind is not measured.
+- Only resumed chats show the session on the command line (`--resume=<first 8 chars>`); new chats
+  don't, so the command line can't map every chat.
+- One of the two leftovers from the user test (`5dcc3012`, sc-map-library, `done` 16:30) still had
+  a live process (PID 38336, started 16:29, `status: "idle"`) at 18:30. So at least that leftover
+  is not explained by a process that died without `SessionEnd`. Asked, the user thought the tab
+  was probably still open (the chat shows only idle time, no clock time), so it was most likely a
+  real open chat, not a leftover. Not settled: whether some way of closing a tab leaves the
+  process running.
+- **Used by the extension (to-do #10):** a status file counts only if its `session_id` is the
+  `sessionId` of a `<pid>.json` whose PID is running. Folder missing or empty, or any file
+  unreadable or without a valid `pid`/`sessionId` -> nothing hidden (code review: an empty folder
+  first meant "no chat running", which would hide every chat if Claude stopped writing there). First real run (18:40): 11 status files, 12 live sessions,
+  nothing hidden. `SESSION_INBOX_SESSIONS_DIR` overrides the folder (tests only).
+- `/clear` (raised by the code review): user test 2026-11-01 18:45, after a `/clear` and a new
+  prompt in an open chat, every status file (11) still matched a `<pid>.json` sessionId, so no live
+  chat was hidden. Both new session ids there had a freshly started process (18:42, 18:43), so
+  whether `/clear` rewrites `sessionId` in place or starts a new process was not told apart; either
+  way the match held.
+- Window close (same user test): after the user closed a whole window with finished chats, the
+  count in the Extension Development Host dropped. Both chats of the falconpaladin window
+  (`6f8066d5`, `2cd4efc7`) were gone afterwards, as status files and as processes; the status files
+  were deleted, so `SessionEnd` likely fired on that window close (which window was closed was not
+  recorded).
+- Not measured: which close paths (close window, quit VS Code) fire `SessionEnd`. With the process
+  check it no longer matters for the count, only for whether the file is deleted or just hidden.
+
 ## Verifying without a live session
 
 Pipe a fake payload into the writer and check the file it writes (works, 2026-11-01). Always send a

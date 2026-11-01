@@ -32,23 +32,65 @@ export function statusDir(env: NodeJS.ProcessEnv = process.env): string {
 // Every readable status file in `dir`. A missing folder means no sessions yet. Files that can't be
 // read or parsed (deleted mid-read, not a status file) are skipped; the next change re-reads them.
 export async function readStatuses(dir: string): Promise<SessionStatus[]> {
+  return ((await readJsonFiles(dir)) ?? []).filter(isStatus);
+}
+
+// SESSION_INBOX_SESSIONS_DIR is for the tests only, like SESSION_INBOX_STATUS_DIR.
+export function sessionsDir(env: NodeJS.ProcessEnv = process.env): string {
+  return env.SESSION_INBOX_SESSIONS_DIR || join(homedir(), ".claude", "sessions");
+}
+
+// Claude Code keeps ~/.claude/sessions/<pid>.json ({ pid, sessionId, ... }) for each running chat
+// process; undocumented, see docs/research/hooks.md. Returns the ids of sessions whose process is
+// still running, or undefined when that can't be told, so that nothing gets hidden: folder missing
+// or empty (a changed format might leave it so), or any file unreadable (mid-write) or not in the
+// expected format. A reused PID keeps a gone chat counted, never hides a live one.
+export async function readLiveSessionIds(dir: string): Promise<Set<string> | undefined> {
+  const files = await readJsonFiles(dir);
+  if (!files || files.length === 0 || !files.every(isSession)) return undefined;
+  return new Set(files.filter((session) => isRunning(session.pid)).map((session) => session.sessionId));
+}
+
+function isSession(data: unknown): data is { pid: number; sessionId: string } {
+  if (typeof data !== "object" || data === null) return false;
+  const { pid, sessionId } = data as Record<string, unknown>;
+  return Number.isInteger(pid) && (pid as number) > 0 && typeof sessionId === "string";
+}
+
+// The parsed contents of every *.json in `dir` (undefined for a file that can't be read or parsed),
+// or undefined if the folder can't be read.
+async function readJsonFiles(dir: string): Promise<unknown[] | undefined> {
   let names: string[];
   try {
     names = await readdir(dir);
   } catch {
-    return [];
+    return undefined;
   }
   const read = names
     .filter((name) => name.endsWith(".json"))
-    .map(async (name) => {
+    .map(async (name): Promise<unknown> => {
       try {
-        const data: unknown = JSON.parse(await readFile(join(dir, name), "utf8"));
-        return isStatus(data) ? data : undefined;
+        return JSON.parse(await readFile(join(dir, name), "utf8"));
       } catch {
         return undefined;
       }
     });
-  return (await Promise.all(read)).filter((status) => status !== undefined);
+  return Promise.all(read);
+}
+
+// Signal 0 only checks that the process exists. EPERM: it exists but belongs to someone else.
+function isRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+// Drops status files whose chat is gone (closed without SessionEnd). `live` undefined: keep all.
+export function onlyLive(statuses: readonly SessionStatus[], live: Set<string> | undefined): SessionStatus[] {
+  return live ? statuses.filter((status) => live.has(status.session_id)) : [...statuses];
 }
 
 function isStatus(data: unknown): data is SessionStatus {

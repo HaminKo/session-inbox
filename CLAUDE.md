@@ -49,7 +49,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #10 — leftover status files keep the count up forever (research first).
+Next: to-do #5 — sidebar view: all sessions across windows (large).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -63,7 +63,11 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - TypeScript stays on `~6.0.x` until typescript-eslint supports 7. VS Code minimum `^1.100.0`,
   with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
 - Publisher id `session-inbox`; no `repository` field in package.json until release.
-- Tests never read the real status folder: they set `SESSION_INBOX_STATUS_DIR` to a temp folder.
+- Tests never read the real status folder: they set `SESSION_INBOX_STATUS_DIR` to a temp folder
+  (and `SESSION_INBOX_SESSIONS_DIR` for `~/.claude/sessions/`).
+- A status file counts only while its chat process runs (`~/.claude/sessions/<pid>.json`);
+  leftovers are hidden, never deleted, and nothing is hidden if that folder is missing, empty or
+  unreadable.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

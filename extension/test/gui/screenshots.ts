@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Page } from "playwright-core";
 import { launchVsCode } from "./launch.ts";
-import { writeSampleStatus } from "./samples.ts";
+import { writeSampleSession, writeSampleStatus } from "./samples.ts";
 import { statusBar, statusItem } from "./selectors.ts";
 
 const shots: Record<string, (window: Page, path: string) => Promise<void>> = {
@@ -37,8 +37,10 @@ const statusDir = mkdtempSync(join(tmpdir(), "session-inbox-status-"));
 writeSampleStatus(statusDir, "a", "waiting");
 writeSampleStatus(statusDir, "b", "done");
 writeSampleStatus(statusDir, "c", "working");
+const sessionsDir = mkdtempSync(join(tmpdir(), "session-inbox-sessions-"));
+for (const id of ["a", "b", "c"]) writeSampleSession(sessionsDir, id);
 try {
-  const vscode = await launchVsCode({ SESSION_INBOX_STATUS_DIR: statusDir });
+  const vscode = await launchVsCode({ SESSION_INBOX_STATUS_DIR: statusDir, SESSION_INBOX_SESSIONS_DIR: sessionsDir });
   try {
     await vscode.window.locator(statusItem).waitFor({ state: "visible", timeout: 20_000 });
     for (const name of wanted.length > 0 ? wanted : Object.keys(shots)) {
@@ -51,4 +53,5 @@ try {
   }
 } finally {
   rmSync(statusDir, { recursive: true, force: true });
+  rmSync(sessionsDir, { recursive: true, force: true });
 }

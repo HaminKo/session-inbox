@@ -2,27 +2,6 @@ Next number: 11
 
 ## To do
 
-### 10. Leftover status files keep the count up forever (medium; research first)
-Goal, in the user's words: "Those tabs were closed" — yet their `done` files stayed, so the status
-bar counted them as waiting.
-
-- **Problem / Goal:** a status file can outlive its chat. Seen 2026-11-01: two `done` files
-  (PeacefreeWeb 15:50, sc-map-library 16:30) were still there at 18:14 with both tabs closed. Closing
-  a single tab is known to delete the file, so the gap is probably closing a whole window or quitting
-  VS Code (not measured). The count must drop when a chat is really gone.
-- **Read first:** docs/research/hooks.md ("Leftover files", `SessionEnd` notes);
-  `extension/src/statusFolder.ts` (`readStatuses`); `hooks/session-status.ps1` (`SessionEnd`).
-- **Approach:** first measure which close paths fire `SessionEnd` (close tab, close window, quit VS
-  Code, kill the process), e.g. with a log line in a test copy of the hook. Then pick a cleanup:
-  remove files whose chat is gone, if anything in the payload or on disk tells that (research);
-  else an age limit for `done` files, or a "Clear" command / sidebar button.
-- **Ask the user:** delete leftovers or only hide them (suggested: hide in the extension, so a
-  wrong guess never loses a still-open chat); an age limit, and how long (suggested: only if no
-  "is the chat gone" signal exists, 24 h); a manual "clear" too (suggested: yes, in the sidebar
-  from #5).
-- **Test:** Claude: unit test of the cleanup rule on sample files in a temp folder. User: close a
-  window with a finished chat, and see the count drop (or the file cleared) as designed.
-
 ### 5. Sidebar view: all sessions across windows (large)
 Tree view, waiting first then done then working, each with folder, how long it has waited, and a
 worktree badge.
