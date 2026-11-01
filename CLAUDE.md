@@ -30,7 +30,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
 - **Checks** (run from the `extension/` folder once it exists):
   - Fast, after edits: `npm run lint` (~5s).
   - Per step: `npm run compile` (esbuild bundle only, ~1s) + `npx tsc --noEmit` (type-check,
-    ~2s); `npm test` once tests exist. `npm run package` builds a `.vsix` (Marketplace manifest
+    ~2s); `npm test` (unit tests, `test/unit/*.test.ts`, ~1s). `npm run package` builds a `.vsix` (Marketplace manifest
     check).
   - Run the extension: `F5` from the repo root (`.vscode/launch.json`).
   - Hooks have no build; verify by piping a fake payload and checking the written file
@@ -49,7 +49,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #4 — status bar: real counts from the status folder.
+Next: to-do #10 — leftover status files keep the count up forever (research first).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -63,6 +63,7 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - TypeScript stays on `~6.0.x` until typescript-eslint supports 7. VS Code minimum `^1.100.0`,
   with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
 - Publisher id `session-inbox`; no `repository` field in package.json until release.
+- Tests never read the real status folder: they set `SESSION_INBOX_STATUS_DIR` to a temp folder.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

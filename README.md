@@ -22,7 +22,8 @@ The hooks extend an existing desktop-notification hook rather than replacing it.
 
 ## Status
 
-The status-writer hook works; the extension has a placeholder status bar item and a GUI test.
+The status-writer hook works. The extension's status bar item shows the live count from the status
+folder (`⚠ N waiting`, highlighted, or `✓ all clear`; hover for waiting / done / working).
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements
@@ -60,8 +61,10 @@ Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet
 - **Extension:** run `npm install` once in `extension/`. Then open the repo folder in VS Code and
   press `F5`: it builds the extension (`npm run compile`) and starts an Extension Development Host
   with it loaded. Package a `.vsix` with `npm run package` (from `extension/`).
+- **Tests** (from `extension/`): `npm test` runs the unit tests (plain Node, about a second).
 - **GUI test and screenshots** (from `extension/`): `npm run test:gui` starts a separate VS Code
-  window with only this extension and checks the status bar; `npm run screenshots` saves PNGs to
+  window with only this extension and checks the status bar, using sample status files in a temp
+  folder (`SESSION_INBOX_STATUS_DIR`), never your real `~/.claude/session-status/`; `npm run screenshots` saves PNGs to
   the temp folder (`session-inbox-shots`). The first run downloads VS Code (~350 MB) into
   `extension/.vscode-test/`.
 

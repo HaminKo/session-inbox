@@ -30,7 +30,8 @@
     "test:gui": "npm run compile && node --test --test-concurrency=1 \"test/gui/*.gui.ts\"",
     "screenshots": "npm run compile && node test/gui/screenshots.ts",
     "package": "vsce package --allow-missing-repository",
-    "vscode:prepublish": "npm run bundle -- --minify"
+    "vscode:prepublish": "npm run bundle -- --minify",
+    "test": "node --test \"test/unit/*.test.ts\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

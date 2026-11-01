@@ -1,11 +1,13 @@
 // Screenshots of the extension's UI in a real VS Code window, for Claude to read.
 // `npm run screenshots` takes all; `npm run screenshots -- statusbar` takes one by name.
-// Files go to the OS temp folder (never the repo); their paths are printed.
-import { mkdirSync } from "node:fs";
+// Files go to the OS temp folder (never the repo); their paths are printed. The extension reads
+// sample status files (2 waiting, 1 working), never the real ~/.claude/session-status/.
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Page } from "playwright-core";
 import { launchVsCode } from "./launch.ts";
+import { writeSampleStatus } from "./samples.ts";
 import { statusBar, statusItem } from "./selectors.ts";
 
 const shots: Record<string, (window: Page, path: string) => Promise<void>> = {
@@ -31,14 +33,22 @@ if (unknown.length > 0) {
 
 const outDir = join(tmpdir(), "session-inbox-shots");
 mkdirSync(outDir, { recursive: true });
-const vscode = await launchVsCode();
+const statusDir = mkdtempSync(join(tmpdir(), "session-inbox-status-"));
+writeSampleStatus(statusDir, "a", "waiting");
+writeSampleStatus(statusDir, "b", "done");
+writeSampleStatus(statusDir, "c", "working");
 try {
-  await vscode.window.locator(statusItem).waitFor({ state: "visible", timeout: 20_000 });
-  for (const name of wanted.length > 0 ? wanted : Object.keys(shots)) {
-    const path = join(outDir, `${name}.png`);
-    await shots[name](vscode.window, path);
-    console.log(path);
+  const vscode = await launchVsCode({ SESSION_INBOX_STATUS_DIR: statusDir });
+  try {
+    await vscode.window.locator(statusItem).waitFor({ state: "visible", timeout: 20_000 });
+    for (const name of wanted.length > 0 ? wanted : Object.keys(shots)) {
+      const path = join(outDir, `${name}.png`);
+      await shots[name](vscode.window, path);
+      console.log(path);
+    }
+  } finally {
+    await vscode.close();
   }
 } finally {
-  await vscode.close();
+  rmSync(statusDir, { recursive: true, force: true });
 }

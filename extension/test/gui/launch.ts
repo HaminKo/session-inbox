@@ -18,7 +18,8 @@ export interface VsCode {
   close: () => Promise<void>;
 }
 
-export async function launchVsCode(): Promise<VsCode> {
+// `extraEnv` is added to VS Code's environment, e.g. SESSION_INBOX_STATUS_DIR for a temp status folder.
+export async function launchVsCode(extraEnv: Record<string, string> = {}): Promise<VsCode> {
   const executablePath = await downloadAndUnzipVSCode({
     version: VSCODE_VERSION,
     cachePath: join(extensionDir, ".vscode-test"),
@@ -26,11 +27,14 @@ export async function launchVsCode(): Promise<VsCode> {
   const tempDir = mkdtempSync(join(tmpdir(), "session-inbox-gui-"));
   // A shell inside VS Code inherits ELECTRON_RUN_AS_NODE=1, which makes Code.exe start as plain
   // Node and reject every VS Code flag ("bad option").
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(
-      (entry): entry is [string, string] => entry[0] !== "ELECTRON_RUN_AS_NODE" && entry[1] !== undefined,
+  const env = {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(
+        (entry): entry is [string, string] => entry[0] !== "ELECTRON_RUN_AS_NODE" && entry[1] !== undefined,
+      ),
     ),
-  );
+    ...extraEnv,
+  };
   const removeTemp = () =>
     rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   let app: ElectronApplication | undefined;

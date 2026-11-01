@@ -120,3 +120,16 @@ what was rejected and why.
   later because the status files are plain files any process can read.
 - Decided by: the user asked; Claude recommended deferring and scoping down.
 - Rejected: building a standalone app now.
+
+## 2026-11-01 — The status bar watches the status folder; leftover files are not handled yet
+- Decision: the extension watches `~/.claude/session-status/` with Node's `fs.watch` and re-reads
+  the whole folder ~100 ms after a change. While the folder is missing it checks every 5 s. The
+  item shows `$(warning) N waiting` on the yellow warning background, or `$(check) all clear`; the
+  tooltip holds the counts only. Tests point the extension at a temp folder through the
+  `SESSION_INBOX_STATUS_DIR` environment variable (test-only, not a user setting).
+- Reason: the count should change when the popup fires; a few small files make a full re-read
+  cheap, and re-reading avoids tracking single file events (Windows sends several per write).
+- Decided by: the user, on Claude's suggestions (to-do #4).
+- Rejected: polling every 2 s (simpler, but up to 2 s late); listing sessions in the tooltip (the
+  sidebar, to-do #5, does that); ignoring old `done` files by age now (guessing: first check
+  whether files really get left behind when a window closes without `SessionEnd`).
