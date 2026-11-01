@@ -3,6 +3,27 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Publisher id `session-inbox`; no `repository` link until release
+- Decision: `extension/package.json` uses publisher `session-inbox` (not created on the Marketplace
+  yet) and has no `repository` field; `npm run package` passes `--allow-missing-repository`.
+- Reason: both are public. The publisher id must not be the GitHub login or real name, nor contain
+  "claude" (it would look official). The only repo URL contains the GitHub login, which tracked
+  files must not hold. Whether to publish at all is open ("Before a public release" in
+  docs/todo.md).
+- Decided by: the user, on Claude's suggestion.
+- Rejected: the GitHub login as publisher id; the GitHub repo URL in package.json now.
+
+## 2026-11-01 — TypeScript pinned to `~6.0.x`; VS Code minimum `^1.100.0`
+- Decision: `typescript ~6.0.3`; `engines.vscode ^1.100.0` with `@types/vscode ~1.100.0` and
+  `@types/node ~20.17.0` (no 20.18 types exist; see docs/research/extension-toolchain.md).
+- Reason: typescript-eslint 8.72.1 supports only `typescript <6.1.0` (npm `latest` is 7.0.2;
+  docs/research/extension-toolchain.md). The APIs this project needs are old, so a lower VS Code
+  minimum lets more installs use it; matching the types to the minimum makes the compiler reject
+  newer APIs.
+- Decided by: the user, on Claude's suggestion.
+- Rejected: TypeScript 7 (outside typescript-eslint's peer range); `^1.144.0`, the installed
+  version (would exclude older VS Code for no gain).
+
 ## 2026-11-01 — Exception: `notify.ps1` popups are taller and show more of the reply
 - Decision: `notify.ps1` was edited in place. The `Stop` popup now shows the start of the reply:
   the first line (the headline) on its own line, then the next lines as one paragraph, up to 280

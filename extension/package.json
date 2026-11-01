@@ -1,0 +1,43 @@
+{
+  "name": "session-inbox",
+  "displayName": "Session Inbox",
+  "description": "A persistent \"waiting on you\" inbox for Claude Code sessions across VS Code windows.",
+  "version": "0.0.1",
+  "publisher": "session-inbox",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "claude code",
+    "notifications",
+    "status bar",
+    "inbox"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "bundle": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+    "compile": "npm run bundle -- --sourcemap",
+    "watch": "npm run bundle -- --sourcemap --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "package": "vsce package --allow-missing-repository",
+    "vscode:prepublish": "npm run bundle -- --minify"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "~20.17.0",
+    "@types/vscode": "~1.100.0",
+    "@vscode/vsce": "^4.1.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}

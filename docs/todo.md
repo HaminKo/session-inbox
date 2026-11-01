@@ -68,6 +68,10 @@ notification — re-invoke `notify.ps1` with a synthesized payload so it reuses 
 - Add a screenshot of the status bar + sidebar to the README (the extension has a UI).
 - Start CHANGELOG.md (Keep a Changelog: Unreleased first, then versions newest first) with the
   first version.
+- Decide how to distribute: VS Code Marketplace (create the `session-inbox` publisher first) or a
+  `.vsix` attached to a GitHub release. Then decide the `repository` link in
+  `extension/package.json` (left out because the repo URL holds the GitHub login).
+- Add a 128×128 PNG icon (`"icon"` in `extension/package.json`) if publishing to the Marketplace.
 
 ## Later, only if the user asks
 - **Standalone tray indicator** (not a full app): a small system-tray process reading the same

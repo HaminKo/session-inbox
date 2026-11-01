@@ -8,8 +8,10 @@ Don't build what's under "Later" in docs/todo.md until asked.
 
 ## User and environment
 - OS: Windows 11 Home. Shell: PowerShell in the VS Code terminal (give copy-ready commands).
-- Node v26.13.0 / npm 11.20.0, installed at `C:\Program Files\nodejs\` (may not be on every
-  shell's PATH; it is in the VS Code terminal).
+- Node v26.13.0 / npm 11.20.0, installed at `C:\Program Files\nodejs\`, which is on the Machine
+  PATH. A VS Code started before that PATH change passes the old PATH to every terminal, task (F5)
+  and Claude shell ("npm is not recognized") until VS Code is fully quit and restarted
+  (Reload Window is not enough). Seen 2026-11-01.
 - Extension language: TypeScript, bundled with esbuild, linted with ESLint, packaged with
   `@vscode/vsce`.
 - Hooks: Windows PowerShell 5.1 scripts in `~/.claude/hooks/`, wired in `~/.claude/settings.json`.
@@ -26,7 +28,10 @@ Don't build what's under "Later" in docs/todo.md until asked.
 ## Build specifics
 - **Checks** (run from the `extension/` folder once it exists):
   - Fast, after edits: `npm run lint` (~5s).
-  - Per step: `npm run compile` + `npx tsc --noEmit` (~10s); `npm test` once tests exist.
+  - Per step: `npm run compile` (esbuild bundle only, ~1s) + `npx tsc --noEmit` (type-check,
+    ~2s); `npm test` once tests exist. `npm run package` builds a `.vsix` (Marketplace manifest
+    check).
+  - Run the extension: `F5` from the repo root (`.vscode/launch.json`).
   - Hooks have no build; verify by piping a fake payload and checking the written file
     (see docs/research/hooks.md).
   - GUI test + screenshots (gui-test skill) once the extension UI exists: it runs in the VS Code
@@ -52,6 +57,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - The status hook runs synchronously so events stay in order; `notify.ps1` stays async.
 - `hooks/session-status.ps1` in the repo is the source: edit it there, then copy it to
   `~/.claude/hooks/`.
+- TypeScript stays on `~6.0.x` until typescript-eslint supports 7. VS Code minimum `^1.100.0`,
+  with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
+- Publisher id `session-inbox`; no `repository` field in package.json until release.
 
 ## Project docs
 README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).

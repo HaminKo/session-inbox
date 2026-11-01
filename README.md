@@ -57,8 +57,9 @@ The status-writer hook works; the extension is next. Both are built as numbered 
 
   Each session then keeps a status file in `~/.claude/session-status/`. Verify with the payload
   test in `docs/research/hooks.md`.
-- **Extension:** from `extension/`, run `npm install`, then `npm run compile`, then press `F5` in
-  VS Code to launch an Extension Development Host. Package a `.vsix` with `npx vsce package`.
+- **Extension:** run `npm install` once in `extension/`. Then open the repo folder in VS Code and
+  press `F5`: it builds the extension (`npm run compile`) and starts an Extension Development Host
+  with it loaded. Package a `.vsix` with `npm run package` (from `extension/`).
 
 ## Credits
 
@@ -67,6 +68,10 @@ The status-writer hook works; the extension is next. Both are built as numbered 
 - [Visual Studio Code Extension API](https://code.visualstudio.com/api) — Microsoft, MIT.
 - [esbuild](https://esbuild.github.io/) — Evan Wallace, MIT.
 - [ESLint](https://eslint.org/) — OpenJS Foundation, MIT.
+- [typescript-eslint](https://typescript-eslint.io/) — typescript-eslint team, MIT.
+- [TypeScript](https://www.typescriptlang.org/) — Microsoft, Apache-2.0.
+- [@types/vscode and @types/node](https://github.com/DefinitelyTyped/DefinitelyTyped) —
+  DefinitelyTyped contributors, MIT.
 - [@vscode/vsce](https://github.com/microsoft/vscode-vsce) — Microsoft, MIT.
 - [Node.js](https://nodejs.org/) — OpenJS Foundation, MIT.
 
