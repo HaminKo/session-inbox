@@ -169,6 +169,44 @@ The popup itself is unchanged (still `WS_EX_NOACTIVATE`, never takes focus). Ope
 which line replaces "refused"; if refusals remain, test cause 1 (focus on `MouseUp` instead of
 `MouseDown`) or 3.
 
+**Follow-up (2026-11-01, later the same day):** the fallbacks did not save every click. Installed
+15:29:41 (hash checked, not reset); of the next 4 clicks on real windows, 3 worked on the first try
+and 1 was refused after all four attempts (15:35:19, session-inbox). The user believes another VS
+Code window was in front (from memory, not logged).
+- Not reproducible on demand: a background process calling the installed `BringToFront` brought
+  claude-practice in front of Brood War, and then session-inbox in front of claude-practice, both on
+  the **first** attempt (measured). So the lock depends on state not yet known; the earlier
+  test's plain refusal was not a permanent condition.
+- A wrong-window match was checked: only one visible window matches session-inbox, and the
+  Extension Development Host's title (`[Extension Development Host] Welcome - Visual Studio Code`)
+  has no folder name. Unlikely, though the windows at 15:35 can't be checked now.
+- `ForegroundLockTimeout` in `HKCU:\Control Panel\Desktop` is 1,911,550,888 ms (~22 days; Windows'
+  default is 200,000), so on this PC the lock never expires by itself. Left alone: it's a
+  system-wide setting.
+- Next step taken: a refusal's log line now says what was in front and what each fallback did, e.g.
+  `[clicked: Windows refused the focus change; in front: "..." (Code, not admin); attach: attached,
+  still refused; Alt tap: refused]`. The front window is read before the fallbacks run. The admin
+  check (`TokenElevation`, or "token not readable") was only tried on a non-admin window (Brood War
+  → "StarCraft, not admin"). Backup of this version: `notify.ps1.refusal-log-2026-11-01`.
+
+**Found: Start/Search in front (2026-11-01, measured).** The first refusal with the new log line
+(15:53:21) said `in front: "Search" (SearchHost, not admin); attach: failed; Alt tap: refused`.
+User test: opening Start with the Windows key and then clicking a test popup was refused 2 of 2
+times, same line. The popup never takes focus, so a click on it doesn't close Start; while
+Start/Search is in front, Windows refuses every attempt (plain, empty input, attach, Alt).
+Likely the cause of other refusals too, e.g. the Windows key pressed to leave a full-screen game,
+or the 15:35 one remembered as "VS Code in front"; not provable for those, they weren't logged.
+- Test of the fix (user ran it once): with Search in front, an Escape key press closed it (VS Code
+  was in front 300 ms later), and then `BringToFront` worked on the plain first attempt.
+- Fix: `BringToFront` first checks the front window's process; if it is `SearchHost` or
+  `StartMenuExperienceHost`, it presses Escape (only then, since the key goes to the front window)
+  and waits up to 300 ms for it to close. The log line then starts with
+  `Start/Search closed with Escape, then ...`. Backup: `notify.ps1.close-start-2026-11-01`.
+- Real popup click with Start open after this install: passed once (user test, 16:00:31, log
+  `[clicked: Start/Search closed with Escape, then window brought to front] claude-howto`).
+  Two earlier tries logged "no VS Code window found": the target window had been closed, so they
+  never reached the new check.
+
 ## Sources
 - `~/.claude/hooks/notify.ps1` (author's existing hook; comments carry dated measurements).
 - Claude Code hooks reference: https://docs.claude.com/en/docs/claude-code/hooks
