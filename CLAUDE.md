@@ -23,7 +23,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   `/build-todo N, step B` for one step of a bigger to-do). New to-dos via /add-todo.
 - Commit after each working step. End a step with the finish-step skill.
 - Extend the existing notification hook (`~/.claude/hooks/notify.ps1`); never modify or replace it
-  in project work. (One exception, asked for by the user: taller popups, docs/decisions.md 2026-11-01.)
+  in project work. (Exceptions, asked for by the user: taller popups and the focus fallback,
+  docs/decisions.md 2026-11-01.)
 
 ## Build specifics
 - **Checks** (run from the `extension/` folder once it exists):

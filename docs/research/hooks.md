@@ -79,7 +79,7 @@ frozen at its first state, and the `catch` hid it. Fix: pass `[NullString]::Valu
 cover updating an existing file, not only creating new ones.
 
 Keep the writer tiny and WinForms-free — it runs on every `PostToolUse`. The heavy popup work
-stays in `notify.ps1`, which this project does not touch.
+stays in `notify.ps1`, which this project changes only when the user asks (see docs/decisions.md).
 
 **Measured cost (2026-11-01):** running `session-status.ps1` synchronously costs ~**374 ms**
 wall-clock per call (5-run average; measured, not estimated). This is almost entirely
@@ -120,6 +120,54 @@ workspace, from the session's checkpoint.
 What to do: build a hook change in a separate file and install it with a shell copy (`Copy-Item`),
 keep backups in `~/.claude/hooks/backups/`, and afterwards compare the installed file's hash with
 the backup. (The reinstalled version, written this way, is the test of this theory.)
+
+## Popup click refused by Windows (focus fallback, 2026-11-01)
+
+Symptom: clicking a `notify.ps1` popup sometimes leaves the VS Code window behind; the log says
+`[clicked: Windows refused the focus change]`. 22 of 203 clicks in `notify.log` (2026-10-31 to
+2026-11-01, counted), in runs; seen in sc-map-library and PeacefreeWeb at 14:45, 14:53, 15:10, 15:22.
+
+Candidate causes, and what tested them:
+1. The popup is `WS_EX_NOACTIVATE`, so the click may not count as the "last input" for the
+   foreground-lock rule. Not tested directly (needs a real click on a refused run); unknown.
+2. The empty `SendInput` retry is ignored. **Confirmed.** The log has 0 "after an empty input"
+   lines, though the retry existed from the 01:37 version on (7+ refusals since). Live test (below):
+   after the empty input, `SetForegroundWindow` returned **true** while Brood War stayed in front.
+   So its return value can't be trusted; the hook now checks `GetForegroundWindow()`.
+   (Corrects the 2026-11-01 note in `notify.ps1` that the empty input fixed a refused test window.)
+3. An elevated window in front (UIPI blocks `SendInput`). Not tested; unlikely, since at 15:22 the
+   front window was probably another VS Code window.
+
+Live test (measured 2026-11-01, Brood War in front): one background PowerShell shows a test window
+without activating it; a second one (no user input) tries to bring it to front, one method per run:
+
+| Method | Returned | In front after |
+|---|---|---|
+| plain `SetForegroundWindow` | false | Brood War |
+| empty input + retry | true | Brood War |
+| Alt tap (`keybd_event(VK_MENU)`) + retry | true | test window |
+| `AttachThreadInput` to the front thread + retry | true | test window |
+| plain again (control) | true | test window |
+
+The last control passing means the runs affected each other (once one background change got
+through, Windows let the next one through too), so "AttachThreadInput alone works" is not proven:
+only the Alt tap ran from a clearly refused state. One run each; not repeated, to keep from
+pulling the user's game out of focus again.
+
+Fix in `notify.ps1` `BringToFront` (backup before: `~/.claude/hooks/backups/notify.ps1.before-focus-fallback-2026-11-01`;
+after: `notify.ps1.focus-fallback-2026-11-01`). Each attempt checks the real foreground (up to
+200 ms); the log names the one that worked:
+1. `SetForegroundWindow` → `window brought to front`
+2. empty input + retry → `... after an empty input` (kept, to see if it ever helps)
+3. `AttachThreadInput` to the front window's thread, `SetForegroundWindow` + `BringWindowToTop`,
+   detach → `... after attaching to the front window's thread`
+4. Alt tap + retry → `... after an Alt tap`. Last because a lone Alt can open the old window's menu
+   bar (VS Code) or reach a game.
+5. otherwise `Windows refused the focus change`.
+
+The popup itself is unchanged (still `WS_EX_NOACTIVATE`, never takes focus). Open: watch the log for
+which line replaces "refused"; if refusals remain, test cause 1 (focus on `MouseUp` instead of
+`MouseDown`) or 3.
 
 ## Sources
 - `~/.claude/hooks/notify.ps1` (author's existing hook; comments carry dated measurements).

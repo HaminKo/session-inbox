@@ -42,6 +42,21 @@ what was rejected and why.
   first in-place edit was silently reset to the original once (docs/research/hooks.md, "Editing
   files in `~/.claude/hooks/`").
 
+## 2026-11-01 — Exception: `notify.ps1` gets a focus fallback when a popup click is refused
+- Decision: `BringToFront` in `notify.ps1` checks that the window really came to the front, and
+  when Windows refuses, it tries `AttachThreadInput` to the front window's thread, then an Alt tap.
+  The log names the attempt that worked. The popup itself still never takes focus.
+- Reason: 22 of 203 popup clicks were refused. The existing empty-input retry never rescued one
+  (0 in the log), and in a live test it returned success while the old window stayed in front.
+  Alt tap and `AttachThreadInput` both brought a refused window to the front (one run each;
+  docs/research/hooks.md, "Popup click refused by Windows").
+- Decided by: the user asked for the fix (either fallback); Claude chose to use both, attach first.
+- Rejected: leaving it as it was (the empty-input retry doesn't work); the Alt tap first (a lone
+  Alt can open the old window's menu bar or reach a game, so it goes last); changing the system's
+  foreground-lock timeout (a system-wide setting, for one script).
+- Backups: `~/.claude/hooks/backups/notify.ps1.before-focus-fallback-2026-11-01` and
+  `notify.ps1.focus-fallback-2026-11-01`. Installed with a shell copy; hash checked.
+
 ## 2026-11-01 — The status hook runs synchronously, not `async`
 - Reason: a turn fires `PostToolUse` (`working`) and then `Stop` (`done`). With `async: true`, a
   slow `working` process can finish after `done` and leave a finished session stuck as `working`.
