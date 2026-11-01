@@ -26,7 +26,9 @@
     "compile": "npm run bundle -- --sourcemap",
     "watch": "npm run bundle -- --sourcemap --watch",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint src test",
+    "test:gui": "npm run compile && node --test --test-concurrency=1 \"test/gui/*.gui.ts\"",
+    "screenshots": "npm run compile && node test/gui/screenshots.ts",
     "package": "vsce package --allow-missing-repository",
     "vscode:prepublish": "npm run bundle -- --minify"
   },
@@ -34,9 +36,11 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "~20.17.0",
     "@types/vscode": "~1.100.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.1.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.14.0",
+    "playwright-core": "^1.64.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1"
   }

@@ -22,8 +22,8 @@ The hooks extend an existing desktop-notification hook rather than replacing it.
 
 ## Status
 
-The status-writer hook works; the extension is next. Both are built as numbered to-dos (see
-`docs/todo.md`); nothing is published yet.
+The status-writer hook works; the extension has a placeholder status bar item and a GUI test.
+Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements
 
@@ -60,6 +60,10 @@ The status-writer hook works; the extension is next. Both are built as numbered 
 - **Extension:** run `npm install` once in `extension/`. Then open the repo folder in VS Code and
   press `F5`: it builds the extension (`npm run compile`) and starts an Extension Development Host
   with it loaded. Package a `.vsix` with `npm run package` (from `extension/`).
+- **GUI test and screenshots** (from `extension/`): `npm run test:gui` starts a separate VS Code
+  window with only this extension and checks the status bar; `npm run screenshots` saves PNGs to
+  the temp folder (`session-inbox-shots`). The first run downloads VS Code (~350 MB) into
+  `extension/.vscode-test/`.
 
 ## Credits
 
@@ -73,6 +77,8 @@ The status-writer hook works; the extension is next. Both are built as numbered 
 - [@types/vscode and @types/node](https://github.com/DefinitelyTyped/DefinitelyTyped) —
   DefinitelyTyped contributors, MIT.
 - [@vscode/vsce](https://github.com/microsoft/vscode-vsce) — Microsoft, MIT.
+- [@vscode/test-electron](https://github.com/microsoft/vscode-test) — Microsoft, MIT.
+- [Playwright](https://playwright.dev/) (`playwright-core`) — Microsoft, Apache-2.0.
 - [Node.js](https://nodejs.org/) — OpenJS Foundation, MIT.
 
 ## License

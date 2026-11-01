@@ -1,0 +1,72 @@
+// Starts a pinned VS Code with only this extension loaded, and returns its window for Playwright.
+// Everything it writes (user data, extensions dir) goes to a temp folder; the VS Code download is
+// cached in extension/.vscode-test/ (gitignored).
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { downloadAndUnzipVSCode } from "@vscode/test-electron";
+import { _electron, type ElectronApplication, type Page } from "playwright-core";
+
+// Pinned so the test doesn't re-download ~350 MB after every VS Code release; bump by hand.
+export const VSCODE_VERSION = "1.144.0";
+
+const extensionDir = resolve(import.meta.dirname, "..", "..");
+
+export interface VsCode {
+  app: ElectronApplication;
+  window: Page;
+  close: () => Promise<void>;
+}
+
+export async function launchVsCode(): Promise<VsCode> {
+  const executablePath = await downloadAndUnzipVSCode({
+    version: VSCODE_VERSION,
+    cachePath: join(extensionDir, ".vscode-test"),
+  });
+  const tempDir = mkdtempSync(join(tmpdir(), "session-inbox-gui-"));
+  // A shell inside VS Code inherits ELECTRON_RUN_AS_NODE=1, which makes Code.exe start as plain
+  // Node and reject every VS Code flag ("bad option").
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(
+      (entry): entry is [string, string] => entry[0] !== "ELECTRON_RUN_AS_NODE" && entry[1] !== undefined,
+    ),
+  );
+  const removeTemp = () =>
+    rmSync(tempDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  let app: ElectronApplication | undefined;
+  try {
+    app = await _electron.launch({
+      executablePath,
+      env,
+      args: [
+        "--disable-extensions",
+        `--extensionDevelopmentPath=${extensionDir}`,
+        `--user-data-dir=${join(tempDir, "user-data")}`,
+        `--extensions-dir=${join(tempDir, "extensions")}`,
+        "--skip-welcome",
+        "--skip-release-notes",
+        "--disable-workspace-trust",
+        "--new-window",
+      ],
+    });
+    const window = await app.firstWindow();
+    await window.waitForSelector(".monaco-workbench", { timeout: 30_000 });
+    const started = app;
+    return {
+      app: started,
+      window,
+      close: async () => {
+        try {
+          await started.close();
+        } finally {
+          removeTemp();
+        }
+      },
+    };
+  } catch (error) {
+    // Don't leave a VS Code window or temp profile behind when startup fails.
+    await app?.close().catch(() => undefined);
+    removeTemp();
+    throw error;
+  }
+}

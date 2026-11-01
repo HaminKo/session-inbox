@@ -2,10 +2,6 @@ Next number: 9
 
 ## To do
 
-### 3. GUI test + screenshots for the extension (small)
-Set up the gui-test skill for the Extension Development Host (`@vscode/test-electron`) and capture
-a first screenshot. Do this right after the skeleton (#2).
-
 ### 4. Status bar: real counts from the status folder (medium)
 Watch `~/.claude/session-status/`, show `⚠ N waiting` / `✓ all clear` (N = `waiting` + `done`),
 tooltip with a breakdown. Handle the folder not existing yet.

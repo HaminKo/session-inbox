@@ -35,8 +35,10 @@ Don't build what's under "Later" in docs/todo.md until asked.
   - Run the extension: `F5` from the repo root (`.vscode/launch.json`).
   - Hooks have no build; verify by piping a fake payload and checking the written file
     (see docs/research/hooks.md).
-  - GUI test + screenshots (gui-test skill) once the extension UI exists: it runs in the VS Code
-    Extension Development Host via `@vscode/test-electron`.
+  - GUI test, every step (~8 s): `npm run test:gui` (`test/gui/*.gui.ts`; opens a VS Code window
+    briefly). A UI change gets a step in it. Details: docs/research/gui-testing.md.
+  - Screenshots: `npm run screenshots` (or `-- statusbar` / `-- window`) → PNGs in
+    `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens, window ~2,900.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
 - **Docs to update when behaviour changes:** README.md (headline features, install/run steps,
   Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md once it exists.
@@ -47,7 +49,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #3 — GUI test + screenshots for the extension (`@vscode/test-electron`).
+Next: to-do #4 — status bar: real counts from the status folder.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -61,6 +63,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - TypeScript stays on `~6.0.x` until typescript-eslint supports 7. VS Code minimum `^1.100.0`,
   with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
 - Publisher id `session-inbox`; no `repository` field in package.json until release.
+- GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
+  by `@vscode/test-electron`.
 
 ## Project docs
 README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).

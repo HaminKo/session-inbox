@@ -3,6 +3,17 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — GUI test: Playwright drives a pinned VS Code
+- Decision: `@vscode/test-electron` only downloads VS Code `1.144.0` (pinned, bumped by hand);
+  `playwright-core` launches it with the extension and checks and screenshots the real workbench
+  DOM. Test files are `*.gui.ts`, run by `node --test` with Node's type stripping.
+- Reason: tests inside the extension host can't see the rendered window or take screenshots.
+  Pinning avoids re-downloading ~350 MB after every VS Code release.
+- Decided by: the user, on Claude's suggestion.
+- Rejected: extension-host tests only (no screenshots, no check of what's drawn); downloading
+  "stable" (re-download per release); 1.100.0 as the test version (it could be added later as a
+  second run); a separate build step for the test files (Node 26 runs them directly).
+
 ## 2026-11-01 — Publisher id `session-inbox`; no `repository` link until release
 - Decision: `extension/package.json` uses publisher `session-inbox` (not created on the Marketplace
   yet) and has no `repository` field; `npm run package` passes `--allow-missing-repository`.
