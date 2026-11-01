@@ -39,7 +39,9 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #1 — hooks (status-writer script + settings.json wiring) and verification.
+To-do #1 (hooks) is built, installed and committed as a check-in. Waiting on the user's live test:
+does `SessionEnd` delete the status file when a chat closes, and do tool calls feel slower (~374 ms
+each)? Then finish #1 (README install steps, remove it from docs/todo.md) and go on to to-do #2.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -47,6 +49,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   the VS Code extension).
 - Three session states: `waiting` (blocked on permission/question), `done` (reply finished, your
   turn), `working`. The inbox counts `waiting` + `done`.
+- The status hook runs synchronously so events stay in order; `notify.ps1` stays async.
+- `hooks/session-status.ps1` in the repo is the source: edit it there, then copy it to
+  `~/.claude/hooks/`.
 
 ## Project docs
 README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).

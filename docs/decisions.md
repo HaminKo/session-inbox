@@ -3,6 +3,29 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — The status hook runs synchronously, not `async`
+- Reason: a turn fires `PostToolUse` (`working`) and then `Stop` (`done`). With `async: true`, a
+  slow `working` process can finish after `done` and leave a finished session stuck as `working`.
+  A synchronous hook finishes before the next event fires, so the last state wins. Cost: ~374 ms
+  per call (measured 2026-11-01), almost all of it `powershell.exe` startup.
+- Decided by: the user, on Claude's suggestion.
+- Rejected: `async: true` like `notify.ps1` (out-of-order writes). `notify.ps1` stays async: it
+  only shows popups, so its order doesn't matter.
+
+## 2026-11-01 — `PostToolUse` writes on every tool call, no throttle yet
+- Reason: measure before adding complexity. Revisit if ~374 ms per tool call is noticeable in real
+  use; the options are in docs/research/hooks.md ("Measured cost").
+- Decided by: the user.
+- Rejected: throttling up front (complexity before any evidence of a problem).
+
+## 2026-11-01 — The status hook lives in the repo; `~/.claude/hooks/` holds an installed copy
+- Decision: `hooks/session-status.ps1` in the repo is the source; install or update it by copying it
+  to `~/.claude/hooks/`. Status files go to `~/.claude/session-status/`.
+- Reason: the hook is a project deliverable, so it should be version-controlled and shippable.
+  `notify.ps1` is the user's own pre-existing hook and stays untracked.
+- Decided by: the user, on Claude's suggestion.
+- Rejected: keeping the script only in `~/.claude/hooks/` (no version control, nothing to ship).
+
 ## 2026-11-01 — "Waiting" is driven by the `PermissionRequest` event, not `Notification`
 - Reason: the build spec asked to hook the `Notification` event, but the author's own `notify.ps1`
   documents (measured 2026-10-31) that the VS Code extension never fires `Notification` — no event
