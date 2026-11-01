@@ -22,8 +22,8 @@ The hooks extend an existing desktop-notification hook rather than replacing it.
 
 ## Status
 
-Early setup. The hooks and extension are built as numbered to-dos (see `docs/todo.md`); nothing
-is published yet.
+The status-writer hook works; the extension is next. Both are built as numbered to-dos (see
+`docs/todo.md`); nothing is published yet.
 
 ## Requirements
 
@@ -35,9 +35,28 @@ is published yet.
 
 > Build steps land here as they're implemented. For now:
 
-- **Hooks:** copy the status-writer script into `~/.claude/hooks/` and add its entries to
-  `~/.claude/settings.json` (see the hooks to-do). Verify with the payload test in
-  `docs/research/hooks.md`.
+- **Hooks:** copy the status-writer into place (in PowerShell, from this folder):
+
+  ```powershell
+  New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\hooks" | Out-Null
+  Copy-Item hooks\session-status.ps1 "$env:USERPROFILE\.claude\hooks\"
+  ```
+
+  Then, in `~/.claude/settings.json`, add this entry to the `hooks` list of each of
+  `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse` and `SessionEnd`, next to any hooks
+  already there. Leave out `"async": true`: the hook has to run in order, so that a late `working`
+  can't overwrite `done`.
+
+  ```json
+  {
+    "type": "command",
+    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/session-status.ps1\"",
+    "timeout": 10
+  }
+  ```
+
+  Each session then keeps a status file in `~/.claude/session-status/`. Verify with the payload
+  test in `docs/research/hooks.md`.
 - **Extension:** from `extension/`, run `npm install`, then `npm run compile`, then press `F5` in
   VS Code to launch an Extension Development Host. Package a `.vsix` with `npx vsce package`.
 

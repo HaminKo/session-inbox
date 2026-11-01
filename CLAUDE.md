@@ -39,9 +39,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-To-do #1 (hooks) is built, installed and committed as a check-in. Waiting on the user's live test:
-does `SessionEnd` delete the status file when a chat closes, and do tool calls feel slower (~374 ms
-each)? Then finish #1 (README install steps, remove it from docs/todo.md) and go on to to-do #2.
+Next: to-do #2 — extension skeleton (build, lint, and a hello-world status bar item).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

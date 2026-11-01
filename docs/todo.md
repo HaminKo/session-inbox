@@ -2,30 +2,6 @@ Next number: 9
 
 ## To do
 
-### 1. Hooks: status-writer script + settings.json wiring (medium)
-Goal: a global hook writes a status file per session and keeps it current, extending (not
-replacing) the existing `notify.ps1`.
-
-- **Problem / Goal:** Claude Code notifications are one-shot; a session that needs you leaves no
-  lasting trace. Write `~/.claude/session-status/<session_id>.json` so the extension can show what
-  is still waiting. Known facts (see docs/research/hooks.md): the VS Code extension does NOT fire
-  `Notification`; `PermissionRequest` is what fires on a permission prompt or a question.
-- **Read first:** `~/.claude/hooks/notify.ps1` (don't modify it), `~/.claude/settings.json`
-  (current `Stop` + `PermissionRequest` entries), docs/research/hooks.md, docs/decisions.md.
-- **Approach:** a new tiny `~/.claude/hooks/session-status.ps1` (no WinForms) that reads stdin
-  JSON and writes the status file; state chosen from `hook_event_name`. Wire in settings.json:
-  add it alongside `notify.ps1` on `PermissionRequest` (state `waiting`) and `Stop` (state
-  `done`); add new entries for `UserPromptSubmit` and `PostToolUse` (state `working`) and
-  `SessionEnd` (delete the file). Detect worktree via the `.git`-is-a-file test. Fields per
-  docs/research/hooks.md.
-- **Ask the user:** confirm the status folder path `~/.claude/session-status/` (suggested: yes);
-  whether `PostToolUse` writing on every tool call is acceptable or should be throttled
-  (suggested: write every time first, measure, throttle only if noticeable).
-- **Test:** Claude pipes fake payloads for each event and checks the written/deleted file
-  (commands in docs/research/hooks.md); records the real field names observed. User runs a live
-  Claude session, triggers a permission prompt, and confirms a `waiting` file appears and flips to
-  `working`/`done`.
-
 ### 2. Extension skeleton: build, lint, and a hello-world status bar item (medium)
 Goal: a compiling, lintable VS Code extension in `extension/` with a clean Marketplace-ready
 `package.json`, showing a placeholder status bar item.

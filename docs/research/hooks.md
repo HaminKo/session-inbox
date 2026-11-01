@@ -16,11 +16,20 @@ deleting them.
   the first question is at `tool_input.questions[0].question`; otherwise `tool_name` is the tool
   needing permission.
 - **`Stop`** fires when a reply finishes. Payload has `last_assistant_message`.
-- **`UserPromptSubmit`**, **`PostToolUse`**, **`SessionEnd`** — used for working/cleanup. Confirmed
-  while building to-do #1 (`session-status.ps1`, 2026-11-01): all three fire in the VS Code
-  extension. `UserPromptSubmit` and `PostToolUse` are the `working` signal; `SessionEnd` is where the
-  status file is deleted. `PostToolUse` carries `tool_name`; `UserPromptSubmit` and `SessionEnd` do
-  not. (`SessionEnd` was wired but not yet observed on a live session end — verify in the live test.)
+- **`UserPromptSubmit`**, **`PostToolUse`**, **`SessionEnd`** — wired by to-do #1 (2026-11-01).
+  `UserPromptSubmit` and `PostToolUse` are the `working` signal; `SessionEnd` deletes the status
+  file. `PostToolUse` carries `tool_name`; `UserPromptSubmit` and `SessionEnd` do not. Observed live
+  in the VS Code extension:
+  - `PostToolUse` fires: the building session's own status file was rewritten after each tool call.
+  - `SessionEnd` fires when a chat tab is closed: its status file was deleted (user test,
+    2026-11-01). Reopening the closed tab fires none of these hooks, so the row stays gone until
+    the chat's next prompt or tool call writes it again (expected from the wiring). Intended: a chat
+    you just reopened is in front of you. Showing it on reopen would need a `SessionStart` hook.
+  - `UserPromptSubmit`: not yet seen on its own (the turn's first `PostToolUse` overwrites its write
+    within seconds); the fake-payload test passes.
+
+  (Corrected: an earlier version of this entry said all three were confirmed live; at that point
+  only `PostToolUse` was.)
 
 ## Hook payload fields (stdin JSON)
 
@@ -75,17 +84,24 @@ wall-clock per call (5-run average; measured, not estimated). This is almost ent
 stay ordered and a late `working` write can't overwrite `done`. If that per-tool-call latency turns
 out to be noticeable in real use, options are: throttle `PostToolUse` writes (e.g. skip if the file
 was touched < N seconds ago), drop the `PostToolUse` hook entirely (relying on `UserPromptSubmit`
-for `working`), or move the writer to a faster runtime. Left unthrottled for now pending the live
-test — the user chose "measure first, throttle only if noticeable".
+for `working`), or move the writer to a faster runtime. Left unthrottled: the user chose "measure
+first, throttle only if noticeable", and noticed no slowdown in the live test (2026-11-01).
 
 ## Verifying without a live session
 
-Pipe a fake payload into the writer and check the file it writes. Example to confirm when built:
+Pipe a fake payload into the writer and check the file it writes (works, 2026-11-01). Always send a
+second event for the same `session_id` too: updating an existing file is a separate code path (see
+the dead end above). Delete the test file afterwards:
 
 ```powershell
+$hook = "$env:USERPROFILE/.claude/hooks/session-status.ps1"
 '{"session_id":"test123","cwd":"C:/tmp/demo","hook_event_name":"PermissionRequest","tool_name":"Bash"}' |
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:USERPROFILE/.claude/hooks/session-status.ps1"
-Get-Content "$env:USERPROFILE/.claude/session-status/test123.json"
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File $hook
+Get-Content "$env:USERPROFILE/.claude/session-status/test123.json"   # state: waiting
+'{"session_id":"test123","cwd":"C:/tmp/demo","hook_event_name":"Stop","last_assistant_message":"Done."}' |
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File $hook
+Get-Content "$env:USERPROFILE/.claude/session-status/test123.json"   # state: done
+Remove-Item "$env:USERPROFILE/.claude/session-status/test123.json"
 ```
 
 ## Sources
