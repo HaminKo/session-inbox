@@ -1,4 +1,4 @@
-Next number: 8
+Next number: 9
 
 ## To do
 
@@ -52,6 +52,27 @@ tooltip with a breakdown. Handle the folder not existing yet.
 ### 5. Sidebar view: all sessions across windows (large)
 Tree view, waiting first then done then working, each with folder, how long it has waited, and a
 worktree badge.
+
+### 8. Sidebar: sort the list by project name or by time (small)
+Goal, in the user's words: "2 ways to order the list - by the name of the project and by time".
+
+- **Problem / Goal:** #5 has one fixed order (waiting, then done, then working). With several
+  sessions open you either look for one project (by name: `my-app`, `my-app-todo12`, `website`)
+  or want to see what has waited longest (by time).
+- **Read first:** the sidebar's tree provider from #5; `timestamp` in docs/research/hooks.md
+  ("Status file": for `working` it means last activity, not when the state began); VS Code API:
+  `view/title` menus, `TreeDataProvider.onDidChangeTreeData`, `ExtensionContext.globalState`.
+- **Approach:** one toggle button in the sidebar's title bar (two commands; a context key shows
+  only the inactive one), the choice saved in `globalState`, the sort applied inside each state
+  group. By project: `folder` A-Z, ignoring case, ties by time. By time: oldest `timestamp` first.
+- **Ask the user:** keep the state groups and sort inside each (suggested: yes, so `waiting` always
+  stays on top); by time, longest-waiting or newest first (suggested: longest-waiting); default
+  mode (suggested: by time); same choice in every window (suggested: yes, `globalState`); sort
+  worktrees by their own folder name (suggested: yes, `my-app-todo12` already lands next to
+  `my-app`).
+- **Test:** Claude: a unit test of the sort (both modes, ties, case, groups kept in order) and a
+  GUI-test step that switches the mode. User: with 3+ sessions in different folders, click the
+  toggle and see the order change; reload the window and the choice is still set.
 
 ### 6. Click a session to focus/open its VS Code window (medium)
 Reuse the window-finding approach from `notify.ps1` (find the VS Code window whose title ends in
