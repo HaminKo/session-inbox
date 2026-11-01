@@ -1,4 +1,4 @@
-Next number: 9
+Next number: 10
 
 ## To do
 
@@ -34,6 +34,32 @@ Goal, in the user's words: "2 ways to order the list - by the name of the projec
 ### 6. Click a session to focus/open its VS Code window (medium)
 Reuse the window-finding approach from `notify.ps1` (find the VS Code window whose title ends in
 `<folder> - Visual Studio Code`, restore and bring to front; open the folder if none).
+
+### 9. Open the session's own Claude tab, not just its window (medium; research first)
+Goal, in the user's words: "change the tab that gets brought up" — a popup click brought the right
+window up, but it showed a different Claude chat ("Build-todo item 4"), which was confusing.
+
+- **Problem / Goal:** `notify.ps1` (and #6) can only bring a VS Code *window* to the front; Windows
+  can't see or pick tabs inside it. With two Claude chats in one window, the click shows whichever
+  tab was last active. Wanted: the click shows the chat that finished or is waiting.
+- **Read first:** `BringToFront` and the click handler in `~/.claude/hooks/notify.ps1`;
+  `session_id` in the payload and the status file (docs/research/hooks.md); VS Code API:
+  `window.registerUriHandler`; the Claude Code extension's `package.json` (`contributes.commands`,
+  any URI handler) in the installed extensions folder.
+- **Approach:** research before any code, into docs/research/claude-tabs.md:
+  1. Can another extension open or reveal a specific Claude Code session tab (a command or URI
+     that takes a session id)? If not, stop and report: the to-do can't be done well.
+  2. With several VS Code windows open, which one receives a `vscode://` URI? If not the one for
+     that folder, the receiving window has to hand it on (or the popup first brings the right
+     window up, then opens the URI).
+  Then, if both are workable: the popup click opens
+  `vscode://session-inbox.session-inbox/open?session=<id>`, and our extension reveals that tab.
+  The same "show this session" action serves the sidebar click from #6.
+- **Ask the user:** if only the window can be brought up, keep today's behaviour (suggested: yes);
+  if a session's tab was closed, reopen it or just show the window (suggested: just the window).
+- **Test:** Claude: a unit test of URI parsing; a GUI-test step if the extension gets a command.
+  User: two Claude chats in one window, switch to chat A, let chat B finish, click its popup and
+  see chat B's tab come up.
 
 ### 7. Re-notify past a configurable threshold (medium)
 If a session has waited longer than a configurable number of minutes (default 10), re-trigger the
