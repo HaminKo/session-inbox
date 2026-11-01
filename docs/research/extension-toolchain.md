@@ -43,6 +43,16 @@ Check with: `npm view typescript-eslint peerDependencies`.
   the Electron 34 release line, not checked).
 - **`tseslint.config()` is deprecated**; the config uses ESLint's `defineConfig` from
   `eslint/config` instead.
+- **F5: the Dev Host window closed right away** (2026-11-01, from VS Code's logs in
+  `%APPDATA%\Code\logs\<session>\main.log` and `windowN\exthost\exthost.log`). First try: the
+  extension activated, then the window sent "terminate" 64 ms later. Next three tries: the
+  extension host aborted with exit code 134 within ~1 s. Launching the same Dev Host *without*
+  the debugger (`code --new-window --extensionDevelopmentPath=...`), with and without
+  `--disable-extensions`, stayed open and activated the extension, so the extension code and the
+  other installed extensions are not the cause; the debugger-attached launch is. First change:
+  `--disable-extensions` in `.vscode/launch.json` (also keeps Claude Code, and its hooks, from
+  running inside the Dev Host). Result: F5 works with it (user test, 2026-11-01). Not checked
+  why the debugger plus the installed extensions crashed; not needed while they stay disabled.
 - Timings: `npm run lint` 3.9 s, `npm run compile` 0.7 s, `npx tsc --noEmit` 2.0 s.
 
 ## Sources

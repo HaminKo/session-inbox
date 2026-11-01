@@ -5,7 +5,7 @@
       "name": "Run Session Inbox extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}/extension"],
+      "args": ["--disable-extensions", "--extensionDevelopmentPath=${workspaceFolder}/extension"],
       "outFiles": ["${workspaceFolder}/extension/dist/**/*.js"],
       "preLaunchTask": "Build extension"
     }

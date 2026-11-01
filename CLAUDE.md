@@ -47,7 +47,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #2 — extension skeleton (build, lint, and a hello-world status bar item).
+Next: to-do #3 — GUI test + screenshots for the extension (`@vscode/test-electron`).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

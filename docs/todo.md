@@ -2,21 +2,6 @@ Next number: 9
 
 ## To do
 
-### 2. Extension skeleton: build, lint, and a hello-world status bar item (medium)
-Goal: a compiling, lintable VS Code extension in `extension/` with a clean Marketplace-ready
-`package.json`, showing a placeholder status bar item.
-
-- **Problem / Goal:** stand up the extension project so later features have a home and all checks
-  run green.
-- **Read first:** VS Code Extension API getting-started; CLAUDE.md "Build specifics".
-- **Approach:** `extension/` with TypeScript + esbuild bundling + ESLint; `package.json` with
-  publisher, name `session-inbox`, display name "Session Inbox", MIT license, repo link, no
-  unused scaffolding. Activate on startup; add one status bar item showing a placeholder.
-- **Ask the user:** the Marketplace **publisher id** (needed in package.json; suggested: create
-  one and record it in docs/local.md).
-- **Test:** `npm run lint`, `npm run compile`, `npx tsc --noEmit` all pass; `F5` launches the
-  Extension Development Host and the status bar item appears.
-
 ### 3. GUI test + screenshots for the extension (small)
 Set up the gui-test skill for the Extension Development Host (`@vscode/test-electron`) and capture
 a first screenshot. Do this right after the skeleton (#2).
