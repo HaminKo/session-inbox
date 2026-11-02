@@ -11,6 +11,7 @@ export type SessionState = "waiting" | "done" | "working";
 export interface SessionStatus {
   session_id: string;
   cwd?: string;
+  project_dir?: string;
   folder?: string;
   worktree?: boolean;
   worktree_name?: string;

@@ -50,8 +50,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #6 — click a session to focus/open its VS Code window (to-do #8, group the
-sidebar by project, is done).
+Next: to-do #9 — open the session's own Claude tab, not just its window (research first; to-do
+#6, click a session to focus/open its window, is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -74,6 +74,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   unreadable.
 - Sidebar: one title-bar button switches grouping by state (default) / by project, saved in
   `globalState`; a project is the row label (folder leaf), case-insensitive, A-Z.
+- Sidebar click opens `project_dir` with `vscode.openFolder` (VS Code focuses an open window), not
+  `notify.ps1`'s window search.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

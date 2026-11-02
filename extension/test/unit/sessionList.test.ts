@@ -1,7 +1,15 @@
 // Unit tests for the sidebar's groups and row text. Plain Node, no VS Code: `npm test`.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatAge, groupSessions, rowLabel, sessionDescription, sessionLabel, sessionTooltip } from "../../src/sessionList.ts";
+import {
+  formatAge,
+  groupSessions,
+  rowLabel,
+  sessionDescription,
+  sessionFolder,
+  sessionLabel,
+  sessionTooltip,
+} from "../../src/sessionList.ts";
 import type { SessionStatus } from "../../src/statusFolder.ts";
 
 const now = new Date(2026, 10, 1, 12, 0).getTime();
@@ -136,4 +144,11 @@ void test("fields of the wrong type are left out, not a crash", () => {
   assert.equal(sessionLabel(status), "x");
   assert.equal(sessionDescription(status, now), "");
   assert.equal(sessionTooltip(status, now), "x\nDone (your turn)");
+});
+
+void test("a click opens project_dir; an older file uses cwd only while it is the project folder", () => {
+  assert.equal(sessionFolder(status("a", "done", { project_dir: "C:/p/demo-a", cwd: "C:\\p\\demo-a\\sub" })), "C:/p/demo-a");
+  assert.equal(sessionFolder(status("a", "done", { cwd: "C:\\p\\Demo-A" })), "C:\\p\\Demo-A");
+  assert.equal(sessionFolder(status("a", "done", { cwd: "C:\\p\\demo-a\\sub" })), undefined);
+  assert.equal(sessionFolder(status("a", "done", { folder: undefined })), undefined);
 });

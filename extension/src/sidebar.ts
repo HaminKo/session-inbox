@@ -106,6 +106,7 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
     item.iconPath = icons[status.state];
     item.description = sessionDescription(status, this.now);
     item.tooltip = sessionTooltip(status, this.now);
+    item.command = { command: "sessionInbox.openSession", title: "Open window", arguments: [status] };
     return item;
   }
 

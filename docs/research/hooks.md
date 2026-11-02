@@ -60,7 +60,8 @@ This avoids launching `git` on every `PostToolUse`. The worktree's name can be t
 ## Status file
 
 Path: `~/.claude/session-status/<session_id>.json`. Suggested fields: `session_id`, `cwd`,
-`folder`, `worktree`, `worktree_name`, `state` (`waiting`/`working`/`done`), `message`,
+`project_dir` (the chat's start folder from `Project-Dir`, maybe with forward slashes; since to-do
+#6, the folder a sidebar click opens; older files lack it), `folder`, `worktree`, `worktree_name`, `state` (`waiting`/`working`/`done`), `message`,
 `tool_name`, `timestamp` (ISO-8601: when this state began for `waiting` and `done`, which fire once;
 for `working` it is refreshed on every tool call, so it means "last activity" there; the sidebar
 shows an age only for `waiting` and `done`, and "last activity" in the `working` tooltip). `message`
@@ -281,6 +282,17 @@ Fix (installed 21:11, hashes checked): both hooks use `Project-Dir` (docs/decisi
 - Status writer time, 3 runs each, old vs new: 404-499 ms vs 413-462 ms (no difference).
 - Real popup click, passed once (user test, 21:16-21:17): this chat's PowerShell in `extension/`,
   log `[Stop] session-inbox`, then `[clicked: window brought to front] session-inbox`.
+
+## Sidebar click opens the project's window (to-do #6, 2026-11-01)
+
+- The status file gained `project_dir`; a fake payload with `CLAUDE_PROJECT_DIR=C:/demo/proj` and
+  `cwd` `C:\demo\proj\sub` wrote `"project_dir":"C:/demo/proj"` (measured). Note: the hook always
+  writes to the real `~/.claude/session-status/`; `SESSION_INBOX_STATUS_DIR` is read only by the
+  extension, so delete the test file afterwards.
+- The extension runs `vscode.openFolder` with `forceNewWindow: true`. GUI test (VS Code 1.144,
+  measured): a folder no window has opens a second window; clicking a row for a folder that is
+  already open (the other window's or the clicking window's own) adds no window. Whether the OS
+  actually raises the other window is for the user test (Playwright's clicks are not OS input).
 
 ## Character picture in the popup (to-do #11, 2026-11-01)
 

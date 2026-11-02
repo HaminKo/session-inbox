@@ -106,6 +106,7 @@ if ($projectDir) { $isWorktree = Test-Path -PathType Leaf (Join-Path $projectDir
 $status = [ordered]@{
     session_id    = $sessionId
     cwd           = $cwd
+    project_dir   = $projectDir  # full start folder, may use forward slashes; the sidebar click opens it
     folder        = $folder
     worktree      = $isWorktree
     worktree_name = $folder

@@ -79,7 +79,23 @@ export function rowLabel(status: SessionStatus, by: GroupBy): string {
 
 // The project folder; for an older or odd file, the last part of `cwd`, then the session id.
 export function sessionLabel(status: SessionStatus): string {
-  return text(status.folder) || text(status.cwd).split(/[\\/]/).filter(Boolean).pop() || status.session_id;
+  return text(status.folder) || leaf(text(status.cwd)) || status.session_id;
+}
+
+// The last part of a path, either slash; undefined for an empty path.
+function leaf(path: string): string | undefined {
+  return path.split(/[\\/]/).filter(Boolean).pop();
+}
+
+// The folder a click opens: the chat's start folder. A file written before the hook had
+// `project_dir` falls back to `cwd`, but only while it is that folder itself (`cwd` follows the
+// shell into subfolders); otherwise undefined, until the session's next hook event rewrites the file.
+export function sessionFolder(status: SessionStatus): string | undefined {
+  const projectDir = text(status.project_dir);
+  if (projectDir) return projectDir;
+  const cwd = text(status.cwd);
+  const last = leaf(cwd);
+  return last && last.toLowerCase() === text(status.folder).toLowerCase() ? cwd : undefined;
 }
 
 // `worktree · 12 min · <message>`, leaving out what doesn't apply. `working` shows no time: its

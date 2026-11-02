@@ -2,13 +2,6 @@ Next number: 14
 
 ## To do
 
-### 6. Click a session to focus/open its VS Code window (medium)
-Reuse the window-finding approach from `notify.ps1` (find the VS Code window whose title ends in
-`<folder> - Visual Studio Code`, restore and bring to front; open the folder if none).
-Also ask: should a click on the status bar item open the sidebar (a command running
-`workbench.view.extension.sessionInbox`, ~5 lines)? Suggested by Claude in the #5 user test (the
-user clicked it expecting that); not decided yet.
-
 ### 9. Open the session's own Claude tab, not just its window (medium; research first)
 Goal, in the user's words: "change the tab that gets brought up" — a popup click brought the right
 window up, but it showed a different Claude chat ("Build-todo item 4"), which was confusing.
@@ -28,7 +21,9 @@ window up, but it showed a different Claude chat ("Build-todo item 4"), which wa
      window up, then opens the URI).
   Then, if both are workable: the popup click opens
   `vscode://session-inbox.session-inbox/open?session=<id>`, and our extension reveals that tab.
-  The same "show this session" action serves the sidebar click from #6.
+  The same "show this session" action serves the sidebar click from #6 (built: `openSession` in
+  `extension/src/extension.ts`; its user test, 2026-11-01, confirmed it brings up the window but
+  not the clicked session's tab).
 - **Ask the user:** if only the window can be brought up, keep today's behaviour (suggested: yes);
   if a session's tab was closed, reopen it or just show the window (suggested: just the window).
 - **Test:** Claude: a unit test of URI parsing; a GUI-test step if the extension gets a command.

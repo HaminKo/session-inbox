@@ -48,6 +48,13 @@ docs/decisions.md (2026-11-01, "GUI test: Playwright drives a pinned VS Code").
   the first launch took 5.5 s in one run, 12.9 s in the next).
   `sidebar.png` 522×389 px; estimated ≈ 270 tokens.
 
+## Row clicks and windows (to-do #6, 2026-11-01, VS Code 1.144)
+- `launchVsCode(env, folder)` opens a folder in the test window. Window titles come from the main
+  process: `app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().map(w => w.getTitle()))`
+  (Electron's types aren't installed: type the argument by hand).
+- Dead end: `.label-name:text-is("demo-other")` never matches a tree row's label (measured: count 0
+  while `innerText` is exactly `demo-other`); `filter({ hasText: "demo-other" })` works.
+
 ## Dead end: `ELECTRON_RUN_AS_NODE`
 The first launch failed with "Process failed to launch!". Running with `DEBUG=pw:browser*` showed
 `Code.exe: bad option: --disable-extensions` (and the same for every VS Code flag). A shell inside

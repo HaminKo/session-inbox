@@ -4,16 +4,18 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-// `waitedMs` back-dates the timestamp (how long the state has lasted); `worktree` marks a linked worktree.
+// `waitedMs` back-dates the timestamp (how long the state has lasted); `worktree` marks a linked worktree;
+// `projectDir` sets the folder a row click opens.
 export function writeSampleStatus(
   dir: string,
   id: string,
   state: "waiting" | "done" | "working",
-  { waitedMs = 0, worktree = false, project = id } = {},
+  { waitedMs = 0, worktree = false, project = id, projectDir = "" } = {},
 ): void {
   const status = {
     session_id: id,
     cwd: `C:/projects/demo-${project}`,
+    ...(projectDir ? { project_dir: projectDir } : {}),
     folder: `demo-${project}`,
     worktree,
     worktree_name: `demo-${project}`,

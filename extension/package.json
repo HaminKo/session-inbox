@@ -51,6 +51,11 @@
         "title": "Group by state",
         "category": "Session Inbox",
         "icon": "$(layers)"
+      },
+      {
+        "command": "sessionInbox.openSession",
+        "title": "Open session's window",
+        "category": "Session Inbox"
       }
     ],
     "menus": {
@@ -73,6 +78,10 @@
         },
         {
           "command": "sessionInbox.groupByState",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.openSession",
           "when": "false"
         }
       ]

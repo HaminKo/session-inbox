@@ -3,6 +3,22 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — A sidebar click opens the folder through VS Code, not `notify.ps1`'s window search (to-do #6)
+- Decision: a session row's click runs `vscode.openFolder` on the session's `project_dir` (new
+  status-file field) with `forceNewWindow: true`. VS Code focuses the window that already has the
+  folder open, or opens a new window. Files without `project_dir` use `cwd` only while its last part
+  is the project folder; otherwise a message says the folder isn't known yet. Only session rows
+  react; project headers keep expand/collapse. Sessions from a plain terminal open the same way. The
+  status bar item's click opens the sidebar (`workbench.view.extension.sessionInbox`).
+- Reason: all VS Code windows run in one main process, and the user's click in one of them lets it
+  take the foreground, so none of `notify.ps1`'s focus fallbacks are needed; "open if no window"
+  comes free. Reusing `notify.ps1`'s method would start PowerShell and compile C# per click (~1 s)
+  and copy ~100 lines of focus code.
+- Decided by: the user, on Claude's suggestions.
+- Rejected: `notify.ps1`'s title search + `SetForegroundWindow` (slower, duplicated); a click on a
+  project header (it already expands/collapses). Known limit: a window opened from a
+  `.code-workspace` file isn't matched by folder, so a click opens a second window; left for now.
+
 ## 2026-11-01 — Exception: `notify.ps1` popups show a character picture (to-do #11)
 - Decision: `notify.ps1` was edited in place (third exception). A 96 px picture sits left of the
   text: `notify-images/<event>.png`, else `notify-images/default.png`, else no picture and the popup
