@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import * as vscode from "vscode";
+import { dueReminders, notifyScript, reminderPayload, sendReminder } from "./renotify.ts";
 import { holdsFolder, readRevealRequest, shouldReveal, writeRevealRequest } from "./reveal.ts";
 import { SessionSource } from "./sessionSource.ts";
 import { sessionFolder } from "./sessionList.ts";
@@ -30,6 +31,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     source.onChange((statuses) => sidebar.update(statuses)),
     source.onChange(revealRequests(statusDir())),
+    source.onChange(reminders()),
     source,
     sidebar,
   );
@@ -54,6 +56,35 @@ function revealRequests(dir: string): () => void {
     await revealTab(request.session_id);
   };
   return () => void check();
+}
+
+// A chat that has waited past sessionInbox.renotifyMinutes gets one more popup (renotify.ts). Runs on
+// every read, so also on the 30 s re-read: a reminder comes at most that much late. Only the window
+// that has the chat's folder open sends it, so several windows don't each send one. What was sent is
+// kept in memory: after a reload, a chat already past the threshold is reminded once more.
+function reminders(): (statuses: readonly SessionStatus[]) => void {
+  const sent = new Set<string>();
+  return (statuses) => {
+    // notify.ps1 shows nothing while this window has focus; held back instead, the reminder comes
+    // on the first read after you leave the window without acting.
+    // SESSION_INBOX_IGNORE_FOCUS is for the GUI test only: its window can't lose focus.
+    if (vscode.window.state.focused && !process.env.SESSION_INBOX_IGNORE_FOCUS) return;
+    const minutes = vscode.workspace.getConfiguration("sessionInbox").get<number>("renotifyMinutes", 10);
+    const folders = workspaceFolders();
+    const mine = statuses.filter((status) => {
+      const folder = sessionFolder(status);
+      return folder !== undefined && holdsFolder(folders, folder);
+    });
+    const now = Date.now();
+    for (const status of dueReminders(mine, now, minutes, sent)) {
+      // Not undefined: `mine` only holds chats with a folder.
+      const folder = sessionFolder(status) as string;
+      const script = notifyScript();
+      if (!sendReminder(script, reminderPayload(status, folder, now), folder)) {
+        console.error(`Session Inbox: no reminder, ${script} not found`);
+      }
+    }
+  };
 }
 
 // Claude Code's own command (internal, docs/research/claude-tabs.md): brings the chat's tab to the

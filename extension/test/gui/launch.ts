@@ -39,6 +39,8 @@ export async function launchVsCode(
         (entry): entry is [string, string] => entry[0] !== "ELECTRON_RUN_AS_NODE" && entry[1] !== undefined,
       ),
     ),
+    // A sample chat past the re-notify threshold must never start the real notify.ps1.
+    SESSION_INBOX_NOTIFY_SCRIPT: join(tempDir, "no-notify.ps1"),
     ...extraEnv,
   };
   const removeTemp = () =>

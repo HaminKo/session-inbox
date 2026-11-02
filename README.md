@@ -34,7 +34,9 @@ its state. The choice is saved for all windows (others pick it up when they relo
 Clicking a session brings up the VS Code window that has its project folder open, or opens the
 folder in a new window if none has, and shows that chat's own Claude tab (not whichever Claude tab
 was last active); clicking a `notify.ps1` popup does the same. Clicking the status bar item opens
-the sidebar.
+the sidebar. A session still waiting on a permission prompt or a question after 10 minutes gets its
+`notify.ps1` popup once more ("Still waiting (12 min): …"); the setting
+`sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off.
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements

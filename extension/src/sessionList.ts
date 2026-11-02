@@ -133,7 +133,8 @@ export function formatAge(ms: number): string {
   return `${Math.floor(hours / 24)} d`;
 }
 
-function since(status: SessionStatus): number | undefined {
+// When the status's state began (its timestamp), or undefined if it has none that parses.
+export function since(status: SessionStatus): number | undefined {
   const time = Date.parse(text(status.timestamp));
   return Number.isNaN(time) ? undefined : time;
 }

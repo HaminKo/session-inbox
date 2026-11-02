@@ -3,6 +3,19 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Re-notify once per wait, from the chat's own window, through `notify.ps1` (to-do #7)
+- Decision: a chat in `waiting` longer than `sessionInbox.renotifyMinutes` (default 10, `0` = off)
+  gets one more `notify.ps1` popup per wait, sent by the window that has its `project_dir` open, with
+  the made-up event `SessionInboxReminder` ("Still waiting (N min): <message>"). `done` chats get
+  none. What was sent is kept in memory only. `notify.ps1` is not changed.
+- Reason: `notify.ps1` popups already stay up until acted on, so a reminder only covers a popup
+  dismissed with X or a window looked at and left; once is enough for that. `done` can sit for hours
+  on purpose. The folder rule (as for `.reveal`) keeps several windows from each sending one.
+- Decided by: the user, on Claude's suggestions.
+- Rejected: repeating reminders (noise over a popup that stays); reminding `done` chats; saving
+  "sent" to disk (state for the reload edge case); a new event branch in `notify.ps1` (its `default`
+  branch already shows the message).
+
 ## 2026-11-01 — A click shows the chat's own Claude tab through a `.reveal` file (to-do #9)
 - Decision: a popup click (`notify.ps1`) and a sidebar click on another window's chat write
   `~/.claude/session-status/.reveal` (`session_id`, `project_dir`, `at`). Each window's Session Inbox

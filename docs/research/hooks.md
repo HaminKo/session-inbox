@@ -311,6 +311,34 @@ Fix (installed 21:11, hashes checked): both hooks use `Project-Dir` (docs/decisi
   Claude Code 2.1.314 (2026-11-01, extension installed from the `.vsix`): passed; the click showed the
   chat's own tab.
 
+## Re-notify: a reminder through `notify.ps1` (to-do #7, 2026-11-01)
+
+- `extension/src/renotify.ts`: a `waiting` chat past `sessionInbox.renotifyMinutes` (default 10,
+  `0` = off), counted from its status `timestamp`, gets one reminder per wait (session id +
+  timestamp; a new permission prompt is a new wait). Checked on every status read, so also on the
+  30 s re-read. Only the window that has the chat's `project_dir` open sends it. Kept in memory, so
+  a reload reminds a chat already past the threshold once more. While that window has focus the
+  reminder is held back, not spent (`notify.ps1` would skip it as "window in focus"); it goes out
+  on the first read after you leave the window. The GUI test can't take focus from its window
+  (`blur()`, `minimize()` and a faked DOM blur with `document.hasFocus` overridden all failed,
+  2026-11-01), so `SESSION_INBOX_IGNORE_FOCUS` turns the hold off there.
+- Known gap (code review): a prompt cancelled with Esc may leave the status `waiting` (not
+  measured which events fire then); such a chat would get a reminder for a prompt that's gone.
+- Payload on stdin, `CLAUDE_PROJECT_DIR` set to the project folder:
+  `{"hook_event_name":"SessionInboxReminder","session_id":"…","cwd":"<project_dir>","message":"Still waiting (12 min): Needs permission to use Bash"}`.
+  `notify.ps1` (unchanged) sends an unknown event to its `default` branch, which shows `message`
+  and `notify-images/default.png`; it still skips the popup when the project's window has focus,
+  closes an older popup for the same folder, and honours `notify.off`.
+- Started as `powershell.exe -NoProfile -ExecutionPolicy Bypass -File <notify.ps1>` with
+  `windowsHide`. Measured 2026-11-01 (Node 26 spawning PowerShell 5.1): with `detached: true` the
+  script never runs at all, whether stdin is a pipe or a file (dead end). Without it, the script
+  gets the payload, and the real popup showed with `windowsHide` (logged `[SessionInboxReminder]`,
+  then clicked). Not settled: a child started from this tool's shell died when its Node parent
+  exited, but that shell may kill whole process trees, so whether a reminder popup survives a window
+  close or reload is a user-test item.
+- `SESSION_INBOX_NOTIFY_SCRIPT` overrides the script path (tests only; the GUI tests default it to
+  a missing file, so no test shows a real popup).
+
 ## Character picture in the popup (to-do #11, 2026-11-01)
 
 `notify.ps1` shows `~/.claude/hooks/notify-images/<event>.png` (`Stop.png`, `PermissionRequest.png`),
