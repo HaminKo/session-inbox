@@ -3,8 +3,7 @@ Next number: 11
 ## To do
 
 ### 5. Sidebar view: all sessions across windows (large)
-Tree view, waiting first then done then working, each with folder, how long it has waited, and a
-worktree badge.
+Design and steps: docs/todo/05-sidebar.md.
 
 ### 8. Sidebar: sort the list by project name or by time (small)
 Goal, in the user's words: "2 ways to order the list - by the name of the project and by time".

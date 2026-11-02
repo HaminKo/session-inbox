@@ -53,6 +53,16 @@ Check with: `npm view typescript-eslint peerDependencies`.
   `--disable-extensions` in `.vscode/launch.json` (also keeps Claude Code, and its hooks, from
   running inside the Dev Host). Result: F5 works with it (user test, 2026-11-01). Not checked
   why the debugger plus the installed extensions crashed; not needed while they stay disabled.
+- **F5 crash came back** (2026-11-01 18:57, to-do #5 step A, VS Code 1.144.0): two F5 tries,
+  both extension hosts aborted with code 134 ~1.2 s after "Loading development extension", before
+  writing an exthost log. An earlier 134 crash at 16:08 (old code) followed by working F5 runs
+  (17:55-18:46) suggests it is intermittent. Measured: the same build launched from the CLI with
+  `--inspect-extensions=9333 --disable-extensions` and a fresh `--user-data-dir` ran 23 s and
+  activated the extension (stopped by the test's own timeout, code 143), so the new code is not
+  the cause; what differs is the attached debugger (js-debug) and the user's own profile. The CLI
+  launch needs `ELECTRON_RUN_AS_NODE` removed from the environment (else Code.exe runs as Node).
+  Right after, Ctrl+F5 (Run Without Debugging) stayed open (user test, 2026-11-01): use it when
+  F5 crashes. Why the debugger crashes the host is still not known.
 - Timings: `npm run lint` 3.9 s, `npm run compile` 0.7 s, `npx tsc --noEmit` 2.0 s.
 
 ## Sources

@@ -49,7 +49,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #5 — sidebar view: all sessions across windows (large).
+Next: to-do #5 step B — the sidebar itself (step A, the shared `SessionSource`, is done; docs/todo/05-sidebar.md).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

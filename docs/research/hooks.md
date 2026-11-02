@@ -94,7 +94,8 @@ first, throttle only if noticeable", and noticed no slowdown in the live test (2
 folder and skips files that don't parse or have no valid `session_id`/`state`, so `.tmp` files and
 a file deleted mid-read are harmless. It watches with `fs.watch` (debounced ~100 ms) and waits for
 the folder to appear if it doesn't exist yet. `SESSION_INBOX_STATUS_DIR` overrides the folder (tests
-only).
+only). Since to-do #5 step A, `extension/src/sessionSource.ts` runs the reads, watchers and 30 s
+timer once and feeds every view (status bar, later the sidebar).
 
 **Leftover files (user test, 2026-11-01):** status files outlive some closed chats. Two `done`
 files (PeacefreeWeb 15:50, sc-map-library 16:30) were still in the folder at 18:14, and the user
