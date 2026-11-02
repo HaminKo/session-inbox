@@ -285,17 +285,21 @@ Fix (installed 21:11, hashes checked): both hooks use `Project-Dir` (docs/decisi
 ## Character picture in the popup (to-do #11, 2026-11-01)
 
 `notify.ps1` shows `~/.claude/hooks/notify-images/<event>.png` (`Stop.png`, `PermissionRequest.png`),
-else `default.png` there, as a 96 px square left of the text; with neither the popup is text only
-and 420 px wide, as before. With a picture it is 524 px wide (the text keeps its width and line
-count) and the picture is bottom-aligned, so it fills a 96 px popup. At 125/150/200% the smallest
-popup is 1-2 px under `px(96)` (rounded parts; 142 px at 150%, measured), so the picture shrinks to
-the popup height instead of losing its top (found in review). Loaded once from bytes (the
+else `default.png` there, left of the text; with neither the popup is text only and 420 px wide,
+as before. With a picture it is 524 px wide (the text keeps its width and line count). The picture
+is 96 px wide and as tall as its shape: taller than the popup, it is top-aligned and the popup cuts
+off the bottom; shorter, it is bottom-aligned. (First version: a 96 px square, bottom-aligned,
+shrunk to fit because at 125/150/200% the smallest popup is 1-2 px under `px(96)`, rounded parts,
+142 px at 150%, measured; replaced by the taller cut the same day.) Loaded once from bytes (the
 file isn't locked), shared by all monitors, disposed after the popups close; a broken file is logged
 as `[picture not loaded: ...]` and the popup shows without it.
 - `default.png` is cut from the user's `orange-tsundere.png` (832×1216, 1.3 MB): source square
   x 120–720, y 30–630 (head and a bit of neck), saved at 192×192 so it stays sharp up to 200%
   scaling; 91 KB (measured). Tighter (face only) filled the frame with hair; looser made the face small.
   Mirrored (user's choice after the first test): in the original her head turns away from the text.
+  Then taller (user's follow-up): source x 120–720, y 30–855, saved at 192×264 (96×132, the 4-line
+  popup), 125 KB. Measured render: fills 524×132 at 100% and 786×194 at 150% (picture 198 px, the
+  bottom 4 px cut off); 2-line popups show the same head-and-shoulders view as the square did.
 - Measured, live run of three fake payloads (21:23): popups 524×96 with the picture and 420×96
   without at 100%; 786×142 and 630×142 at 150%; no errors. Two popups started in the same instant
   landed on one spot (the known limitation in the code, not new).

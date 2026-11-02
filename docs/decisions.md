@@ -19,6 +19,14 @@ what was rejected and why.
   original on every popup (a small pre-cut copy loads faster).
 - Backups: `~/.claude/hooks/backups/notify.ps1.before-picture-2026-11-01` and
   `notify.ps1.picture-2026-11-01`. Installed with a shell copy; hash checked.
+- Addendum, same day (user's follow-up, "since it's tall enough, shouldn't we use the bigger
+  original picture?"): `default.png` is now a taller cut, 96×132 (saved 192×264), top-aligned and cut
+  off by the popup, so she fills a 4-line popup and a 2-line one looks as before. Any picture is
+  96 px wide and as tall as its shape. Rejected: loading the 1.3 MB original (decoded on every
+  popup, and resolution was not the problem); a bigger square that grows with the popup (the popup
+  would widen with its height and stacked popups would have ragged left edges). Backups:
+  `notify.ps1.before-tall-picture-2026-11-01`, `notify.ps1.tall-picture-2026-11-01`,
+  `default.png.square-2026-11-01`.
 
 ## 2026-11-01 — Exception: both hooks name the project by the folder the chat started in
 - Decision: `notify.ps1` and `session-status.ps1` take the project folder from
