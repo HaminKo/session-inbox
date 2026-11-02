@@ -23,8 +23,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   `/build-todo N, step B` for one step of a bigger to-do). New to-dos via /add-todo.
 - Commit after each working step. End a step with the finish-step skill.
 - Extend the existing notification hook (`~/.claude/hooks/notify.ps1`); never modify or replace it
-  in project work. (Exceptions, asked for by the user: taller popups and the focus fallback,
-  docs/decisions.md 2026-11-01.)
+  in project work. (Exceptions, asked for by the user: taller popups, the focus fallback and
+  naming by start folder, docs/decisions.md 2026-11-01.)
 
 ## Build specifics
 - **Checks** (run from the `extension/` folder once it exists):
@@ -62,6 +62,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - The status hook runs synchronously so events stay in order; `notify.ps1` stays async.
 - `hooks/session-status.ps1` in the repo is the source: edit it there, then copy it to
   `~/.claude/hooks/`.
+- Hooks name the project by the chat's start folder (`CLAUDE_PROJECT_DIR`), never the payload
+  `cwd`, which follows the shell into subfolders.
 - TypeScript stays on `~6.0.x` until typescript-eslint supports 7. VS Code minimum `^1.100.0`,
   with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
 - Publisher id `session-inbox`; no `repository` field in package.json until release.

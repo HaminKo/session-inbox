@@ -3,6 +3,24 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Exception: both hooks name the project by the folder the chat started in
+- Decision: `notify.ps1` and `session-status.ps1` take the project folder from
+  `$env:CLAUDE_PROJECT_DIR`, else from the chat's `~/.claude/sessions/*.json` (matched by
+  `sessionId`, its `cwd`), else the payload `cwd` as before. One `Project-Dir` function, copied
+  word for word into both. The status file's `cwd` stays the payload's (current shell folder);
+  `folder`, `worktree` and `worktree_name` come from the start folder.
+- Reason: the payload `cwd` follows the chat's shell; after a `cd extension` a click logged
+  `no VS Code window found` because the popup was named "extension" (docs/research/hooks.md).
+  `CLAUDE_PROJECT_DIR` was measured set for hooks in the VS Code extension and stayed on the
+  repo root while `cwd` was the subfolder; the session-file fallback was tested with a fake payload.
+  No measurable cost on the status writer (404-499 ms per run either way, mostly powershell.exe start).
+- Decided by: the user, on Claude's suggestion (asked to fix the window not coming to front).
+  Changing `notify.ps1` is an exception to "never modify it"; backups in `~/.claude/hooks/backups/`:
+  `*.before-project-dir-2026-11-01` and `notify.ps1.project-dir-2026-11-01`.
+- Rejected: walking up the folders until a VS Code window matches (fixes only the click, and a
+  window search is too slow for the status writer); the git root (wrong when a window opens a
+  subfolder of a repo).
+
 ## 2026-11-01 — To-do #8 groups by project instead of sorting by name
 - Decision: the sidebar's title-bar button switches between grouping by state (Waiting / Done /
   Working, oldest first; the default) and grouping by project: one header per row label (the

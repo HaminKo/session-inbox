@@ -259,6 +259,29 @@ or the 15:35 one remembered as "VS Code in front"; not provable for those, they 
   Two earlier tries logged "no VS Code window found": the target window had been closed, so they
   never reached the new check.
 
+## Popup named after a subfolder: `cwd` follows the shell (2026-11-01, measured)
+
+Symptom: a click logged `[clicked: no VS Code window found] extension`; the popup said
+"Claude: extension" for a session-inbox chat. Cause, confirmed: the payload's `cwd` is the chat's
+current shell folder, not where it started. That chat's transcript has `cwd` = `...\extension` on
+282 of 364 lines (after a `cd extension` for npm), while its `~/.claude/sessions/<pid>.json` still
+says `cwd` = the repo root. `notify.ps1` names the popup `Split-Path -Leaf $data.cwd`, and the
+window match needs that name as a whole title part, so "extension" matches no window. The same
+name drives the focus check, one-popup-per-project and the auto-close, so all of those miss too.
+`session-status.ps1` has the same `Split-Path -Leaf $cwd` (sidebar would show "extension").
+
+Fix (installed 21:11, hashes checked): both hooks use `Project-Dir` (docs/decisions.md):
+`$env:CLAUDE_PROJECT_DIR`, else the matching `~/.claude/sessions/*.json` `cwd`, else payload `cwd`.
+- Measured: `CLAUDE_PROJECT_DIR` is set for hooks in the VS Code extension, as
+  `c:/Users/.../session-inbox` (forward slashes, lowercase drive). After the chat's PowerShell moved
+  into `extension/`, the payload `cwd` was `...\extension` and `CLAUDE_PROJECT_DIR` still the root.
+  (The Bash tool resets its folder before the hook runs, so it never showed the subfolder.)
+- Fake payloads on copies writing to a temp folder: session-file fallback → "session-inbox"; env set →
+  its leaf; unknown session → payload `cwd` leaf. `notify.ps1` copy: `[Stop] session-inbox`.
+- Status writer time, 3 runs each, old vs new: 404-499 ms vs 413-462 ms (no difference).
+- Real popup click, passed once (user test, 21:16-21:17): this chat's PowerShell in `extension/`,
+  log `[Stop] session-inbox`, then `[clicked: window brought to front] session-inbox`.
+
 ## Sources
 - `~/.claude/hooks/notify.ps1` (author's existing hook; comments carry dated measurements).
 - Claude Code hooks reference: https://docs.claude.com/en/docs/claude-code/hooks

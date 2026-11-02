@@ -76,10 +76,32 @@ switch ($event) {
     default { $state = 'working' }  # UserPromptSubmit, PostToolUse
 }
 
+# The folder the chat started in, which is its VS Code window's folder. The payload's cwd follows the
+# chat's shell, so after a "cd extension" it names a subfolder (measured 2026-11-01). Claude Code sets
+# CLAUDE_PROJECT_DIR for hooks to the start folder (measured in the VS Code extension, 2026-11-01, with
+# forward slashes); failing that, the chat's file in ~/.claude/sessions/ keeps the start folder. A word-for-word copy of Project-Dir in notify.ps1; keep the two the same.
+function Project-Dir($data) {
+    if ($env:CLAUDE_PROJECT_DIR) { return $env:CLAUDE_PROJECT_DIR }
+    $sessions = Join-Path $env:USERPROFILE '.claude\sessions'
+    if ($data.session_id) {
+        foreach ($f in (Get-ChildItem -LiteralPath $sessions -Filter '*.json' -ErrorAction SilentlyContinue)) {
+            try {
+                $text = [System.IO.File]::ReadAllText($f.FullName)
+                if (-not $text.Contains($data.session_id)) { continue }  # skip the JSON parse for other chats
+                $s = $text | ConvertFrom-Json
+                if ($s.sessionId -eq $data.session_id -and $s.cwd) { return $s.cwd }
+            }
+            catch { }
+        }
+    }
+    return $data.cwd
+}
+
 $cwd = $data.cwd
-$folder = if ($cwd) { Split-Path -Leaf $cwd } else { '' }
+$projectDir = Project-Dir $data
+$folder = if ($projectDir) { Split-Path -Leaf $projectDir } else { '' }
 $isWorktree = $false
-if ($cwd) { $isWorktree = Test-Path -PathType Leaf (Join-Path $cwd '.git') }
+if ($projectDir) { $isWorktree = Test-Path -PathType Leaf (Join-Path $projectDir '.git') }
 
 $status = [ordered]@{
     session_id    = $sessionId
