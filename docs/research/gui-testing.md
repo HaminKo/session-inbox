@@ -12,6 +12,12 @@ docs/decisions.md (2026-11-01, "GUI test: Playwright drives a pinned VS Code").
 - The test (`test/gui/*.gui.ts`, run by `node --test`) reads the real DOM: the status bar item
   has the id `<publisher>.<name>` = `session-inbox.session-inbox`; its label text, the
   `.codicon-inbox` icon, and the hover tooltip (`.monaco-hover`) after a real mouse hover.
+- Flaky, 2026-11-02 (to-do #14, measured): `statusbar.gui.ts` "hovering the item shows the
+  breakdown" failed 4 runs in a row, also at commit 7d7e81c without the #14 changes (run from a
+  separate worktree): the first visible `.monaco-hover` read "Open Folder", another hover, not the
+  item's tooltip. ~~Fails every run~~ (wrong): the full suite passed 17/17 later the same day,
+  after a VS Code restart. Cause not looked into. Same day `open.gui.ts` timed out once (3 tests, 30 s each) and
+  passed the 2 runs after it: flaky, cause unknown.
 - Test files are TypeScript run directly by Node 26 (type stripping; no build).
   `extension/test/package.json` sets `"type": "module"` for that folder only. The root
   package.json stays CommonJS because `dist/extension.js` is a CJS bundle. tsconfig gets

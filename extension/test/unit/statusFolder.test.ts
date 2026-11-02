@@ -8,7 +8,8 @@ import { afterEach, beforeEach, test } from "node:test";
 import {
   countStates,
   onlyLive,
-  readLiveSessionIds,
+  openSessions,
+  readLiveSessions,
   readStatuses,
   sessionsDir,
   statusDir,
@@ -84,19 +85,22 @@ void test("live sessions are those whose process is running", async () => {
   writeSession(root, process.pid, "alive");
   writeSession(root, deadPid(), "gone");
   writeFileSync(join(root, "notes.txt"), "not a session file");
-  assert.deepEqual(await readLiveSessionIds(root), new Set(["alive"]));
+  assert.deepEqual(
+    (await readLiveSessions(root))?.map((session) => session.sessionId),
+    ["alive"],
+  );
 });
 
 void test("a sessions folder that can't be trusted hides nothing", async () => {
-  assert.equal(await readLiveSessionIds(join(root, "missing")), undefined, "missing folder");
-  assert.equal(await readLiveSessionIds(root), undefined, "empty folder");
+  assert.equal(await readLiveSessions(join(root, "missing")), undefined, "missing folder");
+  assert.equal(await readLiveSessions(root), undefined, "empty folder");
   writeSession(root, process.pid, "alive");
   writeFileSync(join(root, "1.json"), '{"pid":1,"sess');
-  assert.equal(await readLiveSessionIds(root), undefined, "a file mid-write");
+  assert.equal(await readLiveSessions(root), undefined, "a file mid-write");
   writeFileSync(join(root, "1.json"), JSON.stringify({ processId: 1, id: "renamed-fields" }));
-  assert.equal(await readLiveSessionIds(root), undefined, "a file in another format");
+  assert.equal(await readLiveSessions(root), undefined, "a file in another format");
   writeFileSync(join(root, "1.json"), JSON.stringify({ pid: 0, sessionId: "bad-pid" }));
-  assert.equal(await readLiveSessionIds(root), undefined, "a PID that isn't a process id");
+  assert.equal(await readLiveSessions(root), undefined, "a PID that isn't a process id");
   const statuses = [{ session_id: "a", state: "done" as const }];
   assert.deepEqual(onlyLive(statuses, undefined), statuses);
 });
@@ -107,9 +111,37 @@ void test("onlyLive drops status files whose chat is gone", () => {
     { session_id: "gone", state: "done" as const },
   ];
   assert.deepEqual(
-    onlyLive(statuses, new Set(["alive"])).map((status) => status.session_id),
+    onlyLive(statuses, [{ pid: 1, sessionId: "alive" }]).map((status) => status.session_id),
     ["alive"],
   );
+});
+
+void test("a running VS Code chat with no status file is open", () => {
+  const statuses = [{ session_id: "has-file", state: "done" as const }];
+  const chat = { kind: "interactive", entrypoint: "claude-vscode" };
+  const live = [
+    { pid: 1, sessionId: "has-file", ...chat, cwd: "C:\\p\\demo" },
+    { pid: 2, sessionId: "restored", ...chat, cwd: "C:\\p\\PeacefreeWeb", startedAt: 0 },
+    { pid: 3, sessionId: "cli", kind: "interactive", entrypoint: "cli", cwd: "C:\\p\\demo" },
+    { pid: 4, sessionId: "background", kind: "sdk", entrypoint: "claude-vscode", cwd: "C:\\p\\demo" },
+    { pid: 5, sessionId: "odd", ...chat, cwd: 5, startedAt: "soon" },
+  ];
+  assert.deepEqual(openSessions(statuses, live), [
+    {
+      session_id: "restored",
+      state: "open",
+      cwd: "C:\\p\\PeacefreeWeb",
+      project_dir: "C:\\p\\PeacefreeWeb",
+      timestamp: "1970-01-01T00:00:00.000Z",
+    },
+    { session_id: "odd", state: "open", cwd: undefined, project_dir: undefined, timestamp: undefined },
+  ]);
+  assert.deepEqual(openSessions(statuses, undefined), [], "a sessions folder that can't be trusted adds nothing");
+});
+
+void test("a status file can't claim the open state", async () => {
+  writeStatus(root, "a", "open");
+  assert.deepEqual(await readStatuses(root), []);
 });
 
 void test("counts by state", () => {
@@ -119,22 +151,27 @@ void test("counts by state", () => {
     { session_id: "c", state: "done" },
     { session_id: "d", state: "working" },
   ]);
-  assert.deepEqual(counts, { waiting: 1, done: 2, working: 1 });
+  assert.deepEqual(counts, { waiting: 1, done: 2, working: 1, open: 0 });
 });
 
 void test("summary counts waiting + done", () => {
-  const busy = summarize({ waiting: 1, done: 2, working: 3 });
+  const busy = summarize({ waiting: 1, done: 2, working: 3, open: 0 });
   assert.equal(busy.needsYou, 3);
   assert.equal(busy.text, "$(warning) 3 waiting");
   assert.equal(
     busy.tooltip,
     "Session Inbox: 3 sessions need you\nWaiting (permission or question): 1\nDone (your turn): 2\nWorking: 3",
   );
-  assert.match(summarize({ waiting: 0, done: 1, working: 0 }).tooltip, /^Session Inbox: 1 session needs you\n/);
-  const clear = summarize({ waiting: 0, done: 0, working: 2 });
+  assert.match(summarize({ waiting: 0, done: 1, working: 0, open: 0 }).tooltip, /^Session Inbox: 1 session needs you\n/);
+  const clear = summarize({ waiting: 0, done: 0, working: 2, open: 0 });
   assert.equal(clear.needsYou, 0);
   assert.equal(clear.text, "$(check) all clear");
   assert.match(clear.tooltip, /^Session Inbox: No session needs you\n/);
+  const open = summarize({ waiting: 0, done: 0, working: 0, open: 8 });
+  assert.equal(open.needsYou, 0, "open chats aren't counted");
+  assert.equal(open.text, "$(check) all clear");
+  assert.match(open.tooltip, /\nOpen \(no status yet\): 8$/);
+  assert.doesNotMatch(clear.tooltip, /Open/, "no open line while there are none");
 });
 
 void test("watchFolder reports a new file", async () => {

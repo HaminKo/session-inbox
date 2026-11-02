@@ -52,15 +52,16 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #7 — re-notify past a configurable threshold (to-do #9, a click shows the chat's own
-Claude tab, is done).
+Next: to-do #7 — re-notify past a configurable threshold (to-do #14, open chats with no status
+yet listed as "Open", is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - "Waiting" is driven by the `PermissionRequest` event, not `Notification` (which never fires in
   the VS Code extension).
 - Three session states: `waiting` (blocked on permission/question), `done` (reply finished, your
-  turn), `working`. The inbox counts `waiting` + `done`.
+  turn), `working`. The inbox counts `waiting` + `done`. A fourth, `open` (running VS Code chat
+  with no status file yet), is made by the extension only and never counted.
 - The status hook runs synchronously so events stay in order; `notify.ps1` stays async.
 - `hooks/session-status.ps1` in the repo is the source: edit it there, then copy it to
   `~/.claude/hooks/`.

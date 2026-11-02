@@ -142,6 +142,22 @@ counts them as waiting forever, until the file is deleted by hand.
   recorded).
 - Not measured: which close paths (close window, quit VS Code) fire `SessionEnd`. With the process
   check it no longer matters for the count, only for whether the file is deleted or just hidden.
+- `<pid>.json` fields (to-do #14, 2026-11-02, Claude Code 2.1.314, measured): `cwd` is the chat's
+  start folder and stays so when the shell moves into a subfolder (a chat's shell in `extension/`,
+  its file still said the repo root; the file isn't rewritten on `cd`). `startedAt` is Unix ms.
+  `status` is `"idle"` or `"busy"` (a chat mid-reply showed `busy`); other values not seen. After a
+  VS Code restart the restored chats get new processes (7 of 9 started within ~2 min of the
+  reopen) but no status file, because no hook fires until their next prompt; there is no
+  `SessionStart` in the writer, so a brand-new tab has no status file either.
+- Not every restored tab gets a process (2026-11-02, after a second VS Code restart, measured): 6
+  live `<pid>.json`, all started 08:56, one per window/folder, while the user had 4 Claude tabs
+  open for session-inbox alone (3 session-inbox processes and 2 sc-map-library before the
+  restart). So the other tabs have no process and no `<pid>.json`, and the inbox can't list them.
+  Confirmed by the user the same day: clicking each of the other restored tabs (no prompt sent)
+  added one "Open" row per tab, so Claude Code starts only the visible tab's chat per window and a
+  tab's process starts when it is shown. Listing dormant tabs would need VS Code's per-window
+  `window.tabGroups` (title only, no session id), published to a shared file by each window: not
+  built, see docs/todo.md Later.
 
 ## Verifying without a live session
 

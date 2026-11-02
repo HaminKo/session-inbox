@@ -3,6 +3,25 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-02 — Running chats with no status file are shown as `open`, not counted (to-do #14)
+- Decision: a running `~/.claude/sessions/<pid>.json` with `entrypoint: "claude-vscode"` and
+  `kind: "interactive"` whose session has no status file is listed with a fourth state, `open`
+  (made by the extension, never read from a status file): project from its `cwd`, time from
+  `startedAt`. Grey, last, no age in the row; grouped by state the "Open" group starts collapsed.
+  Not in the badge or status-bar count; the status-bar tooltip adds "Open (no status yet): N".
+  The `status` field (`idle`/`busy`) is not used.
+- Reason: after a VS Code restart the restored chats run but no hook fires until their next prompt,
+  so the inbox was empty. Their old state is lost; counting 8 "needs you" after a restart is noise.
+  `cwd` in `<pid>.json` stays the start folder (measured, docs/research/hooks.md).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: a `SessionStart` event in the status hook (more hook surface; new tabs showing "Open"
+  is accurate anyway); using `status: busy` as `working` (undocumented, and a busy chat writes a
+  real status within seconds); collapsing project headers too (VS Code keeps a header's collapse by
+  id, so a project could stay collapsed after a waiting chat joins it); CLI chats (Later).
+- Known gaps: an open chat in a worktree has no `worktree` tag until its first hook event; a
+  leftover `<pid>.json` whose PID is reused by another process would show a ghost "Open" row (no
+  leftover file seen so far).
+
 ## 2026-11-01 — Re-notify once per wait, from the chat's own window, through `notify.ps1` (to-do #7)
 - Decision: a chat in `waiting` longer than `sessionInbox.renotifyMinutes` (default 10, `0` = off)
   gets one more `notify.ps1` popup per wait, sent by the window that has its `project_dir` open, with

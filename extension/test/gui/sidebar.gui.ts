@@ -111,6 +111,28 @@ void test("a new status file shows up in its group, oldest first, and in the bad
   await waitFor(badge, "3", "badge");
 });
 
+void test("a running chat with no status file is listed under Open, collapsed and not counted", async () => {
+  writeSampleSession(sessionsDir, "o", { vscode: true });
+  const before = [
+    "Waiting (1)",
+    "demo-a | worktree · 12 min · Needs permission to use Bash",
+    "Done (2)",
+    "demo-d | 1 h 20 min · Finished",
+    "demo-b | <1 min · Finished",
+    "Working (1)",
+    "demo-c",
+  ];
+  await waitFor(rows, [...before, "Open (1)"], "rows");
+  assert.equal(await badge(), "3");
+  await vscode.window.locator(treeRow, { hasText: "Open (1)" }).click();
+  await waitFor(rows, [...before, "Open (1)", "demo-o"], "rows");
+  const icon = vscode.window.locator(`${treeRow} .custom-view-tree-node-item-icon`).last();
+  assert.match((await icon.getAttribute("class")) ?? "", /codicon-circle-outline\b/);
+  // Gone again, so the grouping test below sees the same rows as before.
+  unlinkSync(join(sessionsDir, "o.json"));
+  await waitFor(rows, before, "rows");
+});
+
 // The title-bar button; it shows the grouping you'd switch to (by state is the default).
 function groupButton(title: string) {
   // VS Code renders it twice (container title and section header), one hidden.

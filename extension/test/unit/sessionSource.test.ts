@@ -29,8 +29,8 @@ function writeStatus(id: string, state: string): void {
   writeFileSync(join(statusDir, `${id}.json`), JSON.stringify({ session_id: id, folder: "demo", state }));
 }
 
-function writeSession(id: string): void {
-  writeFileSync(join(sessionsDir, `${id}.json`), JSON.stringify({ pid: process.pid, sessionId: id }));
+function writeSession(id: string, entrypoint?: string): void {
+  writeFileSync(join(sessionsDir, `${id}.json`), JSON.stringify({ pid: process.pid, sessionId: id, kind: "interactive", entrypoint }));
 }
 
 // Resolves with the first update whose ids (sorted) equal `ids`, or rejects after 3 s.
@@ -83,4 +83,21 @@ void test("no updates after dispose", async () => {
   await source.refresh();
   await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(calls, 0);
+});
+
+void test("a running VS Code chat is open until its status file appears", async () => {
+  writeSession("restored", "claude-vscode");
+  source = new SessionSource(statusDir, sessionsDir);
+  const [open] = await waitFor(source, ["restored"]);
+  assert.equal(open?.state, "open");
+  writeStatus("restored", "working");
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("never saw working")), 3_000);
+    const sub = source?.onChange((statuses) => {
+      if (statuses.length !== 1 || statuses[0]?.state !== "working") return;
+      clearTimeout(timer);
+      setImmediate(() => sub?.dispose());
+      resolve();
+    });
+  });
 });

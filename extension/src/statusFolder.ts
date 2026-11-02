@@ -6,7 +6,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-export type SessionState = "waiting" | "done" | "working";
+// `open`: a running chat with no status file yet (made by `openSessions`, never read from a file).
+export type SessionState = "waiting" | "done" | "working" | "open";
 
 export interface SessionStatus {
   session_id: string;
@@ -23,7 +24,8 @@ export interface SessionStatus {
 
 export type Counts = Record<SessionState, number>;
 
-const states: readonly string[] = ["waiting", "done", "working"];
+// The states a status file may hold; `open` never comes from a file.
+const fileStates: readonly string[] = ["waiting", "done", "working"];
 
 // SESSION_INBOX_STATUS_DIR is for the tests only: it points the extension at a temp folder.
 export function statusDir(env: NodeJS.ProcessEnv = process.env): string {
@@ -41,18 +43,28 @@ export function sessionsDir(env: NodeJS.ProcessEnv = process.env): string {
   return env.SESSION_INBOX_SESSIONS_DIR || join(homedir(), ".claude", "sessions");
 }
 
-// Claude Code keeps ~/.claude/sessions/<pid>.json ({ pid, sessionId, ... }) for each running chat
-// process; undocumented, see docs/research/hooks.md. Returns the ids of sessions whose process is
-// still running, or undefined when that can't be told, so that nothing gets hidden: folder missing
-// or empty (a changed format might leave it so), or any file unreadable (mid-write) or not in the
-// expected format. A reused PID keeps a gone chat counted, never hides a live one.
-export async function readLiveSessionIds(dir: string): Promise<Set<string> | undefined> {
-  const files = await readJsonFiles(dir);
-  if (!files || files.length === 0 || !files.every(isSession)) return undefined;
-  return new Set(files.filter((session) => isRunning(session.pid)).map((session) => session.sessionId));
+// One ~/.claude/sessions/<pid>.json. Only `pid` and `sessionId` are checked; the rest may hold anything.
+export interface LiveSession {
+  pid: number;
+  sessionId: string;
+  cwd?: unknown;
+  startedAt?: unknown;
+  kind?: unknown;
+  entrypoint?: unknown;
 }
 
-function isSession(data: unknown): data is { pid: number; sessionId: string } {
+// Claude Code keeps ~/.claude/sessions/<pid>.json for each running chat process; undocumented, see
+// docs/research/hooks.md. Returns the sessions whose process is still running, or undefined when
+// that can't be told, so that nothing gets hidden: folder missing or empty (a changed format might
+// leave it so), or any file unreadable (mid-write) or not in the expected format. A reused PID
+// keeps a gone chat counted, never hides a live one.
+export async function readLiveSessions(dir: string): Promise<LiveSession[] | undefined> {
+  const files = await readJsonFiles(dir);
+  if (!files || files.length === 0 || !files.every(isSession)) return undefined;
+  return files.filter((session) => isRunning(session.pid));
+}
+
+function isSession(data: unknown): data is LiveSession {
   if (typeof data !== "object" || data === null) return false;
   const { pid, sessionId } = data as Record<string, unknown>;
   return Number.isInteger(pid) && (pid as number) > 0 && typeof sessionId === "string";
@@ -90,18 +102,45 @@ function isRunning(pid: number): boolean {
 }
 
 // Drops status files whose chat is gone (closed without SessionEnd). `live` undefined: keep all.
-export function onlyLive(statuses: readonly SessionStatus[], live: Set<string> | undefined): SessionStatus[] {
-  return live ? statuses.filter((status) => live.has(status.session_id)) : [...statuses];
+export function onlyLive(statuses: readonly SessionStatus[], live: readonly LiveSession[] | undefined): SessionStatus[] {
+  if (!live) return [...statuses];
+  const ids = new Set(live.map((session) => session.sessionId));
+  return statuses.filter((status) => ids.has(status.session_id));
+}
+
+// Running VS Code chats with no status file yet (after a VS Code restart, or a new tab before its
+// first prompt), as `open` statuses: project from the start folder (`cwd` there doesn't follow the
+// shell), time from when the process started. No `folder`: the row label falls back to the last part
+// of `cwd`. Only VS Code chats with a tab (`interactive`); CLI chats are left out (docs/todo.md, Later).
+export function openSessions(statuses: readonly SessionStatus[], live: readonly LiveSession[] | undefined): SessionStatus[] {
+  if (!live) return [];
+  const known = new Set(statuses.map((status) => status.session_id));
+  return live
+    .filter(
+      (session) =>
+        session.entrypoint === "claude-vscode" && session.kind === "interactive" && !known.has(session.sessionId),
+    )
+    .map((session) => {
+      const cwd = typeof session.cwd === "string" && session.cwd ? session.cwd : undefined;
+      const started = typeof session.startedAt === "number" ? new Date(session.startedAt) : undefined;
+      return {
+        session_id: session.sessionId,
+        state: "open",
+        cwd,
+        project_dir: cwd,
+        timestamp: started && !Number.isNaN(started.getTime()) ? started.toISOString() : undefined,
+      };
+    });
 }
 
 function isStatus(data: unknown): data is SessionStatus {
   if (typeof data !== "object" || data === null) return false;
   const { session_id, state } = data as Record<string, unknown>;
-  return typeof session_id === "string" && typeof state === "string" && states.includes(state);
+  return typeof session_id === "string" && typeof state === "string" && fileStates.includes(state);
 }
 
 export function countStates(statuses: readonly SessionStatus[]): Counts {
-  const counts: Counts = { waiting: 0, done: 0, working: 0 };
+  const counts: Counts = { waiting: 0, done: 0, working: 0, open: 0 };
   for (const status of statuses) counts[status.state]++;
   return counts;
 }
@@ -117,7 +156,10 @@ export function summarize(counts: Counts): { needsYou: number; headline: string;
     `Waiting (permission or question): ${counts.waiting}`,
     `Done (your turn): ${counts.done}`,
     `Working: ${counts.working}`,
-  ].join("\n");
+    counts.open > 0 ? `Open (no status yet): ${counts.open}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
   return { needsYou, headline, text, tooltip };
 }
 

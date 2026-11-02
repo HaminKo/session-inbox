@@ -6,37 +6,6 @@ Next number: 15
 If a session has waited longer than a configurable number of minutes (default 10), re-trigger the
 notification — re-invoke `notify.ps1` with a synthesized payload so it reuses the real popup.
 
-### 14. Show open chats that have no status yet, e.g. after a VS Code restart (small)
-Goal, in the user's words: "Any way for it to at least have the status of open sessions?"
-
-- **Problem / Goal:** close every VS Code window and reopen it: the chat tabs come back and their
-  processes run, but the inbox is empty, because no hook fires on reopen and `SessionEnd` deleted
-  the status files. Measured 2026-11-02: 9 live `~/.claude/sessions/<pid>.json`, 7 started within
-  ~2 min of the reopen, only 1 with a status file. Wanted: those chats listed as "Open" in the
-  sidebar, e.g. `PeacefreeWeb` under an "Open (8)" group, until their next prompt or tool call
-  writes a real state. Not counted in the status bar (8 "needs you" after a restart is noise).
-  Their state before the restart (waiting / done) is lost and can't be recovered.
-- **Read first:** `readLiveSessionIds`, `isSession`, `onlyLive`, `countStates`, `summarize` in
-  `extension/src/statusFolder.ts`; `refresh` in `extension/src/sessionSource.ts`; `groupByState` /
-  `groupByProject` in `extension/src/sessionList.ts`; `colors` / `urgency` in
-  `extension/src/sidebar.ts`; docs/research/hooks.md on `~/.claude/sessions/` (lines ~113-135).
-- **Approach:** read the live `<pid>.json` files as entries, not just ids. Each live one with no
-  status file becomes a `SessionStatus` with a new state `open`, `project_dir` from its `cwd`,
-  `timestamp` from `startedAt`. Only `"entrypoint": "claude-vscode"` (CLI chats are out of scope,
-  see Later). New group "Open" last in state order, grey icon; never in `needsYou`. Click works as
-  for other rows (opens `project_dir`, reveals the tab). Build after #7, which touches the same
-  files.
-- **Ask the user:** show "Open" at all times or collapsed by default (suggested: collapsed, it's
-  the least urgent group); use the `"status"` field in `<pid>.json` (seen only as `"idle"` so far)
-  (suggested: no, until another value is seen and understood).
-- **To check first:** does `<pid>.json` `cwd` stay the start folder when the shell moves into a
-  subfolder (like the payload `cwd` doesn't)? If it moves, the project name is wrong for that chat.
-- **Test:** Claude: unit tests (a live session without status file → `open`; with one → its real
-  state; a non-VS Code entrypoint is skipped; `open` not counted); a GUI-test step with a fake
-  `<pid>.json` (the test's own PID) and no status file, checking the "Open" group. User: quit VS
-  Code, reopen, see the restored chats under "Open"; send a prompt in one and see it move to
-  Working, then Done.
-
 ### 13. Stacked popups fall down to fill a gap (small)
 Goal, in the user's words: "if you close a notification in a stack, it leaves a gap. Should we
 leave it that way or should stacks fall down?" (agreed: fall down).
@@ -120,6 +89,10 @@ Goal, in the user's words: "customize the parent folder - change the color, choo
 - Editors other than VS Code.
 - Claude-desktop-app / CLI sessions (currently VS-Code-extension sessions only).
 - History / analytics of past waits.
+- List dormant Claude tabs too (from to-do #14): after a VS Code restart only the visible tab
+  per window starts a chat process; the others have no `<pid>.json` until shown. Would need each
+  window to publish `window.tabGroups` (title only, no session id) to a shared file. See
+  docs/research/hooks.md, "Not every restored tab gets a process".
 - "Talking" popup picture (from to-do #11): a 2-3 frame GIF (mouth open/closed) played a few
   seconds, then held on one frame. Needs the frames drawn first; see docs/research/hooks.md,
   "Character picture in the popup".

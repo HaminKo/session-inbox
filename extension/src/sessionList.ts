@@ -14,19 +14,20 @@ export interface SessionGroup {
 // The two ways the sidebar groups sessions; the title-bar button switches between them.
 export type GroupBy = "state" | "project";
 
-const groupOrder: readonly SessionState[] = ["waiting", "done", "working"];
-const groupNames: Record<SessionState, string> = { waiting: "Waiting", done: "Done", working: "Working" };
+const groupOrder: readonly SessionState[] = ["waiting", "done", "working", "open"];
+const groupNames: Record<SessionState, string> = { waiting: "Waiting", done: "Done", working: "Working", open: "Open" };
 const stateNames: Record<SessionState, string> = {
   waiting: "Waiting (permission or question)",
   done: "Done (your turn)",
   working: "Working",
+  open: "Open (no status yet)",
 };
 
 export function groupSessions(statuses: readonly SessionStatus[], by: GroupBy = "state"): SessionGroup[] {
   return by === "project" ? groupByProject(statuses) : groupByState(statuses);
 }
 
-// Waiting, then done, then working; empty groups left out. Inside a group the oldest timestamp
+// Waiting, done, working, open; empty groups left out. Inside a group the oldest timestamp
 // comes first (the session that has waited longest), ones without a readable timestamp last.
 function groupByState(statuses: readonly SessionStatus[]): SessionGroup[] {
   return groupOrder
@@ -40,7 +41,7 @@ function groupByState(statuses: readonly SessionStatus[]): SessionGroup[] {
 // One group per row label ignoring case (Windows folders; a worktree is its own project), shown
 // with the lowest of its spellings. A-Z with numbers by value (`todo9` before `todo12`), ties by
 // the key itself, so neither the order nor the header text depends on the order files are read.
-// The header says `1 waiting · 1 done`; inside, waiting, done, working, each oldest first.
+// The header says `1 waiting · 1 done`; inside, waiting, done, working, open, each oldest first.
 function groupByProject(statuses: readonly SessionStatus[]): SessionGroup[] {
   const projects = new Map<string, { label: string; sessions: SessionStatus[] }>();
   for (const status of statuses) {
@@ -72,7 +73,7 @@ function byTime(a: SessionStatus, b: SessionStatus): number {
 }
 
 // A row's label: grouped by project the header already names the project, so the row names its
-// state (`Waiting`, `Done`, `Working`); grouped by state, the project.
+// state (`Waiting`, `Done`, `Working`, `Open`); grouped by state, the project.
 export function rowLabel(status: SessionStatus, by: GroupBy): string {
   return by === "project" ? groupNames[status.state] : sessionLabel(status);
 }
@@ -99,18 +100,20 @@ export function sessionFolder(status: SessionStatus): string | undefined {
 }
 
 // `worktree · 12 min · <message>`, leaving out what doesn't apply. `working` shows no time: its
-// timestamp means last activity, not waiting since (docs/research/hooks.md).
+// timestamp means last activity, not waiting since (docs/research/hooks.md). Nor does `open`: its
+// timestamp is when the chat process started, after a VS Code restart just the restart.
 export function sessionDescription(status: SessionStatus, now: number): string {
   const start = since(status);
   const parts = [
     status.worktree === true ? "worktree" : "",
-    status.state !== "working" && start !== undefined ? formatAge(now - start) : "",
+    (status.state === "waiting" || status.state === "done") && start !== undefined ? formatAge(now - start) : "",
     oneLine(status.message),
   ];
   return parts.filter(Boolean).join(" · ");
 }
 
-// Full path, state with the clock time it began (last activity for `working`), full message.
+// Full path, state with the clock time it began (last activity for `working`, process start for
+// `open`), full message.
 // The date is added when that wasn't today.
 export function sessionTooltip(status: SessionStatus, now: number): string {
   const start = since(status);
@@ -119,7 +122,9 @@ export function sessionTooltip(status: SessionStatus, now: number): string {
     ? stateNames[status.state]
     : status.state === "working"
       ? `Working, last activity ${time}`
-      : `${stateNames[status.state]} since ${time}`;
+      : status.state === "open"
+        ? `${stateNames.open}, chat started ${time}`
+        : `${stateNames[status.state]} since ${time}`;
   return [text(status.cwd) || sessionLabel(status), state, text(status.message)].filter(Boolean).join("\n");
 }
 

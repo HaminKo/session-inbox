@@ -23,13 +23,14 @@ function ago(ms: number): string {
   return new Date(now - ms).toISOString();
 }
 
-void test("groups come waiting, done, working; empty ones are left out", () => {
-  const groups = groupSessions([status("a", "working"), status("b", "waiting"), status("c", "working")]);
+void test("groups come waiting, done, working, open; empty ones are left out", () => {
+  const groups = groupSessions([status("o", "open"), status("a", "working"), status("b", "waiting"), status("c", "working")]);
   assert.deepEqual(
-    groups.map((group) => [group.label, group.sessions.map((s) => s.session_id)]),
+    groups.map((group) => [group.id, group.label, group.sessions.map((s) => s.session_id)]),
     [
-      ["Waiting (1)", ["b"]],
-      ["Working (2)", ["a", "c"]],
+      ["state:waiting", "Waiting (1)", ["b"]],
+      ["state:working", "Working (2)", ["a", "c"]],
+      ["state:open", "Open (1)", ["o"]],
     ],
   );
   assert.deepEqual(groupSessions([]), []);
@@ -51,6 +52,7 @@ void test("inside a group the oldest comes first, no timestamp last", () => {
 void test("by project: one group per folder ignoring case, A-Z, numbers by value, with a summary", () => {
   const groups = groupSessions(
     [
+      status("a0", "open", { folder: "my-app", timestamp: ago(60 * minute) }),
       status("a1", "working", { folder: "my-app", timestamp: ago(minute) }),
       status("a2", "done", { folder: "my-app", timestamp: ago(5 * minute) }),
       status("a3", "waiting", { folder: "my-app", timestamp: ago(2 * minute) }),
@@ -68,7 +70,7 @@ void test("by project: one group per folder ignoring case, A-Z, numbers by value
     [
       ["project:alpha", "alpha", "1 done", ["c"]],
       ["project:beta", "Beta", "1 waiting · 1 done", ["b", "b2"]],
-      ["project:my-app", "my-app", "1 waiting · 2 done · 1 working", ["a3", "a4", "a2", "a1"]],
+      ["project:my-app", "my-app", "1 waiting · 2 done · 1 working · 1 open", ["a3", "a4", "a2", "a1", "a0"]],
       ["project:my-app-todo9", "my-app-todo9", "1 working", ["t9"]],
       ["project:my-app-todo12", "my-app-todo12", "1 done", ["t12"]],
     ],
@@ -91,6 +93,7 @@ void test("grouping by state is the default; its ids and descriptions", () => {
 void test("row label: the project grouped by state, the state grouped by project", () => {
   assert.equal(rowLabel(status("a", "waiting"), "state"), "demo-a");
   assert.equal(rowLabel(status("a", "waiting"), "project"), "Waiting");
+  assert.equal(rowLabel(status("a", "open"), "project"), "Open");
   assert.equal(rowLabel(status("a", "done"), "project"), "Done");
   assert.equal(rowLabel(status("a", "working"), "project"), "Working");
 });
@@ -120,6 +123,7 @@ void test("description: worktree, age, message; working shows no age", () => {
   );
   assert.equal(sessionDescription(status("a", "done", { timestamp, message: "Line one\n  line two" }), now), "12 min · Line one line two");
   assert.equal(sessionDescription(status("a", "working", { timestamp, message: "" }), now), "");
+  assert.equal(sessionDescription(status("a", "open", { timestamp }), now), "", "open shows no age");
   assert.equal(sessionDescription(status("a", "done", { message: "Finished" }), now), "Finished");
 });
 
@@ -133,6 +137,11 @@ void test("tooltip: path, state with clock time, message", () => {
     sessionTooltip(status("a", "working", { cwd: "C:/projects/demo-a", timestamp }), now),
     "C:/projects/demo-a\nWorking, last activity 09:05",
   );
+  assert.equal(
+    sessionTooltip(status("a", "open", { cwd: "C:/projects/demo-a", timestamp }), now),
+    "C:/projects/demo-a\nOpen (no status yet), chat started 09:05",
+  );
+  assert.equal(sessionTooltip(status("a", "open"), now), "demo-a\nOpen (no status yet)");
   assert.equal(sessionTooltip(status("a", "done"), now), "demo-a\nDone (your turn)");
   const yesterday = new Date(2026, 9, 31, 23, 50).toISOString();
   assert.equal(sessionTooltip(status("a", "done", { timestamp: yesterday }), now), "demo-a\nDone (your turn) since 2026-10-31 23:50");

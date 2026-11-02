@@ -31,6 +31,10 @@ it has waited, and its message. A button in the sidebar's title bar switches to 
 one header per project folder A-Z (a folder icon in the colour of its most urgent state: yellow
 waiting, green done, blue working), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
 its state. The choice is saved for all windows (others pick it up when they reload).
+A chat that is open but hasn't written a status yet (after a VS Code restart, or a new tab before
+its first prompt) is shown as grey "Open", last (grouped by state: an "Open" group that starts
+collapsed), not counted in the badge or the status bar; it moves to its real state with its next
+prompt or tool call.
 Clicking a session brings up the VS Code window that has its project folder open, or opens the
 folder in a new window if none has, and shows that chat's own Claude tab (not whichever Claude tab
 was last active); clicking a `notify.ps1` popup does the same. Clicking the status bar item opens

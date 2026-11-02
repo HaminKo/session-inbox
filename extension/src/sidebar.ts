@@ -23,14 +23,19 @@ const colors: Record<SessionState, vscode.ThemeColor> = {
   waiting: new vscode.ThemeColor("list.warningForeground"),
   done: new vscode.ThemeColor("charts.green"),
   working: new vscode.ThemeColor("charts.blue"),
+  open: new vscode.ThemeColor("descriptionForeground"),
 };
 const icons: Record<SessionState, vscode.ThemeIcon> = {
   waiting: new vscode.ThemeIcon("warning", colors.waiting),
   done: new vscode.ThemeIcon("check", colors.done),
   working: new vscode.ThemeIcon("loading~spin", colors.working),
+  open: new vscode.ThemeIcon("circle-outline", colors.open),
 };
 // Most urgent first: a project header's folder takes the colour of the first state it holds.
-const urgency: readonly SessionState[] = ["waiting", "done", "working"];
+const urgency: readonly SessionState[] = ["waiting", "done", "working", "open"];
+// Starts collapsed: the least urgent group, and after a VS Code restart it can hold every chat.
+// VS Code keeps it open once expanded, as the group's id doesn't change.
+const collapsedGroups: readonly string[] = ["state:open"];
 
 const groupByKey = "sessionInbox.groupBy";
 
@@ -91,7 +96,12 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
 
   getTreeItem(node: Node): vscode.TreeItem {
     if (node.kind === "group") {
-      const item = new vscode.TreeItem(node.group.label, vscode.TreeItemCollapsibleState.Expanded);
+      const item = new vscode.TreeItem(
+        node.group.label,
+        collapsedGroups.includes(node.group.id)
+          ? vscode.TreeItemCollapsibleState.Collapsed
+          : vscode.TreeItemCollapsibleState.Expanded,
+      );
       item.id = node.group.id;
       item.description = node.group.description;
       if (node.by === "project") {

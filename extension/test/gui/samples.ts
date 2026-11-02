@@ -28,7 +28,15 @@ export function writeSampleStatus(
 }
 
 // Marks session `id` as running. Several sessions can share `pid` (the test's own, which is alive);
-// the file is named after the id so each can be removed on its own.
-export function writeSampleSession(dir: string, id: string, pid = process.pid): void {
-  writeFileSync(join(dir, `${id}.json`), JSON.stringify({ pid, sessionId: id, kind: "interactive" }));
+// the file is named after the id so each can be removed on its own. `vscode` makes it a VS Code
+// chat (entrypoint, start folder, start time), which the sidebar lists as "Open" while it has no
+// status file.
+export function writeSampleSession(dir: string, id: string, { pid = process.pid, vscode = false } = {}): void {
+  const session = {
+    pid,
+    sessionId: id,
+    kind: "interactive",
+    ...(vscode ? { entrypoint: "claude-vscode", cwd: `C:\\projects\\demo-${id}`, startedAt: Date.now() } : {}),
+  };
+  writeFileSync(join(dir, `${id}.json`), JSON.stringify(session));
 }
