@@ -3,6 +3,23 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Exception: `notify.ps1` popups show a character picture (to-do #11)
+- Decision: `notify.ps1` was edited in place (third exception). A 96 px picture sits left of the
+  text: `notify-images/<event>.png`, else `notify-images/default.png`, else no picture and the popup
+  exactly as before. With a picture the popup is 104 px wider (524 px at 100%); the text keeps its
+  width. Still, not animated. `default.png` is a 192 px head-and-neck crop of the user's picture,
+  kept next to the 1.3 MB original. Details: docs/research/hooks.md, "Character picture in the popup".
+- Reason: the user wanted "an anime girl talking picture next to the notifications", as if she says
+  the persona opening line.
+- Decided by: the user (approved editing it and all of Claude's suggestions: crop, per-event names
+  with a default fallback, still first, wider popup).
+- Rejected: narrower text instead of a wider popup (4 lines would no longer fit); a separate
+  picture per event now (only one picture exists; per-event files need no code later); the
+  animated GIF for now (no frames exist; noted under Later in docs/todo.md); scaling the 1.3 MB
+  original on every popup (a small pre-cut copy loads faster).
+- Backups: `~/.claude/hooks/backups/notify.ps1.before-picture-2026-11-01` and
+  `notify.ps1.picture-2026-11-01`. Installed with a shell copy; hash checked.
+
 ## 2026-11-01 — Exception: both hooks name the project by the folder the chat started in
 - Decision: `notify.ps1` and `session-status.ps1` take the project folder from
   `$env:CLAUDE_PROJECT_DIR`, else from the chat's `~/.claude/sessions/*.json` (matched by
