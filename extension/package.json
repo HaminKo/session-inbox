@@ -21,6 +21,31 @@
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "sessionInbox",
+          "title": "Session Inbox",
+          "icon": "media/inbox.svg"
+        }
+      ]
+    },
+    "views": {
+      "sessionInbox": [
+        {
+          "id": "sessionInbox.sessions",
+          "name": "Sessions"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "sessionInbox.sessions",
+        "contents": "No Claude Code sessions running."
+      }
+    ]
+  },
   "scripts": {
     "bundle": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
     "compile": "npm run bundle -- --sourcemap",

@@ -62,7 +62,8 @@ This avoids launching `git` on every `PostToolUse`. The worktree's name can be t
 Path: `~/.claude/session-status/<session_id>.json`. Suggested fields: `session_id`, `cwd`,
 `folder`, `worktree`, `worktree_name`, `state` (`waiting`/`working`/`done`), `message`,
 `tool_name`, `timestamp` (ISO-8601: when this state began for `waiting` and `done`, which fire once;
-for `working` it is refreshed on every tool call, so it means "last activity" there). `message`
+for `working` it is refreshed on every tool call, so it means "last activity" there; the sidebar
+shows an age only for `waiting` and `done`, and "last activity" in the `working` tooltip). `message`
 for `done` is the reply's first line only (at most 140 characters, Markdown removed by `Plain-Line`,
 a word-for-word copy of the one in `notify.ps1`); the `notify.ps1` popup shows more of the reply
 (since 2026-11-01, see docs/decisions.md).

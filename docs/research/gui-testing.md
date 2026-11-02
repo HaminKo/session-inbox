@@ -30,6 +30,24 @@ docs/decisions.md (2026-11-01, "GUI test: Playwright drives a pinned VS Code").
   (35 KB). The window is 1200×800 CSS px at 150 % display scaling.
 - Token cost (estimate, width × height / 750): statusbar ≈ 25 tokens, window ≈ 2,900 tokens.
 
+## Sidebar (to-do #5 step B, 2026-11-01, VS Code 1.144)
+- Activity Bar entry: `.activitybar .action-item` whose `.action-label` has
+  `aria-label="Session Inbox - <badge tooltip>"` (e.g. `Session Inbox - 2 sessions need you`). The
+  badge number is `.badge-content` inside it, and shows before the view was ever opened.
+- The `.badge` div covers the `.action-label` link, so Playwright's click on the link times out
+  ("intercepts pointer events"). Click the `.action-item` instead.
+- Tree rows: `#workbench\.parts\.sidebar .monaco-list-row` (role `treeitem`), text in
+  `.label-name` and `.label-description`, icon `.custom-view-tree-node-item-icon` with
+  `codicon-<name>` (`loading~spin` becomes `codicon-loading codicon-modifier-spin`). Rows appear a
+  moment after the click: a count taken 1.5 s later in a probe was 0 once, so the test polls.
+- A row's `aria-label` is its tooltip when the tooltip is a plain string.
+- Empty tree: the `viewsWelcome` text is in `.welcome-view-content`.
+- `locator.evaluateAll((el) => ...)` fails lint here: tsconfig has no DOM lib, so `el` is
+  unresolved (`no-unsafe-member-access`). Use `locator.all()` with `innerText` / `getAttribute`.
+- Measured: `npm run test:gui` 16–25 s for 9 tests (two VS Code launches, one per `.gui.ts` file;
+  the first launch took 5.5 s in one run, 12.9 s in the next).
+  `sidebar.png` 522×389 px; estimated ≈ 270 tokens.
+
 ## Dead end: `ELECTRON_RUN_AS_NODE`
 The first launch failed with "Process failed to launch!". Running with `DEBUG=pw:browser*` showed
 `Code.exe: bad option: --disable-extensions` (and the same for every VS Code flag). A shell inside

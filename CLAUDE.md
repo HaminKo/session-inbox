@@ -35,10 +35,11 @@ Don't build what's under "Later" in docs/todo.md until asked.
   - Run the extension: `F5` from the repo root (`.vscode/launch.json`).
   - Hooks have no build; verify by piping a fake payload and checking the written file
     (see docs/research/hooks.md).
-  - GUI test, every step (~8 s): `npm run test:gui` (`test/gui/*.gui.ts`; opens a VS Code window
+  - GUI test, every step (~16–25 s): `npm run test:gui` (`test/gui/*.gui.ts`; opens a VS Code window
     briefly). A UI change gets a step in it. Details: docs/research/gui-testing.md.
-  - Screenshots: `npm run screenshots` (or `-- statusbar` / `-- window`) → PNGs in
-    `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens, window ~2,900.
+  - Screenshots: `npm run screenshots` (or `-- statusbar` / `-- sidebar` / `-- window`) → PNGs in
+    `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens,
+    sidebar ~270, window ~2,900.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
 - **Docs to update when behaviour changes:** README.md (headline features, install/run steps,
   Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md once it exists.
@@ -49,7 +50,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #5 step B — the sidebar itself (step A, the shared `SessionSource`, is done; docs/todo/05-sidebar.md).
+Next: to-do #8 — sort the sidebar by project name or by time (to-do #5, the sidebar, is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

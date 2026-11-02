@@ -4,17 +4,23 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-export function writeSampleStatus(dir: string, id: string, state: "waiting" | "done" | "working"): void {
+// `waitedMs` back-dates the timestamp (how long the state has lasted); `worktree` marks a linked worktree.
+export function writeSampleStatus(
+  dir: string,
+  id: string,
+  state: "waiting" | "done" | "working",
+  { waitedMs = 0, worktree = false } = {},
+): void {
   const status = {
     session_id: id,
     cwd: `C:/projects/demo-${id}`,
     folder: `demo-${id}`,
-    worktree: false,
+    worktree,
     worktree_name: `demo-${id}`,
     state,
     message: state === "waiting" ? "Needs permission to use Bash" : state === "done" ? "Finished" : "",
     tool_name: state === "waiting" ? "Bash" : null,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - waitedMs).toISOString(),
   };
   writeFileSync(join(dir, `${id}.json`), JSON.stringify(status));
 }

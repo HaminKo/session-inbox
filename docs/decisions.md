@@ -3,6 +3,14 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — Sidebar sorts oldest first inside each state group
+- Decision: inside Waiting / Done / Working, the session with the oldest `timestamp` comes first;
+  rows without a readable timestamp go last.
+- Reason: the session that has waited longest is the one most likely forgotten; one line of code,
+  and to-do #8 (sort by name or time) keeps it as its "by time" mode.
+- Decided by: the user, on Claude's suggestion (to-do #5 step B).
+- Rejected: file-name order (what the status bar read gives): looks random to the user.
+
 ## 2026-11-01 — Leftover status files are hidden when their chat process is gone
 - Decision: the extension reads Claude Code's own `~/.claude/sessions/<pid>.json` files (`pid`,
   `sessionId`) and counts a status file only if its session has a running process (checked with

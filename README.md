@@ -25,6 +25,9 @@ The hooks extend an existing desktop-notification hook rather than replacing it.
 The status-writer hook works. The extension's status bar item shows the live count from the status
 folder (`⚠ N waiting`, highlighted, or `✓ all clear`; hover for waiting / done / working). A chat
 whose process has ended (window closed or VS Code quit without the hook's cleanup) is not counted.
+The Session Inbox icon in the Activity Bar (badge: waiting + done) opens a sidebar listing every
+running session in groups Waiting / Done / Working, each with its folder, a `worktree` tag, how long
+it has waited, and its message.
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements

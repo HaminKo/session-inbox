@@ -24,8 +24,15 @@ worktree badge.
   a copy. Not done on purpose: skipping unchanged reads (step B needs the 30 s tick to update the
   age text). Tests: 3 new unit tests (17 pass), GUI test 5/5 unchanged; user test passed with
   Ctrl+F5 (F5 crashed the host again, see docs/research/extension-toolchain.md).
-- [ ] **B. Sidebar (next):** subscribe with `source.onChange` in `extension.ts`;
-  `extension/src/sessionList.ts` (pure: groups, order, age and description
-  text, with unit tests), `extension/src/sidebar.ts` (TreeDataProvider + badge), package.json
-  contributions, GUI-test step (headers, order, row text, badge), `sidebar` screenshot. Docs:
-  README, docs/research/hooks.md, CLAUDE.md Status.
+- [x] **B. Sidebar, done 2026-11-01:** `extension/src/sessionList.ts` (pure: groups, order, label,
+  age, description, tooltip), `extension/src/sidebar.ts` (TreeDataProvider + Activity Bar badge,
+  hidden at 0), a second `source.onChange` subscriber in `extension.ts`, package.json container /
+  view / `viewsWelcome`, own icon `media/inbox.svg` (shipped via `.vscodeignore`). Choices (user:
+  "go with your suggestions"): oldest first inside a group, no timestamp last (to-do #8 builds on
+  it); label falls back `folder` → end of `cwd` → session id; tooltip adds the date when the state
+  began on an earlier day. After code review: fields of the wrong type are ignored (only
+  `session_id`/`state` are checked on read), session rows have no `id` (VS Code rejects duplicate
+  ids), `update` after dispose is ignored, GUI reads retry when a row re-renders. Left: the welcome
+  text can flash before the first read. Tests: 24 unit pass (7 new), GUI test 9/9 (4 new sidebar
+  steps), `sidebar` screenshot; user test passed. Open: a click on the status bar item opening the
+  sidebar was suggested in the user test; not decided (see to-do #6).

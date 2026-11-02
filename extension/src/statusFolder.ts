@@ -106,7 +106,7 @@ export function countStates(statuses: readonly SessionStatus[]): Counts {
 }
 
 // The inbox counts waiting + done (docs/decisions.md): both are sessions where it's your turn.
-export function summarize(counts: Counts): { needsYou: number; text: string; tooltip: string } {
+export function summarize(counts: Counts): { needsYou: number; headline: string; text: string; tooltip: string } {
   const needsYou = counts.waiting + counts.done;
   const text = needsYou > 0 ? `$(warning) ${needsYou} waiting` : "$(check) all clear";
   const headline =
@@ -117,7 +117,7 @@ export function summarize(counts: Counts): { needsYou: number; text: string; too
     `Done (your turn): ${counts.done}`,
     `Working: ${counts.working}`,
   ].join("\n");
-  return { needsYou, text, tooltip };
+  return { needsYou, headline, text, tooltip };
 }
 
 // Calls `onChange` shortly after the folder's contents change. While the folder doesn't exist (no

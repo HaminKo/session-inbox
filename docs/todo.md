@@ -2,16 +2,14 @@ Next number: 11
 
 ## To do
 
-### 5. Sidebar view: all sessions across windows (large)
-Design and steps: docs/todo/05-sidebar.md.
-
 ### 8. Sidebar: sort the list by project name or by time (small)
 Goal, in the user's words: "2 ways to order the list - by the name of the project and by time".
 
 - **Problem / Goal:** #5 has one fixed order (waiting, then done, then working). With several
   sessions open you either look for one project (by name: `my-app`, `my-app-todo12`, `website`)
   or want to see what has waited longest (by time).
-- **Read first:** the sidebar's tree provider from #5; `timestamp` in docs/research/hooks.md
+- **Read first:** `groupSessions` in `extension/src/sessionList.ts` (already sorts oldest first inside
+  each group, so "by time" exists) and `extension/src/sidebar.ts`; `timestamp` in docs/research/hooks.md
   ("Status file": for `working` it means last activity, not when the state began); VS Code API:
   `view/title` menus, `TreeDataProvider.onDidChangeTreeData`, `ExtensionContext.globalState`.
 - **Approach:** one toggle button in the sidebar's title bar (two commands; a context key shows
@@ -29,6 +27,9 @@ Goal, in the user's words: "2 ways to order the list - by the name of the projec
 ### 6. Click a session to focus/open its VS Code window (medium)
 Reuse the window-finding approach from `notify.ps1` (find the VS Code window whose title ends in
 `<folder> - Visual Studio Code`, restore and bring to front; open the folder if none).
+Also ask: should a click on the status bar item open the sidebar (a command running
+`workbench.view.extension.sessionInbox`, ~5 lines)? Suggested by Claude in the #5 user test (the
+user clicked it expecting that); not decided yet.
 
 ### 9. Open the session's own Claude tab, not just its window (medium; research first)
 Goal, in the user's words: "change the tab that gets brought up" — a popup click brought the right
