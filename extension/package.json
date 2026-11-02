@@ -39,6 +39,44 @@
         }
       ]
     },
+    "commands": [
+      {
+        "command": "sessionInbox.groupByProject",
+        "title": "Group by project",
+        "category": "Session Inbox",
+        "icon": "$(folder)"
+      },
+      {
+        "command": "sessionInbox.groupByState",
+        "title": "Group by state",
+        "category": "Session Inbox",
+        "icon": "$(layers)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "sessionInbox.groupByProject",
+          "when": "view == sessionInbox.sessions && sessionInbox.groupBy != project",
+          "group": "navigation"
+        },
+        {
+          "command": "sessionInbox.groupByState",
+          "when": "view == sessionInbox.sessions && sessionInbox.groupBy == project",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "sessionInbox.groupByProject",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.groupByState",
+          "when": "false"
+        }
+      ]
+    },
     "viewsWelcome": [
       {
         "view": "sessionInbox.sessions",

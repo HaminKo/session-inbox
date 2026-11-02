@@ -50,7 +50,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #8 — sort the sidebar by project name or by time (to-do #5, the sidebar, is done).
+Next: to-do #6 — click a session to focus/open its VS Code window (to-do #8, group the
+sidebar by project, is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -69,6 +70,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - A status file counts only while its chat process runs (`~/.claude/sessions/<pid>.json`);
   leftovers are hidden, never deleted, and nothing is hidden if that folder is missing, empty or
   unreadable.
+- Sidebar: one title-bar button switches grouping by state (default) / by project, saved in
+  `globalState`; a project is the row label (folder leaf), case-insensitive, A-Z.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

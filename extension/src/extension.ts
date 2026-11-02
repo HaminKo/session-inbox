@@ -8,7 +8,11 @@ export function activate(context: vscode.ExtensionContext): void {
   item.name = "Session Inbox";
   context.subscriptions.push(item);
 
-  const sidebar = new Sidebar("sessionInbox.sessions");
+  const sidebar = new Sidebar("sessionInbox.sessions", context.globalState);
+  context.subscriptions.push(
+    vscode.commands.registerCommand("sessionInbox.groupByProject", () => sidebar.setGroupBy("project")),
+    vscode.commands.registerCommand("sessionInbox.groupByState", () => sidebar.setGroupBy("state")),
+  );
 
   const source = new SessionSource(statusDir(), sessionsDir());
   context.subscriptions.push(

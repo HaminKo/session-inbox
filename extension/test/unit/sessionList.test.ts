@@ -1,7 +1,7 @@
 // Unit tests for the sidebar's groups and row text. Plain Node, no VS Code: `npm test`.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatAge, groupSessions, sessionDescription, sessionLabel, sessionTooltip } from "../../src/sessionList.ts";
+import { formatAge, groupSessions, rowLabel, sessionDescription, sessionLabel, sessionTooltip } from "../../src/sessionList.ts";
 import type { SessionStatus } from "../../src/statusFolder.ts";
 
 const now = new Date(2026, 10, 1, 12, 0).getTime();
@@ -38,6 +38,53 @@ void test("inside a group the oldest comes first, no timestamp last", () => {
     groups[0].sessions.map((s) => s.session_id),
     ["old", "new", "none", "bad"],
   );
+});
+
+void test("by project: one group per folder ignoring case, A-Z, numbers by value, with a summary", () => {
+  const groups = groupSessions(
+    [
+      status("a1", "working", { folder: "my-app", timestamp: ago(minute) }),
+      status("a2", "done", { folder: "my-app", timestamp: ago(5 * minute) }),
+      status("a3", "waiting", { folder: "my-app", timestamp: ago(2 * minute) }),
+      status("a4", "done", { folder: "my-app", timestamp: ago(30 * minute) }),
+      status("t12", "done", { folder: "my-app-todo12", worktree: true }),
+      status("t9", "working", { folder: "my-app-todo9", worktree: true }),
+      status("b2", "done", { folder: "beta" }),
+      status("b", "waiting", { folder: "Beta" }),
+      status("c", "done", { folder: undefined, cwd: "C:\\projects\\alpha" }),
+    ],
+    "project",
+  );
+  assert.deepEqual(
+    groups.map((group) => [group.id, group.label, group.description, group.sessions.map((s) => s.session_id)]),
+    [
+      ["project:alpha", "alpha", "1 done", ["c"]],
+      ["project:beta", "Beta", "1 waiting · 1 done", ["b", "b2"]],
+      ["project:my-app", "my-app", "1 waiting · 2 done · 1 working", ["a3", "a4", "a2", "a1"]],
+      ["project:my-app-todo9", "my-app-todo9", "1 working", ["t9"]],
+      ["project:my-app-todo12", "my-app-todo12", "1 done", ["t12"]],
+    ],
+  );
+  assert.deepEqual(groupSessions([], "project"), []);
+});
+
+void test("grouping by state is the default; its ids and descriptions", () => {
+  const statuses = [status("a", "working"), status("b", "waiting")];
+  assert.deepEqual(groupSessions(statuses), groupSessions(statuses, "state"));
+  assert.deepEqual(
+    groupSessions(statuses).map((group) => [group.id, group.description]),
+    [
+      ["state:waiting", ""],
+      ["state:working", ""],
+    ],
+  );
+});
+
+void test("row label: the project grouped by state, the state grouped by project", () => {
+  assert.equal(rowLabel(status("a", "waiting"), "state"), "demo-a");
+  assert.equal(rowLabel(status("a", "waiting"), "project"), "Waiting");
+  assert.equal(rowLabel(status("a", "done"), "project"), "Done");
+  assert.equal(rowLabel(status("a", "working"), "project"), "Working");
 });
 
 void test("age text", () => {

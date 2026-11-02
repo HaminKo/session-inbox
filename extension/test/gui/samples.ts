@@ -9,14 +9,14 @@ export function writeSampleStatus(
   dir: string,
   id: string,
   state: "waiting" | "done" | "working",
-  { waitedMs = 0, worktree = false } = {},
+  { waitedMs = 0, worktree = false, project = id } = {},
 ): void {
   const status = {
     session_id: id,
-    cwd: `C:/projects/demo-${id}`,
-    folder: `demo-${id}`,
+    cwd: `C:/projects/demo-${project}`,
+    folder: `demo-${project}`,
     worktree,
-    worktree_name: `demo-${id}`,
+    worktree_name: `demo-${project}`,
     state,
     message: state === "waiting" ? "Needs permission to use Bash" : state === "done" ? "Finished" : "",
     tool_name: state === "waiting" ? "Bash" : null,

@@ -3,6 +3,30 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — To-do #8 groups by project instead of sorting by name
+- Decision: the sidebar's title-bar button switches between grouping by state (Waiting / Done /
+  Working, oldest first; the default) and grouping by project: one header per row label (the
+  folder; a worktree is its own project), A-Z ignoring case with numbers by value, the header's
+  description summing up its states (`1 waiting · 1 done`), sessions underneath ordered waiting,
+  done, working, oldest first. Two levels, no state sub-groups. Saved in `globalState`; other open
+  windows follow only after a reload (`globalState` has no change event). Headers get a folder
+  icon in the colour of their most urgent state; row icons are coloured too (waiting
+  `list.warningForeground`, done `charts.green`, working `charts.blue`); rows under a project are
+  labelled with their state, not the project name again.
+- Reason: the user wants a quick glance at one project's status; a name sort inside state groups
+  (built first) still scatters a project over three groups.
+- Decided by: the user, on Claude's suggestions (to-do #8, after testing the sort).
+- Header look: the user asked for clearer headers (indent, bold, colour or dividers). A tree view
+  can't set bold, label colour, dividers or indent (`workbench.tree.indent` is a global user
+  setting), so: an icon on headers and no repeated names in rows; then, asked for colour, coloured
+  icons. Kept in reserve, user to decide after seeing the icons: colouring the header text through
+  a `FileDecorationProvider` (a workaround, ~25 lines; a list of green names may feel loud).
+- Rejected: project > state > sessions (three levels): most projects have one or two sessions, so
+  a state level mostly repeats the row's state icon; sorting by name inside the state groups (the
+  original plan): replaced by the grouping; projects needing you first: positions would jump, which
+  defeats the glance; worktrees under their main repo: the status file doesn't record the main
+  repo, so it needs a hook change (possible later to-do).
+
 ## 2026-11-01 — Sidebar sorts oldest first inside each state group
 - Decision: inside Waiting / Done / Working, the session with the oldest `timestamp` comes first;
   rows without a readable timestamp go last.

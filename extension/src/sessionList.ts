@@ -1,12 +1,18 @@
 // What the sidebar shows, worked out from the statuses: groups, their order, and the text of each
 // row. No `vscode` import, so the unit tests run in plain Node.
-import type { SessionState, SessionStatus } from "./statusFolder.ts";
+import { countStates, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
+// One header row and the sessions under it; the same shape in both groupings. `id` is
+// `state:<state>` or `project:<label>`, so the two groupings never share a tree item id.
 export interface SessionGroup {
-  state: SessionState;
+  id: string;
   label: string;
+  description: string;
   sessions: SessionStatus[];
 }
+
+// The two ways the sidebar groups sessions; the title-bar button switches between them.
+export type GroupBy = "state" | "project";
 
 const groupOrder: readonly SessionState[] = ["waiting", "done", "working"];
 const groupNames: Record<SessionState, string> = { waiting: "Waiting", done: "Done", working: "Working" };
@@ -16,17 +22,59 @@ const stateNames: Record<SessionState, string> = {
   working: "Working",
 };
 
+export function groupSessions(statuses: readonly SessionStatus[], by: GroupBy = "state"): SessionGroup[] {
+  return by === "project" ? groupByProject(statuses) : groupByState(statuses);
+}
+
 // Waiting, then done, then working; empty groups left out. Inside a group the oldest timestamp
 // comes first (the session that has waited longest), ones without a readable timestamp last.
-export function groupSessions(statuses: readonly SessionStatus[]): SessionGroup[] {
+function groupByState(statuses: readonly SessionStatus[]): SessionGroup[] {
   return groupOrder
     .map((state) => {
-      const sessions = statuses
-        .filter((status) => status.state === state)
-        .sort((a, b) => (since(a) ?? Infinity) - (since(b) ?? Infinity));
-      return { state, label: `${groupNames[state]} (${sessions.length})`, sessions };
+      const sessions = statuses.filter((status) => status.state === state).sort(byTime);
+      return { id: `state:${state}`, label: `${groupNames[state]} (${sessions.length})`, description: "", sessions };
     })
     .filter((group) => group.sessions.length > 0);
+}
+
+// One group per row label ignoring case (Windows folders; a worktree is its own project), shown
+// with the lowest of its spellings. A-Z with numbers by value (`todo9` before `todo12`), ties by
+// the key itself, so neither the order nor the header text depends on the order files are read.
+// The header says `1 waiting · 1 done`; inside, waiting, done, working, each oldest first.
+function groupByProject(statuses: readonly SessionStatus[]): SessionGroup[] {
+  const projects = new Map<string, { label: string; sessions: SessionStatus[] }>();
+  for (const status of statuses) {
+    const label = sessionLabel(status);
+    const key = label.toLowerCase();
+    const project = projects.get(key) ?? { label, sessions: [] };
+    if (label < project.label) project.label = label;
+    project.sessions.push(status);
+    projects.set(key, project);
+  }
+  return [...projects]
+    .sort(([a], [b]) => a.localeCompare(b, "en", { numeric: true }) || (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, { label, sessions }]) => {
+      const counts = countStates(sessions);
+      return {
+        id: `project:${key}`,
+        label,
+        description: groupOrder
+          .filter((state) => counts[state] > 0)
+          .map((state) => `${counts[state]} ${state}`)
+          .join(" · "),
+        sessions: sessions.sort((a, b) => groupOrder.indexOf(a.state) - groupOrder.indexOf(b.state) || byTime(a, b)),
+      };
+    });
+}
+
+function byTime(a: SessionStatus, b: SessionStatus): number {
+  return (since(a) ?? Infinity) - (since(b) ?? Infinity);
+}
+
+// A row's label: grouped by project the header already names the project, so the row names its
+// state (`Waiting`, `Done`, `Working`); grouped by state, the project.
+export function rowLabel(status: SessionStatus, by: GroupBy): string {
+  return by === "project" ? groupNames[status.state] : sessionLabel(status);
 }
 
 // The project folder; for an older or odd file, the last part of `cwd`, then the session id.

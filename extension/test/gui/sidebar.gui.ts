@@ -19,7 +19,7 @@ before(async () => {
   writeSampleStatus(statusDir, "b", "done");
   writeSampleStatus(statusDir, "c", "working");
   sessionsDir = mkdtempSync(join(tmpdir(), "session-inbox-sessions-"));
-  for (const id of ["a", "b", "c", "d"]) writeSampleSession(sessionsDir, id);
+  for (const id of ["a", "b", "c", "d", "e"]) writeSampleSession(sessionsDir, id);
   vscode = await launchVsCode({ SESSION_INBOX_STATUS_DIR: statusDir, SESSION_INBOX_SESSIONS_DIR: sessionsDir });
   await vscode.window.locator(statusItem).waitFor({ state: "visible", timeout: 20_000 });
 });
@@ -111,8 +111,63 @@ void test("a new status file shows up in its group, oldest first, and in the bad
   await waitFor(badge, "3", "badge");
 });
 
+// The title-bar button; it shows the grouping you'd switch to (by state is the default).
+function groupButton(title: string) {
+  // VS Code renders it twice (container title and section header), one hidden.
+  return vscode.window.locator(`${sideBar} .action-label[aria-label="${title}"]`).filter({ visible: true });
+}
+
+void test("the title-bar button switches between grouping by project and by state", async () => {
+  // A second session in demo-a's folder, so one project holds two states.
+  writeSampleStatus(statusDir, "e", "working", { project: "a" });
+  const byState = [
+    "Waiting (1)",
+    "demo-a | worktree · 12 min · Needs permission to use Bash",
+    "Done (2)",
+    "demo-d | 1 h 20 min · Finished",
+    "demo-b | <1 min · Finished",
+    "Working (2)",
+    "demo-c",
+    "demo-a",
+  ];
+  await waitFor(rows, byState, "rows by state");
+  await groupButton("Group by project").click();
+  await waitFor(
+    rows,
+    [
+      "demo-a | 1 waiting · 1 working",
+      "Waiting | worktree · 12 min · Needs permission to use Bash",
+      "Working",
+      "demo-b | 1 done",
+      "Done | <1 min · Finished",
+      "demo-c | 1 working",
+      "Working",
+      "demo-d | 1 done",
+      "Done | 1 h 20 min · Finished",
+    ],
+    "rows by project",
+  );
+  // Headers have a folder icon, the one with a waiting session in the warning colour.
+  const headerIcons: string[] = [];
+  for (const row of await vscode.window.locator(`${treeRow}:has(.monaco-tl-twistie.collapsible)`).all()) {
+    const icon = row.locator(".custom-view-tree-node-item-icon");
+    const name = /codicon-(folder)\b/.exec((await icon.getAttribute("class")) ?? "")?.[1] ?? "?";
+    // VS Code writes the resolved colour (`color: rgb(...)`); the theme key's name isn't in the page.
+    const color = /color: (rgb\([^)]*\))/.exec((await icon.getAttribute("style")) ?? "")?.[1] ?? "none";
+    headerIcons.push(`${name} ${color}`);
+  }
+  // demo-a has a waiting session, demo-b and demo-d are done, demo-c is working.
+  const [waiting, done, working, done2] = headerIcons;
+  assert.match(waiting, /^folder rgb/);
+  assert.equal(done, done2);
+  assert.equal(new Set([waiting, done, working]).size, 3, `three different colours: ${headerIcons.join(", ")}`);
+  await groupButton("Group by state").click();
+  await waitFor(rows, byState, "rows by state again");
+  await groupButton("Group by project").waitFor({ state: "visible", timeout: 2_000 });
+});
+
 void test("with no sessions left it shows the welcome text and no badge", async () => {
-  for (const id of ["a", "b", "c", "d"]) unlinkSync(join(statusDir, `${id}.json`));
+  for (const id of ["a", "b", "c", "d", "e"]) unlinkSync(join(statusDir, `${id}.json`));
   await waitFor(rows, [], "rows");
   await waitFor(badge, "", "badge");
   const welcome = vscode.window.locator(`${sideBar} .welcome-view-content`);

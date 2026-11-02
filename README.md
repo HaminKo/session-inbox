@@ -27,7 +27,10 @@ folder (`⚠ N waiting`, highlighted, or `✓ all clear`; hover for waiting / do
 whose process has ended (window closed or VS Code quit without the hook's cleanup) is not counted.
 The Session Inbox icon in the Activity Bar (badge: waiting + done) opens a sidebar listing every
 running session in groups Waiting / Done / Working, each with its folder, a `worktree` tag, how long
-it has waited, and its message.
+it has waited, and its message. A button in the sidebar's title bar switches to grouping by project:
+one header per project folder A-Z (a folder icon in the colour of its most urgent state: yellow
+waiting, green done, blue working), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
+its state. The choice is saved for all windows (others pick it up when they reload).
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements
