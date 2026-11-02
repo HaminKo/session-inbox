@@ -294,6 +294,23 @@ Fix (installed 21:11, hashes checked): both hooks use `Project-Dir` (docs/decisi
   already open (the other window's or the clicking window's own) adds no window. Whether the OS
   actually raises the other window is for the user test (Playwright's clicks are not OS input).
 
+## Popup click shows the chat's own tab: the `.reveal` file (to-do #9, 2026-11-01)
+
+- On a popup click, `notify.ps1` (`Write-RevealRequest`, before `BringToFront`) writes
+  `~/.claude/session-status/.reveal`: `{"session_id":"…","project_dir":"…","at":<ms since 1970>}`,
+  UTF-8 without BOM, under a temp name then renamed. Only if that folder exists; any failure is
+  swallowed so the window still comes up. Not `*.json`, so status readers skip it.
+- Every window's Session Inbox watches the folder; the window with `project_dir` among its workspace
+  folders (case and slash direction ignored) runs Claude Code's `claude-vscode.primaryEditor.open`
+  with the id, if `at` is at most 15 s old. A sidebar click on another window's chat writes the same
+  file. Why a file and not a URI: docs/research/claude-tabs.md.
+- Measured: the PowerShell writer, run against a temp `USERPROFILE`, wrote
+  `{"project_dir":"c:/Projects/demo","session_id":"abc-123","at":1793589147470}`, first bytes
+  `{"p` (no BOM), no temp file left. GUI test (stand-in Claude Code in `test/gui/fake-claude`): a
+  request for the window's folder is shown, one for another folder ignored. User test with the real
+  Claude Code 2.1.314 (2026-11-01, extension installed from the `.vsix`): passed; the click showed the
+  chat's own tab.
+
 ## Character picture in the popup (to-do #11, 2026-11-01)
 
 `notify.ps1` shows `~/.claude/hooks/notify-images/<event>.png` (`Stop.png`, `PermissionRequest.png`),

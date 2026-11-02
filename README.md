@@ -15,7 +15,7 @@ It has two parts:
    - a status bar item: `⚠ N waiting` or `✓ all clear`;
    - a sidebar listing every session across all windows (waiting first, with how long each has
      waited, and a badge for worktrees);
-   - click a session to focus or open its VS Code window;
+   - click a session (or its desktop popup) to bring up its VS Code window and its own Claude tab;
    - a re-notification if a session has waited longer than a configurable threshold.
 
 The hooks extend an existing desktop-notification hook rather than replacing it.
@@ -32,7 +32,9 @@ one header per project folder A-Z (a folder icon in the colour of its most urgen
 waiting, green done, blue working), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
 its state. The choice is saved for all windows (others pick it up when they reload).
 Clicking a session brings up the VS Code window that has its project folder open, or opens the
-folder in a new window if none has; clicking the status bar item opens the sidebar.
+folder in a new window if none has, and shows that chat's own Claude tab (not whichever Claude tab
+was last active); clicking a `notify.ps1` popup does the same. Clicking the status bar item opens
+the sidebar.
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements

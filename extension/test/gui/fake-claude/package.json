@@ -1,0 +1,19 @@
+{
+  "name": "fake-claude-code",
+  "description": "GUI-test stand-in for Claude Code: records calls of the command Session Inbox uses to show a chat's tab.",
+  "version": "0.0.0",
+  "publisher": "session-inbox-test",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claude-vscode.primaryEditor.open",
+        "title": "Fake Claude Code: Open session"
+      }
+    ]
+  }
+}

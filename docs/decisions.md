@@ -3,6 +3,24 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-01 — A click shows the chat's own Claude tab through a `.reveal` file (to-do #9)
+- Decision: a popup click (`notify.ps1`) and a sidebar click on another window's chat write
+  `~/.claude/session-status/.reveal` (`session_id`, `project_dir`, `at`). Each window's Session Inbox
+  watches it; the window that has `project_dir` open, for a request at most 15 s old, runs Claude
+  Code's internal command `claude-vscode.primaryEditor.open(<session id>)`, which brings that chat's
+  tab to the front (or reopens it as a tab). A sidebar click on a chat of its own window calls the
+  command directly. If the command fails or is gone, the window still comes up as before (error
+  logged). `notify.ps1` was edited in place for this (fourth exception: `Write-RevealRequest`, a few
+  lines in the click handler).
+- Reason: Claude Code can reveal a session by id (docs/research/claude-tabs.md), but a `vscode://`
+  URI goes to the focused window, and in the wrong one Claude Code opens a second copy of the chat.
+  The file reaches the right window, needs no "Allow this URI?" prompt and serves both clicks.
+- Decided by: the user, on Claude's suggestions.
+- Rejected: opening `vscode://anthropic.claude-code/open?session=<id>` from the popup (simpler, but
+  races the focus change, can duplicate the chat, prompts once, and can't serve the sidebar);
+  our own URI handler (same routing problem). Known risk: the command is undocumented and may
+  change with a Claude Code update.
+
 ## 2026-11-01 — A sidebar click opens the folder through VS Code, not `notify.ps1`'s window search (to-do #6)
 - Decision: a session row's click runs `vscode.openFolder` on the session's `project_dir` (new
   status-file field) with `forceNewWindow: true`. VS Code focuses the window that already has the

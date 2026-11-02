@@ -19,8 +19,13 @@ export interface VsCode {
 }
 
 // `extraEnv` is added to VS Code's environment, e.g. SESSION_INBOX_STATUS_DIR for a temp status folder.
-// `folder`, if given, is opened in the window (by default it has none).
-export async function launchVsCode(extraEnv: Record<string, string> = {}, folder?: string): Promise<VsCode> {
+// `folder`, if given, is opened in the window (by default it has none). `extensions` are more
+// extension folders to load next to this one, e.g. test/gui/fake-claude.
+export async function launchVsCode(
+  extraEnv: Record<string, string> = {},
+  folder?: string,
+  extensions: readonly string[] = [],
+): Promise<VsCode> {
   const executablePath = await downloadAndUnzipVSCode({
     version: VSCODE_VERSION,
     cachePath: join(extensionDir, ".vscode-test"),
@@ -46,6 +51,7 @@ export async function launchVsCode(extraEnv: Record<string, string> = {}, folder
       args: [
         "--disable-extensions",
         `--extensionDevelopmentPath=${extensionDir}`,
+        ...extensions.map((dir) => `--extensionDevelopmentPath=${dir}`),
         `--user-data-dir=${join(tempDir, "user-data")}`,
         `--extensions-dir=${join(tempDir, "extensions")}`,
         "--skip-welcome",

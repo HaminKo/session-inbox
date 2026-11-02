@@ -24,7 +24,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
 - Commit after each working step. End a step with the finish-step skill.
 - Extend the existing notification hook (`~/.claude/hooks/notify.ps1`); never modify or replace it
   in project work. (Exceptions, asked for by the user: taller popups, the focus fallback,
-  naming by start folder and the popup picture, docs/decisions.md 2026-11-01.)
+  naming by start folder, the popup picture and the `.reveal` click hand-off, docs/decisions.md
+  2026-11-01.)
 
 ## Build specifics
 - **Checks** (run from the `extension/` folder once it exists):
@@ -32,7 +33,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   - Per step: `npm run compile` (esbuild bundle only, ~1s) + `npx tsc --noEmit` (type-check,
     ~2s); `npm test` (unit tests, `test/unit/*.test.ts`, ~1s). `npm run package` builds a `.vsix` (Marketplace manifest
     check).
-  - Run the extension: `F5` from the repo root (`.vscode/launch.json`).
+  - Run the extension: `F5` from the repo root (`.vscode/launch.json`). F5 disables other
+    extensions, so anything that needs Claude Code is tested from the installed `.vsix`.
   - Hooks have no build; verify by piping a fake payload and checking the written file
     (see docs/research/hooks.md).
   - GUI test, every step (~16–25 s): `npm run test:gui` (`test/gui/*.gui.ts`; opens a VS Code window
@@ -50,8 +52,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #9 — open the session's own Claude tab, not just its window (research first; to-do
-#6, click a session to focus/open its window, is done).
+Next: to-do #7 — re-notify past a configurable threshold (to-do #9, a click shows the chat's own
+Claude tab, is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -76,6 +78,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   `globalState`; a project is the row label (folder leaf), case-insensitive, A-Z.
 - Sidebar click opens `project_dir` with `vscode.openFolder` (VS Code focuses an open window), not
   `notify.ps1`'s window search.
+- A click shows the chat's own tab via `~/.claude/session-status/.reveal`, acted on only by the
+  window that has its `project_dir` open (Claude's `claude-vscode.primaryEditor.open`), not a URI.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 
