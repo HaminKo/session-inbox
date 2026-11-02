@@ -34,6 +34,10 @@ what was rejected and why.
 - Rejected: repeating reminders (noise over a popup that stays); reminding `done` chats; saving
   "sent" to disk (state for the reload edge case); a new event branch in `notify.ps1` (its `default`
   branch already shows the message).
+- Known limit, kept (2026-11-02, user went with Claude's suggestion): `notify.ps1` keeps one popup
+  per folder, so a reminder replaces any popup that project shows, also a newer one from another
+  chat in the same folder. Rare (two chats in one folder overlapping) and the sidebar lists both;
+  merging reminders or changing `notify.ps1` was rejected as more code than the case is worth.
 
 ## 2026-11-01 — A click shows the chat's own Claude tab through a `.reveal` file (to-do #9)
 - Decision: a popup click (`notify.ps1`) and a sidebar click on another window's chat write

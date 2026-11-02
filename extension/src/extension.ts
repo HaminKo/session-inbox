@@ -69,17 +69,19 @@ function reminders(): (statuses: readonly SessionStatus[]) => void {
     // on the first read after you leave the window without acting.
     // SESSION_INBOX_IGNORE_FOCUS is for the GUI test only: its window can't lose focus.
     if (vscode.window.state.focused && !process.env.SESSION_INBOX_IGNORE_FOCUS) return;
+    // Off: nothing else to do on this hot path (it runs on every tool call of every chat).
     const minutes = vscode.workspace.getConfiguration("sessionInbox").get<number>("renotifyMinutes", 10);
+    if (!(minutes > 0)) return;
     const folders = workspaceFolders();
-    const mine = statuses.filter((status) => {
+    const folderOf = new Map<SessionStatus, string>();
+    for (const status of statuses) {
       const folder = sessionFolder(status);
-      return folder !== undefined && holdsFolder(folders, folder);
-    });
+      if (folder !== undefined && holdsFolder(folders, folder)) folderOf.set(status, folder);
+    }
     const now = Date.now();
-    for (const status of dueReminders(mine, now, minutes, sent)) {
-      // Not undefined: `mine` only holds chats with a folder.
-      const folder = sessionFolder(status) as string;
-      const script = notifyScript();
+    const script = notifyScript();
+    for (const status of dueReminders([...folderOf.keys()], now, minutes, sent)) {
+      const folder = folderOf.get(status) ?? "";
       if (!sendReminder(script, reminderPayload(status, folder, now), folder)) {
         console.error(`Session Inbox: no reminder, ${script} not found`);
       }

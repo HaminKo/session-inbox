@@ -75,7 +75,7 @@ void test("notifyScript is the user's notify.ps1 unless the tests override it", 
 void test("sendReminder hands the payload and the project folder to the script", async () => {
   const script = join(root, "fake-notify.ps1");
   const out = join(root, "received.txt");
-  // Written by PowerShell with a BOM; the test strips it.
+  // WriteAllText writes UTF-8 without a BOM; the strip below is only a guard.
   writeFileSync(
     script,
     `[Console]::InputEncoding = [System.Text.Encoding]::UTF8\n` +

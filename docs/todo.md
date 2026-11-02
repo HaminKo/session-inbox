@@ -2,10 +2,6 @@ Next number: 15
 
 ## To do
 
-### 7. Re-notify past a configurable threshold (medium)
-If a session has waited longer than a configurable number of minutes (default 10), re-trigger the
-notification — re-invoke `notify.ps1` with a synthesized payload so it reuses the real popup.
-
 ### 13. Stacked popups fall down to fill a gap (small)
 Goal, in the user's words: "if you close a notification in a stack, it leaves a gap. Should we
 leave it that way or should stacks fall down?" (agreed: fall down).

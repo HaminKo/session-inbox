@@ -52,8 +52,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #7 — re-notify past a configurable threshold (to-do #14, open chats with no status
-yet listed as "Open", is done).
+Next: to-do #13 — stacked popups fall down to fill a gap (to-do #7, re-notify past a threshold,
+is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
