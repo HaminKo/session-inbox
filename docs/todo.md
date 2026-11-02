@@ -1,4 +1,4 @@
-Next number: 11
+Next number: 12
 
 ## To do
 
@@ -60,6 +60,41 @@ window up, but it showed a different Claude chat ("Build-todo item 4"), which wa
 ### 7. Re-notify past a configurable threshold (medium)
 If a session has waited longer than a configurable number of minutes (default 10), re-trigger the
 notification — re-invoke `notify.ps1` with a synthesized payload so it reuses the real popup.
+
+### 11. A talking character picture in the notification popup (small)
+Goal, in the user's words: "add an anime girl talking picture next to the notifications".
+
+- **Problem / Goal:** the popups are text only (accent bar, title, 2-4 lines of the reply). Wanted:
+  a character portrait on the left of the popup, as if she is saying the message, to match the
+  persona opening line. Example: a `Stop` popup for `my-app` shows her picture beside "Hmph, fine
+  — to-do #1 is finished and committed."
+- **Doable:** yes. The popup is a custom WinForms window (`ClaudePopup : Form`), so a `PictureBox`
+  can show a PNG, or an animated GIF, which WinForms plays by itself.
+- **Read first:** the `ClaudePopup` constructor in `~/.claude/hooks/notify.ps1` (size from the
+  text's line count, the stacking loop, `px()` DPI scaling, the accent panel and label bounds);
+  the two `notify.ps1` exceptions in docs/decisions.md (2026-11-01: backups, install with a shell
+  copy, not the Edit tool).
+- **Approach:** this edits `notify.ps1`, so it needs the user's go-ahead as a third exception in
+  docs/decisions.md, with a backup first. A square picture (~96 px at 100%) docked left after the
+  accent bar; the text moves right and the popup widens by that much (or the text gets narrower).
+  The image path from a setting at the top of the script (e.g.
+  `~/.claude/hooks/notify-images/`), and with no image there the popup is exactly as today. One
+  picture per event is cheap (`done.png`, `waiting.png`). "Talking": a 2-3 frame GIF (mouth
+  open/closed) played a few seconds, then held on one frame, since popups stay until clicked.
+  Dispose the image when the popup closes. The user supplies the art.
+- **The picture (given):** `~/.claude/hooks/notify-images/orange-tsundere.png`, outside the repo.
+  Measured: 832×1216 portrait PNG, transparent background with a white sticker outline, 1.3 MB,
+  waist-up. Shrunk whole into ~96 px the face would be ~25 px, so crop to head and shoulders
+  (face roughly x 230–640, y 100–560) and save a small pre-sized copy next to it, rather than
+  loading and scaling 1.3 MB on every popup.
+- **Ask the user:** how to crop (suggested: head and shoulders, square); still or animated (suggested: start still, add the GIF after); one picture or one per event
+  (suggested: one per event, so "waiting" looks different from "done"); popup wider or text
+  narrower (suggested: wider by the picture, so 4 lines still fit, but check that stacked popups
+  still fit the side monitor).
+- **Test:** Claude: pipe a fake `Stop` and `PermissionRequest` payload (docs/research/hooks.md)
+  with and without the image folder, and check notify.log for errors. User: see the picture in
+  both popup kinds on both monitors (100% and the other scaling), several popups stacked, and that
+  click and X still work.
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
