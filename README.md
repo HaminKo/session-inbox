@@ -12,7 +12,8 @@ It has two parts:
    `~/.claude/session-status/<session_id>.json` — project folder, worktree, state, message, and
    timestamp — and update it as the session moves between waiting, working, and done.
 2. **A VS Code extension** that watches that folder and shows, in every window:
-   - a status bar item: `⚠ N waiting` or `✓ all clear`;
+   - a status bar item: `⚠ N waiting` or `✓ all clear` (N counts waiting sessions and finished
+     replies, both are your turn);
    - a sidebar listing every session across all windows (waiting first, with how long each has
      waited, and a badge for worktrees);
    - click a session (or its desktop popup) to bring up its VS Code window and its own Claude tab;
@@ -29,7 +30,7 @@ The Session Inbox icon in the Activity Bar (badge: waiting + done) opens a sideb
 running session in groups Waiting / Done / Working, each with its folder, a `worktree` tag, how long
 it has waited, and its message. A button in the sidebar's title bar switches to grouping by project:
 one header per project folder A-Z (a folder icon in the colour of its most urgent state: yellow
-waiting, green done, blue working), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
+waiting, green done, blue working, grey open), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
 its state. The choice is saved for all windows (others pick it up when they reload).
 Right-click a project header for "Set Icon…" (a pick of ~25 icons, e.g. a map or a globe) or
 "Reset Icon"; the icon keeps the state colour and changes in every open window at once. It's stored
@@ -59,27 +60,40 @@ folder in a new window if none has, and shows that chat's own Claude tab (not wh
 was last active); clicking a `notify.ps1` popup does the same. Clicking the status bar item opens
 the sidebar. A session still waiting on a permission prompt or a question after 10 minutes gets its
 `notify.ps1` popup once more ("Still waiting (12 min): …"); the setting
-`sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off.
+`sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off. The reminder is sent only by
+a window that has the chat's folder open and isn't in front, and can come up to ~30 s late.
+An empty sidebar says "No Claude Code sessions running."; clicking a session whose folder no longer
+exists (a removed worktree) shows "Folder not found" instead of opening it.
 With the setting `sessionInbox.trayIcon` on (default off), a Windows tray icon next to the clock
 shows the same count, also when no VS Code window is in front, in the sidebar's colours: yellow if
 any session is waiting, green if only finished replies are, grey when all clear; hover for a
 summary. Click it for the list of sessions that need you (dark when Windows apps are set to dark),
-each with the sidebar's state icon and its project's icon; one opens its window and tab like a sidebar click. It closes when the
-VS Code that started it quits, or when the setting is turned off (turn it off before uninstalling;
-otherwise the icon stays until VS Code quits).
-Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
+each with the sidebar's state icon and its project's icon; one opens its window and tab like a
+sidebar click (this needs VS Code's `code` command on PATH). It closes when the VS Code that
+started it quits, when the setting is turned off (turn it off before uninstalling; otherwise the
+icon stays until VS Code quits), or with **Exit** in its menu (it comes back when a VS Code window
+starts or the setting is turned off and on).
+Each part is built as a numbered to-do (listed in `docs/todo.md`, details in `docs/todo/`);
+nothing is published yet.
 
 ## Requirements
 
-- Windows (the hooks use Windows PowerShell and the Windows notification APIs).
+- Windows (the hook and the tray icon are Windows PowerShell scripts).
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) with the VS Code extension.
-- VS Code and Node.js (for building the extension).
+- VS Code 1.100 or newer.
+- For building: Node.js 22.18 or newer (the unit tests run `.ts` files directly with
+  `node --test`).
 
 ## Install and run
 
 > Build steps land here as they're implemented. For now:
 
-- **Hooks:** run **Session Inbox: Install Hooks** from the Command Palette. It copies the
+- **Extension:** run `npm install` once in `extension/`, then `npm run package` (from
+  `extension/`) to build `session-inbox-0.0.1.vsix`, and install it with
+  `code --install-extension session-inbox-0.0.1.vsix` (or Extensions view → `…` → Install from
+  VSIX…).
+- **Hooks:** with the extension installed, run **Session Inbox: Install Hooks** from the Command
+  Palette. It copies the
   status-writer (bundled in the extension from `hooks/session-status.ps1`) into `~/.claude/hooks/`
   and adds it to `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse` and `SessionEnd`
   in `~/.claude/settings.json`, next to any hooks already there. It never changes other hooks or
@@ -96,29 +110,44 @@ Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet
   Copy-Item hooks\session-status.ps1 "$env:USERPROFILE\.claude\hooks\"
   ```
 
-  Then, in `~/.claude/settings.json`, add this entry to the `hooks` list of each of those 5 events,
-  next to any hooks already there. Leave out `"async": true`: the hook has to run in order, so that
+  Then, in `~/.claude/settings.json`, add a group with this entry to each of those 5 events, next to
+  any groups already there (shown for `Stop`; the same for `PermissionRequest`, `UserPromptSubmit`,
+  `PostToolUse` and `SessionEnd`). Leave out `"async": true`: the hook has to run in order, so that
   a late `working` can't overwrite `done`.
 
   ```json
   {
-    "type": "command",
-    "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/session-status.ps1\"",
-    "timeout": 10
+    "hooks": {
+      "Stop": [
+        {
+          "hooks": [
+            {
+              "type": "command",
+              "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/session-status.ps1\"",
+              "timeout": 10
+            }
+          ]
+        }
+      ]
+    }
   }
   ```
 
   Each session then keeps a status file in `~/.claude/session-status/`. Verify with the payload
   test in `docs/research/hooks.md`.
-- **Extension:** run `npm install` once in `extension/`. Then open the repo folder in VS Code and
-  press `F5`: it builds the extension (`npm run compile`) and starts an Extension Development Host
-  with it loaded. Package a `.vsix` with `npm run package` (from `extension/`).
-- **Tests** (from `extension/`): `npm test` runs the unit tests (plain Node, about a second).
+- **Development:** open the repo folder in VS Code and press `F5`: it type-checks and builds the
+  extension (`npm run compile`) and starts an Extension Development Host with it loaded. That
+  window has all other extensions turned off, Claude Code included, so showing a chat's own tab
+  only works from the installed `.vsix`.
+- **Checks** (from `extension/`): `npm run lint` (ESLint), `npm run check-types` (TypeScript),
+  `npm test` (unit tests, plain Node, about a second).
 - **GUI test and screenshots** (from `extension/`): `npm run test:gui` starts a separate VS Code
-  window with only this extension and checks the status bar, using sample status files in temp
+  window with this extension (some tests add a stand-in for Claude Code) and checks the status bar,
+  sidebar, Install Hooks, opening a session, its tab, reminders and the tray icon, using sample
+  status files in temp
   folders (`SESSION_INBOX_STATUS_DIR`, `SESSION_INBOX_SESSIONS_DIR`), never your real
-  `~/.claude/session-status/` or `~/.claude/sessions/`; `npm run screenshots` saves PNGs to
-  the temp folder (`session-inbox-shots`). The first run downloads VS Code (~350 MB) into
+  `~/.claude/session-status/` or `~/.claude/sessions/`; `npm run screenshots` (or `-- statusbar`, `-- sidebar`,
+  `-- window` for one) saves PNGs to the temp folder (`session-inbox-shots`). The first run downloads VS Code (~350 MB) into
   `extension/.vscode-test/`.
 
 ## Credits
