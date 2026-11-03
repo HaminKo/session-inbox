@@ -383,6 +383,33 @@ as `[picture not loaded: ...]` and the popup shows without it.
 - Not built: a "talking" GIF (needs 2–3 frames of art that don't exist yet; WinForms would play
   a GIF in the same `PictureBox` with no code change, but holding it on one frame would need code).
 
+## Stacked popups fall down (to-do #13, 2026-11-02)
+
+On each 500 ms tick, `ClaudePopup.Fall()` moves a popup down to 8 px (`px(8)`) above the nearest
+other folder's popup below it in its column (horizontal overlap, higher `Top`), or to the corner.
+It never moves up, and it skips the tick while the cursor is inside any popup's `GetWindowRect`
+or inside the span from its own top to the bottom of the spot it would fall to (the process is
+per-monitor DPI aware, so `Cursor.Position` uses the same pixels). A newer notification of the same
+folder closes the older popups only after its own show, so it takes their slot. Why gravity and
+not "lowest free spot": docs/decisions.md.
+- Measured, live run of fake `Stop` payloads for folders `fall-a`..`fall-d` (scratch script:
+  `GetWindowRect` of each popup, `WM_CLOSE` to one folder's popups, `SetCursorPos` for the guard),
+  two monitors at 100% (popups 524×96) and 150% (786×142):
+  - `a b c`, close `b`: `c` dropped 104 px at 100% and 154 px at 150% (height + gap), to just
+    above `a`, within 1.5 s.
+  - Cursor over `a`, close the middle one: the top one stayed; it dropped within 1 s of the cursor
+    moving away.
+  - `a b c d`, close `b`: `c` and `d` each ended one slot lower, no overlap, within 2 s.
+  - After the review fixes: `a c d` stacked, `c` notified again: the new `c` showed in the old
+    one's slot, `d` stayed. Cursor in the gap of a closed popup: the one above stayed (logged by a
+    debug copy of the script: the guard held while the cursor was in the gap, and the popup fell on
+    the next tick after the real mouse moved away).
+  - No errors in `notify.log`.
+- Testing tips: the real mouse moving during a run moves the cursor the test set, so a guard case
+  can look failed; log `Cursor.Position` from a scratch copy of the script to tell. A scratch copy
+  whose C# doesn't compile still reaches `Application.Run` with no window and never exits (stop it
+  by hand); compile-check the type alone first.
+
 ## Sources
 - `~/.claude/hooks/notify.ps1` (author's existing hook; comments carry dated measurements).
 - Claude Code hooks reference: https://docs.claude.com/en/docs/claude-code/hooks

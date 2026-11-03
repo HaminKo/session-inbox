@@ -2,33 +2,6 @@ Next number: 15
 
 ## To do
 
-### 13. Stacked popups fall down to fill a gap (small)
-Goal, in the user's words: "if you close a notification in a stack, it leaves a gap. Should we
-leave it that way or should stacks fall down?" (agreed: fall down).
-
-- **Problem / Goal:** popups of different projects stack upward on each side monitor. Closing one
-  in the middle leaves an empty slot until a new popup happens to land there. Wanted: the popups
-  above it move down. Example: `a` (bottom), `b`, `c` stacked; close `b`, and `c` drops to just
-  above `a` with the usual 8 px gap.
-- **Read first:** in `~/.claude/hooks/notify.ps1`: the placement loop in the `ClaudePopup`
-  constructor (`taken`, `spot`, the jump to just above the popup in the way), `Popups()` /
-  `IsPopupFor`, and the 500 ms `$checkFocus` timer. Also the `notify.ps1` exceptions in
-  docs/decisions.md (backup first, install with a shell copy).
-- **Approach:** each popup is its own process, so each one moves itself. Move the placement rule
-  into one method (e.g. `LowestFreeSpot()`), used by the constructor and on each timer tick. If the
-  spot is lower than the popup's current place, move there. Guard: move only while the mouse is
-  over no popup, so a popup never drops under the cursor right after an X click (a quick second
-  click would hit the wrong project). ~20-25 lines. Needs the user's go-ahead as another
-  `notify.ps1` exception in docs/decisions.md.
-- **Ask the user:** jump or slide (suggested: jump, as placement does today; a slide animation
-  adds code for little gain); wait a moment after the mouse leaves before moving (suggested: no,
-  the next 500 ms tick is enough).
-- **Test:** Claude: three fake payloads for three folders (docs/research/hooks.md, "Character
-  picture in the popup", for the testing tips), close the middle popup's process window by
-  message, and check the top one's window rectangle moved down by the right amount, on both
-  monitors. User: stack three, close the middle one with X, and see the top one drop only after
-  the mouse leaves; click and X still work.
-
 ### 12. Customize a project's header in the sidebar: colour, icon (medium)
 Goal, in the user's words: "customize the parent folder - change the color, choose icon, etc".
 

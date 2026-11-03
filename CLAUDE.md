@@ -25,7 +25,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
 - Extend the existing notification hook (`~/.claude/hooks/notify.ps1`); never modify or replace it
   in project work. (Exceptions, asked for by the user: taller popups, the focus fallback,
   naming by start folder, the popup picture and the `.reveal` click hand-off, docs/decisions.md
-  2026-11-01.)
+  2026-11-01; stacked popups fall down, 2026-11-02.)
 
 ## Build specifics
 - **Checks** (run from the `extension/` folder once it exists):
@@ -52,8 +52,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #13 — stacked popups fall down to fill a gap (to-do #7, re-notify past a threshold,
-is done).
+Next: to-do #12 — customize a project's header in the sidebar: colour, icon (to-do #13,
+stacked popups fall down, is done).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

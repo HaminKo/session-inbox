@@ -3,6 +3,26 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-02 — Stacked popups fall down to fill a gap, by gravity (to-do #13)
+- Decision: `notify.ps1` was edited in place (fifth exception: `ClaudePopup.Fall()`, a few fields,
+  one line in the 500 ms timer tick). On every tick each popup rests 8 px above the nearest other
+  folder's popup below it in its column, or in the corner if none; it only moves down, as a jump,
+  and not while the mouse is over any popup or over the gap it would fall into. Placement of a new
+  popup is unchanged, but the older popup of the same folder now closes after the new one shows
+  (`CloseOlder` skips this process's own popups), not before. Backup:
+  `~/.claude/hooks/backups/notify.ps1.before-fall-down-2026-11-02`.
+- Reason: closing a middle popup left a gap until a new popup happened to land there. The mouse
+  guard keeps a popup from dropping under the cursor after an X click (the clicked popup is gone at
+  once, so "over a popup" alone missed that case; found in review). Closing the older popup first
+  would let the popups above fall into its slot before the replacement shows: the stack would
+  reshuffle on every re-notify, or overlap for good if the replacement had already picked that
+  slot (found in review).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: one shared "lowest free spot" rule for placement and ticks (the to-do's first approach):
+  each popup is its own process, so with `a b c d` and `b` closed, `c` and `d` would both jump into
+  `b`'s slot on the same tick. Gravity moves a stack one level per tick, so they can't collide. A
+  slide animation (more code for little gain); a delay after the mouse leaves (the next tick is enough).
+
 ## 2026-11-02 — Running chats with no status file are shown as `open`, not counted (to-do #14)
 - Decision: a running `~/.claude/sessions/<pid>.json` with `entrypoint: "claude-vscode"` and
   `kind: "interactive"` whose session has no status file is listed with a fourth state, `open`
