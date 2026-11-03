@@ -52,7 +52,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #18 (each project's current focus in the sidebar), then "Before a public release" in docs/todo.md.
+Next: "Before a public release" in docs/todo.md.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -91,6 +91,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - The tray draws the sidebar's codicons from VS Code's own `codicon.ttf`; the extension writes the
   names, characters and font path into `~/.claude/session-status/.tray-looks` (no `.json`, so no
   reader takes it for a status), and the script only looks them up.
+- A project's focus row (`sessionInbox.projects` → `focus`) is re-read on every sidebar update,
+  never watched or written by the extension.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

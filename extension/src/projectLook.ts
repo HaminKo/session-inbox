@@ -1,4 +1,4 @@
-// A project's own icon in the sidebar (grouped by project), from the user setting
+// A project's own icon and focus file in the sidebar (grouped by project), from the user setting
 // `sessionInbox.projects`: `{ "sc-map-library": { "icon": "map" } }`. The icon keeps its state
 // colour, so the glance still shows waiting / done / working (docs/decisions.md 2026-11-02).
 // Plain data, no VS Code, so it can be unit-tested; sidebar.ts turns the name into a ThemeIcon.
@@ -53,12 +53,23 @@ function findKey(looks: unknown, label: string): string | undefined {
   return Object.keys(looks).find((name) => name.toLowerCase() === key);
 }
 
-// The icon name for a project header: the setting's, or the folder when it's missing or malformed.
-export function projectIcon(looks: unknown, label: string): string {
+// The setting's entry for `label`, when it is an object.
+function projectEntry(looks: unknown, label: string): Record<string, unknown> | undefined {
   const key = findKey(looks, label);
   const entry = key !== undefined && isEntry(looks) ? looks[key] : undefined;
-  const icon = isEntry(entry) ? entry.icon : undefined;
+  return isEntry(entry) ? entry : undefined;
+}
+
+// The icon name for a project header: the setting's, or the folder when it's missing or malformed.
+export function projectIcon(looks: unknown, label: string): string {
+  const icon = projectEntry(looks, label)?.icon;
   return typeof icon === "string" && iconName.test(icon) ? icon : defaultIcon;
+}
+
+// The project's focus file (focus.ts), relative to its folder; undefined when not set.
+export function projectFocus(looks: unknown, label: string): string | undefined {
+  const focus = projectEntry(looks, label)?.focus;
+  return typeof focus === "string" && focus.trim() ? focus.trim() : undefined;
 }
 
 // The setting with `label`'s icon set, or removed when `icon` is undefined. Other fields of the

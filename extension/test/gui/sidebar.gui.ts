@@ -1,7 +1,7 @@
 // GUI test for the sidebar: the Activity Bar badge, the groups and the row text. Same setup as
 // statusbar.gui.ts: temp status and sessions folders, never the real ones.
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, unlinkSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
@@ -217,6 +217,49 @@ void test("right-click on a project header sets its icon, which keeps the state 
   await menuItem("Reset Icon").click();
   await waitFor(async () => (await headerIcons())[1], before, "demo-b's icon after reset");
   await groupButton("Group by state").click();
+});
+
+void test("grouped by project, a project's focus file gives a Now row that follows the file", async () => {
+  const projectDir = mkdtempSync(join(tmpdir(), "session-inbox-project-"));
+  // The setting is read live; put back what earlier tests left in it afterwards.
+  const settings = JSON.parse(readFileSync(vscode.settingsFile, "utf8")) as Record<string, unknown>;
+  const focusFile = join(projectDir, "docs", "todo.md");
+  const writeFocus = (now: string) =>
+    writeFileSync(focusFile, `# To do
+
+## Where we are
+- Now: ${now}
+- Next: 7
+- Updated: 2026-01-01
+
+## To do
+`);
+  try {
+    mkdirSync(join(focusFile, ".."));
+    writeFocus("Step B (the parser)");
+    const focusSetting = { "sessionInbox.projects": { "DEMO-F": { focus: "docs/todo.md" } } };
+    writeFileSync(vscode.settingsFile, JSON.stringify({ ...settings, ...focusSetting }));
+    writeSampleSession(sessionsDir, "f");
+    writeSampleStatus(statusDir, "f", "done", { projectDir });
+    await groupButton("Group by project").click();
+    const lastRows = async () => (await rows()).slice(-3);
+    await waitFor(lastRows, ["demo-f | 1 done", "Step B (the parser)", "Done | <1 min · Finished"], "demo-f's rows");
+    // The row has the target icon; its hover is checked by hand (docs/todo/18-project-focus.md).
+    const focusRow = vscode.window.locator(treeRow).filter({ hasText: "Step B (the parser)" });
+    assert.equal(await focusRow.locator(".codicon-target").count(), 1);
+    // Re-read with the next update; a hook event (here: the status file rewritten) brings one.
+    writeFocus("Step C (the row)");
+    writeSampleStatus(statusDir, "f", "done", { projectDir });
+    await waitFor(lastRows, ["demo-f | 1 done", "Step C (the row)", "Done | <1 min · Finished"], "demo-f's new focus");
+    await groupButton("Group by state").click();
+    await waitFor(async () => (await rows())[0], "Waiting (1)", "first row by state");
+    assert.ok(!(await rows()).some((row) => row.startsWith("Step C")), "no focus row by state");
+  } finally {
+    writeFileSync(vscode.settingsFile, JSON.stringify(settings));
+    rmSync(join(statusDir, "f.json"), { force: true });
+    rmSync(join(sessionsDir, "f.json"), { force: true });
+    rmSync(projectDir, { recursive: true, force: true });
+  }
 });
 
 void test("with no sessions left it shows the welcome text and no badge", async () => {

@@ -3,6 +3,22 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — A project's focus file is re-read on every sidebar update, not watched (to-do #18)
+- Decision: the sidebar's "Now" row (grouped by project) comes from the file named by
+  `sessionInbox.projects` → `focus`, read again (async, only for projects shown that have `focus`)
+  on every sidebar update: each hook event from any chat, and the 30 s re-read. The row is its own
+  first child under the project header (icon `target`, not clickable); "Next:" shows only in the
+  hover; only projects that already have a session appear. A file that can't be used shows no row
+  and logs one line per file in a "Session Inbox" output channel (new in this to-do).
+- Reason: the file is written by that project's finish-step skill through Claude's Edit tool,
+  whose PostToolUse hook event already makes the sidebar update, so the row changes almost at
+  once. A hand edit shows within 30 s. This saves the watcher create/dispose code and the open
+  question of `createFileSystemWatcher` on folders outside the window's workspace.
+- Decided by: the user ("Go with your suggestions"), on Claude's suggestions.
+- Rejected: one file watcher per focus file (the to-do's first Approach: instant but more code to
+  keep right); the focus in the header's description (it already holds the counts and gets cut off
+  in a narrow sidebar).
+
 ## 2026-11-03 — Project focus goes in the extension's sidebar, not a standalone app (to-do #18)
 - Decision: show each project's "Where we are" line in the sidebar (to-do #18). A richer overview
   (Now/Next for every opted-in project, running or not) goes under "Later" as a webview panel

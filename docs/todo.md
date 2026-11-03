@@ -1,9 +1,7 @@
 Next number: 19
 
 ## To do
-- **18 — Each project's current focus in the sidebar** (medium): the "Now:" line of a project's
-  "Where we are" block under its header (Group by project), opted in per project.
-  docs/todo/18-project-focus.md.
+(none open: next, "Before a public release" below)
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).

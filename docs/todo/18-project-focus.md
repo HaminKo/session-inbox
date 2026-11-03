@@ -74,3 +74,12 @@ more than 14 days old. Group by state does not change.
   shows no such row.
 - User, by hand from the installed `.vsix`: add `"focus": "docs/todo.md"` for sc-map-library,
   check the row and the hover, then commit a change to that file there and see the row update.
+
+## Done (2026-11-03)
+Built in one step. `focus.ts` parses the section (ends at a `#` or `##` heading; CRLF; `- `
+optional) and `staleDays` (impossible dates ignored); `projectFocus()` in `projectLook.ts`. The
+sidebar re-reads shown projects' focus files on every update instead of watching them
+(docs/decisions.md 2026-11-03); unusable files log one line per problem in a new "Session Inbox"
+output channel. Unit tests in `focus.test.ts`, a GUI step in `sidebar.gui.ts`; tested by the user
+from the `.vsix` with sc-map-library. Left from the review: two folders with the same leaf share one
+group and focus file; the block is rendered as markdown; absolute or `../` paths are allowed.

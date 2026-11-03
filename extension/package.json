@@ -148,10 +148,14 @@
                 "type": "string",
                 "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
                 "markdownDescription": "A [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name, e.g. `map`."
+              },
+              "focus": {
+                "type": "string",
+                "markdownDescription": "A markdown file in the project folder (e.g. `docs/todo.md`) with a `## Where we are` section. Its `Now:` line is shown under the project's header when grouped by project."
               }
             }
           },
-          "markdownDescription": "A project's own icon in the sidebar when grouped by project, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\" } }`. The icon keeps its state colour. Set by right-clicking a project header."
+          "markdownDescription": "A project's own icon and focus file in the sidebar when grouped by project, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\", \"focus\": \"docs/todo.md\" } }`. The icon keeps its state colour; set it by right-clicking a project header."
         }
       }
     },

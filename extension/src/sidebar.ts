@@ -1,23 +1,29 @@
 // The sidebar: every running session in one tree, grouped by state or by project (sessionList.ts),
 // and a badge on the Activity Bar icon with the waiting + done count. A title-bar button switches
 // the grouping; the choice is kept in `globalState`, so other windows pick it up when they reload.
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import * as vscode from "vscode";
+import { parseFocus, staleDays, type Focus } from "./focus.ts";
 import {
   groupSessions,
   rowLabel,
   sessionDescription,
+  sessionFolder,
   sessionTooltip,
   type GroupBy,
   type SessionGroup,
 } from "./sessionList.ts";
-import { defaultIcon, iconChoices, projectIcon, stateIcons, withIcon } from "./projectLook.ts";
+import { defaultIcon, iconChoices, projectFocus, projectIcon, stateIcons, withIcon } from "./projectLook.ts";
 import { countStates, summarize, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
 // Each node keeps the grouping it was built under, so a node VS Code still holds from before a
 // switch is drawn the way it was built.
 export type Node =
   | { kind: "group"; group: SessionGroup; by: GroupBy }
-  | { kind: "session"; status: SessionStatus; by: GroupBy };
+  | { kind: "session"; status: SessionStatus; by: GroupBy }
+  // A project's "Now:" line, the first row under its header (grouped by project only).
+  | { kind: "focus"; groupId: string; file: string; focus: Focus };
 
 // Theme colours, so they suit light and dark themes.
 const colors: Record<SessionState, vscode.ThemeColor> = {
@@ -37,6 +43,8 @@ const urgency: readonly SessionState[] = ["waiting", "done", "working", "open"];
 // Starts collapsed: the least urgent group, and after a VS Code restart it can hold every chat.
 // VS Code keeps it open once expanded, as the group's id doesn't change.
 const collapsedGroups: readonly string[] = ["state:open"];
+// A focus block older than this gets a note in its hover.
+const staleAfterDays = 14;
 
 const groupByKey = "sessionInbox.groupBy";
 const projectsKey = "projects";
@@ -58,6 +66,14 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
   // The `sessionInbox.projects` setting, re-read when it changes (in any window: settings are shared).
   private looks = projectLooks();
   private readonly configListener: vscode.Disposable;
+  // The focus files of the projects shown: absolute path → text (undefined when unreadable) and
+  // its parsed block. Re-read on every update, which also comes with every hook event and every
+  // 30 s (docs/decisions.md).
+  private focusFiles = new Map<string, { text: string | undefined; focus: Focus | undefined }>();
+  private focusReads = 0;
+  // The problem last logged per focus file, so the log gets one line per problem, not per update.
+  private readonly reported = new Map<string, string>();
+  private log: vscode.LogOutputChannel | undefined;
 
   private readonly state: vscode.Memento;
 
@@ -69,7 +85,7 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
     this.configListener = vscode.workspace.onDidChangeConfiguration((event) => {
       if (!event.affectsConfiguration(`sessionInbox.${projectsKey}`)) return;
       this.looks = projectLooks();
-      this.changed.fire(undefined);
+      this.regroup();
     });
     void this.showGroupBy();
   }
@@ -89,6 +105,65 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
   private regroup(): void {
     this.groups = groupSessions(this.statuses, this.groupBy);
     this.changed.fire(undefined);
+    if (this.groupBy === "project") void this.readFocus();
+  }
+
+  // The absolute path of a project's focus file, from the setting and the folder of its first
+  // session that has one; undefined when either is missing.
+  private focusPath(group: SessionGroup): string | undefined {
+    const file = projectFocus(this.looks, group.label);
+    const folder = group.sessions.map(sessionFolder).find((dir) => dir !== undefined);
+    return file && folder ? resolve(folder, file) : undefined;
+  }
+
+  // Reads every shown project's focus file and redraws when any text changed. A read that an
+  // newer one overtook is dropped, so a slow disk can't put old text back.
+  private async readFocus(): Promise<void> {
+    const read = ++this.focusReads;
+    const paths = new Set(this.groups.map((group) => this.focusPath(group)).filter((path) => path !== undefined));
+    const texts = new Map(
+      await Promise.all(
+        [...paths].map(async (path) => [path, await readFile(path, "utf8").catch(() => undefined)] as const),
+      ),
+    );
+    if (this.disposed || read !== this.focusReads) return;
+    const changed =
+      texts.size !== this.focusFiles.size ||
+      [...texts].some(([path, text]) => !this.focusFiles.has(path) || this.focusFiles.get(path)?.text !== text);
+    if (!changed) return;
+    this.focusFiles = new Map(
+      [...texts].map(([path, text]) => [path, { text, focus: text === undefined ? undefined : parseFocus(text) }]),
+    );
+    for (const [path, { text, focus }] of this.focusFiles) this.reportFocus(path, text, focus);
+    this.changed.fire(undefined);
+  }
+
+  // One line in the output channel when a focus file can't be used, again only after it was fixed.
+  private reportFocus(path: string, text: string | undefined, focus: Focus | undefined): void {
+    const problem =
+      text === undefined
+        ? "can't be read"
+        : !focus
+          ? 'has no "## Where we are" section'
+          : !focus.now
+            ? 'has no "Now:" line in its "## Where we are" section'
+            : undefined;
+    if (!problem) {
+      this.reported.delete(path);
+      return;
+    }
+    if (this.reported.get(path) === problem) return;
+    this.reported.set(path, problem);
+    this.log ??= vscode.window.createOutputChannel("Session Inbox", { log: true });
+    this.log.warn(`Focus file ${path} ${problem}, so no focus row is shown.`);
+  }
+
+  // The focus row for a project, when its file is read and has a "Now:" line.
+  private focusNode(group: SessionGroup): Node | undefined {
+    const path = this.focusPath(group);
+    const focus = path === undefined ? undefined : this.focusFiles.get(path)?.focus;
+    const file = projectFocus(this.looks, group.label);
+    return focus?.now && file ? { kind: "focus", groupId: group.id, file, focus } : undefined;
   }
 
   // Called with every read, including the 30 s tick that moves the age text on.
@@ -104,11 +179,16 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
 
   getChildren(node?: Node): Node[] {
     if (!node) return this.groups.map((group) => ({ kind: "group", group, by: this.groupBy }));
-    if (node.kind === "group") return node.group.sessions.map((status) => ({ kind: "session", status, by: node.by }));
+    if (node.kind === "group") {
+      const sessions: Node[] = node.group.sessions.map((status) => ({ kind: "session", status, by: node.by }));
+      const focus = node.by === "project" ? this.focusNode(node.group) : undefined;
+      return focus ? [focus, ...sessions] : sessions;
+    }
     return [];
   }
 
   getTreeItem(node: Node): vscode.TreeItem {
+    if (node.kind === "focus") return focusItem(node.focus, node.file, node.groupId, this.now);
     if (node.kind === "group") {
       const item = new vscode.TreeItem(
         node.group.label,
@@ -139,9 +219,27 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
   dispose(): void {
     this.disposed = true;
     this.configListener.dispose();
+    this.log?.dispose();
     this.view.dispose();
     this.changed.dispose();
   }
+}
+
+// Not clickable; the hover has the whole block, and a note when "Updated:" is old.
+function focusItem(focus: Focus, file: string, groupId: string, now: number): vscode.TreeItem {
+  const item = new vscode.TreeItem(focus.now ?? "", vscode.TreeItemCollapsibleState.None);
+  item.id = `focus:${groupId}`;
+  item.iconPath = new vscode.ThemeIcon("target");
+  const tooltip = new vscode.MarkdownString("", true);
+  tooltip.appendMarkdown("**Where we are** · ").appendText(file).appendMarkdown(`
+
+${focus.block}`);
+  const days = staleDays(focus.updated, new Date(now), staleAfterDays);
+  if (days !== undefined) tooltip.appendMarkdown(`
+
+$(warning) Not updated for ${days} days`);
+  item.tooltip = tooltip;
+  return item;
 }
 
 // Right-click "Set Icon…" on a project header: a pick of icons, written to the user setting.
