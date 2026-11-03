@@ -56,6 +56,16 @@
         "command": "sessionInbox.openSession",
         "title": "Open session's window",
         "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.setProjectIcon",
+        "title": "Set Icon…",
+        "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.resetProjectIcon",
+        "title": "Reset Icon",
+        "category": "Session Inbox"
       }
     ],
     "menus": {
@@ -83,6 +93,26 @@
         {
           "command": "sessionInbox.openSession",
           "when": "false"
+        },
+        {
+          "command": "sessionInbox.setProjectIcon",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.resetProjectIcon",
+          "when": "false"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "sessionInbox.setProjectIcon",
+          "when": "view == sessionInbox.sessions && viewItem == project",
+          "group": "1_look@1"
+        },
+        {
+          "command": "sessionInbox.resetProjectIcon",
+          "when": "view == sessionInbox.sessions && viewItem == project",
+          "group": "1_look@2"
         }
       ]
     },
@@ -95,6 +125,22 @@
           "minimum": 0,
           "scope": "application",
           "markdownDescription": "Minutes a session may wait on you (a permission prompt or a question) before its popup is shown once more. `0` turns reminders off. Uses `~/.claude/hooks/notify.ps1`."
+        },
+        "sessionInbox.projects": {
+          "type": "object",
+          "default": {},
+          "scope": "application",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "icon": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+                "markdownDescription": "A [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name, e.g. `map`."
+              }
+            }
+          },
+          "markdownDescription": "A project's own icon in the sidebar when grouped by project, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\" } }`. The icon keeps its state colour. Set by right-clicking a project header."
         }
       }
     },

@@ -10,11 +10,12 @@ import {
   type GroupBy,
   type SessionGroup,
 } from "./sessionList.ts";
+import { defaultIcon, iconChoices, projectIcon, withIcon } from "./projectLook.ts";
 import { countStates, summarize, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
 // Each node keeps the grouping it was built under, so a node VS Code still holds from before a
 // switch is drawn the way it was built.
-type Node =
+export type Node =
   | { kind: "group"; group: SessionGroup; by: GroupBy }
   | { kind: "session"; status: SessionStatus; by: GroupBy };
 
@@ -38,6 +39,11 @@ const urgency: readonly SessionState[] = ["waiting", "done", "working", "open"];
 const collapsedGroups: readonly string[] = ["state:open"];
 
 const groupByKey = "sessionInbox.groupBy";
+const projectsKey = "projects";
+
+function projectLooks(): unknown {
+  return vscode.workspace.getConfiguration("sessionInbox").get(projectsKey);
+}
 
 export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable {
   private readonly changed = new vscode.EventEmitter<undefined>();
@@ -49,6 +55,9 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
   // The time the ages are measured against, set per update so all rows agree.
   private now = Date.now();
   private disposed = false;
+  // The `sessionInbox.projects` setting, re-read when it changes (in any window: settings are shared).
+  private looks = projectLooks();
+  private readonly configListener: vscode.Disposable;
 
   private readonly state: vscode.Memento;
 
@@ -57,6 +66,11 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
     this.state = state;
     this.groupBy = state.get(groupByKey) === "project" ? "project" : "state";
     this.view = vscode.window.createTreeView(viewId, { treeDataProvider: this });
+    this.configListener = vscode.workspace.onDidChangeConfiguration((event) => {
+      if (!event.affectsConfiguration(`sessionInbox.${projectsKey}`)) return;
+      this.looks = projectLooks();
+      this.changed.fire(undefined);
+    });
     void this.showGroupBy();
   }
 
@@ -106,7 +120,9 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
       item.description = node.group.description;
       if (node.by === "project") {
         const top = urgency.find((state) => node.group.sessions.some((s) => s.state === state));
-        item.iconPath = new vscode.ThemeIcon("folder", top && colors[top]);
+        item.iconPath = new vscode.ThemeIcon(projectIcon(this.looks, node.group.label), top && colors[top]);
+        // Shows "Set Icon…" and "Reset Icon" on right-click (package.json, view/item/context).
+        item.contextValue = "project";
       }
       return item;
     }
@@ -122,7 +138,35 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
 
   dispose(): void {
     this.disposed = true;
+    this.configListener.dispose();
     this.view.dispose();
     this.changed.dispose();
+  }
+}
+
+// Right-click "Set Icon…" on a project header: a pick of icons, written to the user setting.
+// `node` is undefined when the command is run some other way (it's hidden from the palette).
+export async function pickProjectIcon(node?: Node): Promise<void> {
+  if (node?.kind !== "group") return;
+  const { label } = node.group;
+  const current = projectIcon(projectLooks(), label);
+  // The current icon on top, so Enter or Escape right away changes nothing.
+  const choices = [current, ...iconChoices.filter((icon) => icon !== current)];
+  const picked = await vscode.window.showQuickPick(
+    choices.map((icon) => ({ label: `$(${icon}) ${icon}`, icon, description: icon === current ? "current" : "" })),
+    { title: `Icon for ${label}`, placeHolder: "Any other codicon name can be set in settings.json" },
+  );
+  // The folder is the default, so picking it is a reset (no entry left behind).
+  if (picked) await setProjectIcon(label, picked.icon === defaultIcon ? undefined : picked.icon);
+}
+
+// Right-click "Reset Icon": back to the folder. Also used by pickProjectIcon.
+export async function setProjectIcon(label: string, icon: string | undefined): Promise<void> {
+  const config = vscode.workspace.getConfiguration("sessionInbox");
+  try {
+    await config.update(projectsKey, withIcon(config.get(projectsKey), label, icon), vscode.ConfigurationTarget.Global);
+  } catch (error) {
+    // E.g. settings.json has a syntax error or unsaved changes.
+    void vscode.window.showErrorMessage(`Couldn't save the icon to your user settings: ${String(error)}`);
   }
 }

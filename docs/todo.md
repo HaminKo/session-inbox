@@ -1,39 +1,7 @@
 Next number: 15
 
 ## To do
-
-### 12. Customize a project's header in the sidebar: colour, icon (medium)
-Goal, in the user's words: "customize the parent folder - change the color, choose icon, etc".
-
-- **Problem / Goal:** grouped by project (#8), every header is a folder icon coloured by its most
-  urgent state. Wanted: a project of your choice looks different, e.g. `sc-map-library` with a
-  purple map icon, `website` with a globe, so a project is found by its look, not just its name.
-- **Read first:** `getTreeItem`, `colors` and `urgency` in `extension/src/sidebar.ts`;
-  `groupByProject` in `extension/src/sessionList.ts` (the project key is the lowercased label);
-  docs/decisions.md 2026-11-01 "To-do #8 groups by project" (what a tree view can and can't
-  colour); VS Code API: `view/item/context` menus with `contextValue`, `window.showQuickPick`,
-  `workspace.getConfiguration().update(..., ConfigurationTarget.Global)`, `ThemeIcon`/`ThemeColor`.
-- **Approach:** right-click a project header: "Set icon…", "Set colour…", "Reset". Each opens a
-  QuickPick: a short curated list of codicons (shown with their icon) and of theme colours
-  (`charts.red/orange/yellow/green/blue/purple`, plus "By state", the default). Stored in a user
-  setting, `sessionInbox.projects`: `{ "sc-map-library": { "icon": "map", "color": "charts.purple" } }`,
-  so it can also be edited by hand in settings.json, applies to every window at once (settings
-  have a change event, unlike `globalState`) and syncs with Settings Sync. Unknown icon or colour
-  names fall back to today's look. Only the project grouping uses it.
-- **Drawback to weigh:** today the folder's colour *is* the state (yellow = waiting). A custom
-  colour hides that, which was the point of the glance. Hence the first question below.
-- **Ask the user:** what a custom colour does to the state signal (suggested: the custom icon and
-  colour are kept, but a project with a waiting session still turns its icon yellow, so "needs
-  you" always shows); anything besides icon and colour, e.g. a display name, pinning a project to
-  the top, hiding a project (suggested: icon and colour now; the others as later to-dos if wanted);
-  icon list curated or any codicon name typed in (suggested: a curated ~20 in the QuickPick, plus
-  any name by hand in settings.json); also colour the header text with a `FileDecorationProvider`
-  (suggested: no, the decision of 2026-11-01 keeps that in reserve).
-- **Test:** Claude: a unit test of reading the setting (known, unknown and missing names; key
-  matching ignores case) and of the waiting override; a GUI-test step that writes the setting in
-  the test profile and checks the header's icon class and colour. User: right-click a project,
-  pick an icon and a colour, see it change in this window and another open window; a waiting
-  session in that project still shows yellow; "Reset" brings back the folder.
+None right now; add one with /add-todo.
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -65,6 +33,9 @@ Goal, in the user's words: "customize the parent folder - change the color, choo
 - "Talking" popup picture (from to-do #11): a 2-3 frame GIF (mouth open/closed) played a few
   seconds, then held on one frame. Needs the frames drawn first; see docs/research/hooks.md,
   "Character picture in the popup".
+- Custom colour for a project header (from to-do #12): rejected for now because it hides the state
+  colour (see docs/decisions.md 2026-11-02); would be a `color` field next to `icon` in
+  `sessionInbox.projects`.
 
 ## Writing a to-do
 Each to-do starts as an entry here. When one grows past ~10 lines, move it into its own file,

@@ -52,8 +52,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #12 — customize a project's header in the sidebar: colour, icon (to-do #13,
-stacked popups fall down, is done).
+Next: no to-dos left (to-do #12, a project header's own icon, is done). Add one with /add-todo,
+or work through "Before a public release" in docs/todo.md.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -81,6 +81,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   `notify.ps1`'s window search.
 - A click shows the chat's own tab via `~/.claude/session-status/.reveal`, acted on only by the
   window that has its `project_dir` open (Claude's `claude-vscode.primaryEditor.open`), not a URI.
+- A project header can get its own icon (setting `sessionInbox.projects`), never its own colour:
+  the colour stays the state.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

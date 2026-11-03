@@ -3,6 +3,23 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-02 — A project header gets its own icon, not its own colour (to-do #12)
+- Decision: right-click a project header (grouped by project) for "Set Icon…" (a QuickPick of ~25
+  curated codicons) or "Reset Icon". Stored in the user setting `sessionInbox.projects`
+  (`{ "<project>": { "icon": "map" } }`, scope `application`, key matched ignoring case), so every
+  open window redraws at once (`onDidChangeConfiguration`) and it can be edited by hand. The icon
+  keeps its state colour. A malformed name falls back to the folder; a well-formed unknown name
+  draws an empty icon (VS Code doesn't tell an extension which codicons exist). The entry is an
+  object so more fields (colour, display name, pinning) can be added later without a format change.
+- Reason: the goal is to tell projects apart at a glance; an icon's shape does that, and leaving the
+  colour to the state keeps the "needs you" glance intact.
+- Decided by: the user, after asking for the honest drawbacks of custom colours.
+- Rejected: a custom colour per project (with yellow forced back while waiting): it hides "done"
+  (green, your turn), most of the usable theme colours (`charts.*`) already mean a state, a
+  QuickPick can't show colour swatches, and it was ~a third of the work. In "Later" in
+  docs/todo.md. `globalState` for the setting: no change event, so other windows would only update
+  on reload. Colouring the header text (`FileDecorationProvider`): still in reserve (2026-11-01).
+
 ## 2026-11-02 — Stacked popups fall down to fill a gap, by gravity (to-do #13)
 - Decision: `notify.ps1` was edited in place (fifth exception: `ClaudePopup.Fall()`, a few fields,
   one line in the 500 ms timer tick). On every tick each popup rests 8 px above the nearest other

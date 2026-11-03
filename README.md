@@ -31,6 +31,11 @@ it has waited, and its message. A button in the sidebar's title bar switches to 
 one header per project folder A-Z (a folder icon in the colour of its most urgent state: yellow
 waiting, green done, blue working), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
 its state. The choice is saved for all windows (others pick it up when they reload).
+Right-click a project header for "Set Icon…" (a pick of ~25 icons, e.g. a map or a globe) or
+"Reset Icon"; the icon keeps the state colour and changes in every open window at once. It's stored
+in the user setting `sessionInbox.projects` (`{ "sc-map-library": { "icon": "map" } }`), where any
+other [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name can
+be typed by hand.
 A chat that is open but hasn't written a status yet (after a VS Code restart, or a new tab before
 its first prompt) is shown as grey "Open", last (grouped by state: an "Open" group that starts
 collapsed), not counted in the badge or the status bar; it moves to its real state with its next

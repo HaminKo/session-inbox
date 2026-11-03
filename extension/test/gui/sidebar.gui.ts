@@ -133,6 +133,21 @@ void test("a running chat with no status file is listed under Open, collapsed an
   await waitFor(rows, before, "rows");
 });
 
+const projectHeader = `${treeRow}:has(.monaco-tl-twistie.collapsible)`;
+
+// Each project header's icon as "name rgb(...)", top to bottom.
+async function headerIcons(): Promise<string[]> {
+  const result: string[] = [];
+  for (const row of await vscode.window.locator(projectHeader).all()) {
+    const icon = row.locator(".custom-view-tree-node-item-icon");
+    const name = /codicon-([a-z0-9-]+)/.exec((await icon.getAttribute("class")) ?? "")?.[1] ?? "?";
+    // VS Code writes the resolved colour (`color: rgb(...)`); the theme key's name isn't in the page.
+    const color = /color: (rgb\([^)]*\))/.exec((await icon.getAttribute("style")) ?? "")?.[1] ?? "none";
+    result.push(`${name} ${color}`);
+  }
+  return result;
+}
+
 // The title-bar button; it shows the grouping you'd switch to (by state is the default).
 function groupButton(title: string) {
   // VS Code renders it twice (container title and section header), one hidden.
@@ -170,22 +185,38 @@ void test("the title-bar button switches between grouping by project and by stat
     "rows by project",
   );
   // Headers have a folder icon, the one with a waiting session in the warning colour.
-  const headerIcons: string[] = [];
-  for (const row of await vscode.window.locator(`${treeRow}:has(.monaco-tl-twistie.collapsible)`).all()) {
-    const icon = row.locator(".custom-view-tree-node-item-icon");
-    const name = /codicon-(folder)\b/.exec((await icon.getAttribute("class")) ?? "")?.[1] ?? "?";
-    // VS Code writes the resolved colour (`color: rgb(...)`); the theme key's name isn't in the page.
-    const color = /color: (rgb\([^)]*\))/.exec((await icon.getAttribute("style")) ?? "")?.[1] ?? "none";
-    headerIcons.push(`${name} ${color}`);
-  }
   // demo-a has a waiting session, demo-b and demo-d are done, demo-c is working.
-  const [waiting, done, working, done2] = headerIcons;
+  const icons = await headerIcons();
+  const [waiting, done, working, done2] = icons;
   assert.match(waiting, /^folder rgb/);
   assert.equal(done, done2);
-  assert.equal(new Set([waiting, done, working]).size, 3, `three different colours: ${headerIcons.join(", ")}`);
+  assert.equal(new Set([waiting, done, working]).size, 3, `three different colours: ${icons.join(", ")}`);
   await groupButton("Group by state").click();
   await waitFor(rows, byState, "rows by state again");
   await groupButton("Group by project").waitFor({ state: "visible", timeout: 2_000 });
+});
+
+void test("right-click on a project header sets its icon, which keeps the state colour", async () => {
+  await groupButton("Group by project").click();
+  await waitFor(async () => (await headerIcons()).length, 4, "project headers");
+  // demo-b and demo-d are both done: same folder, same colour.
+  const [, before, , other] = await headerIcons();
+  assert.equal(before, other);
+  const header = vscode.window.locator(projectHeader).filter({ hasText: "demo-b" });
+  // VS Code's own (HTML) context menu, as on Windows by default.
+  const menuItem = (title: string) => vscode.window.locator(`.context-view .action-label[aria-label="${title}"]`);
+  await header.click({ button: "right" });
+  await menuItem("Set Icon…").click();
+  const input = vscode.window.locator(".quick-input-widget input");
+  await input.fill("rocket");
+  await input.press("Enter");
+  // Written to the user setting; its change event redraws the header in the same state colour.
+  await waitFor(async () => (await headerIcons())[1], before.replace(/^folder/, "rocket"), "demo-b's icon");
+  assert.equal((await headerIcons())[3], other);
+  await header.click({ button: "right" });
+  await menuItem("Reset Icon").click();
+  await waitFor(async () => (await headerIcons())[1], before, "demo-b's icon after reset");
+  await groupButton("Group by state").click();
 });
 
 void test("with no sessions left it shows the welcome text and no badge", async () => {

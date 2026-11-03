@@ -4,7 +4,7 @@ import { dueReminders, notifyScript, reminderPayload, sendReminder } from "./ren
 import { holdsFolder, readRevealRequest, shouldReveal, writeRevealRequest } from "./reveal.ts";
 import { SessionSource } from "./sessionSource.ts";
 import { sessionFolder } from "./sessionList.ts";
-import { Sidebar } from "./sidebar.ts";
+import { pickProjectIcon, setProjectIcon, Sidebar, type Node } from "./sidebar.ts";
 import { countStates, sessionsDir, statusDir, summarize, type SessionStatus } from "./statusFolder.ts";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -18,6 +18,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("sessionInbox.groupByProject", () => sidebar.setGroupBy("project")),
     vscode.commands.registerCommand("sessionInbox.groupByState", () => sidebar.setGroupBy("state")),
     vscode.commands.registerCommand("sessionInbox.openSession", openSession),
+    vscode.commands.registerCommand("sessionInbox.setProjectIcon", pickProjectIcon),
+    vscode.commands.registerCommand("sessionInbox.resetProjectIcon", (node?: Node) =>
+      node?.kind === "group" ? setProjectIcon(node.group.label, undefined) : undefined,
+    ),
   );
 
   const source = new SessionSource(statusDir(), sessionsDir());
