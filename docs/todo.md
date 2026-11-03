@@ -1,8 +1,9 @@
-Next number: 18
+Next number: 19
 
 ## To do
-- **17 — The tray looks like the sidebar** (medium): same state colours and icons, project icons
-  in the menu. docs/todo/17-tray-look.md.
+- **18 — Each project's current focus in the sidebar** (medium): the "Now:" line of a project's
+  "Where we are" block under its header (Group by project), opted in per project.
+  docs/todo/18-project-focus.md.
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -34,6 +35,9 @@ Next number: 18
 - Custom colour for a project header (from to-do #12): rejected for now because it hides the state
   colour (see docs/decisions.md 2026-11-02); would be a `color` field next to `icon` in
   `sessionInbox.projects`.
+- Projects overview (from to-do #18): a webview panel in the extension with Now/Next for every
+  project that has a `focus` file, running or not. Try it after #18 has been used for a while.
+  A standalone app was rejected for this (docs/decisions.md 2026-11-03).
 
 ## Writing a to-do
 Each to-do starts as an entry here. When one grows past ~10 lines, move it into its own file,
