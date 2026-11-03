@@ -150,12 +150,20 @@
                 "markdownDescription": "A [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name, e.g. `map`."
               },
               "focus": {
-                "type": "string",
-                "markdownDescription": "A markdown file in the project folder (e.g. `docs/todo.md`) with a `## Where we are` section. Its `Now:` line is shown under the project's header when grouped by project."
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "const": false
+                  }
+                ],
+                "markdownDescription": "The markdown file in the project folder whose `## Where we are` section gives the `Now:` row under the project's header when grouped by project. Default `docs/todo.md`, so only a project that keeps it elsewhere needs this; `false` shows no row."
               }
             }
           },
-          "markdownDescription": "A project's own icon and focus file in the sidebar when grouped by project, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\", \"focus\": \"docs/todo.md\" } }`. The icon keeps its state colour; set it by right-clicking a project header."
+          "markdownDescription": "A project's own icon and focus file in the sidebar when grouped by project, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\" } }`. The focus row comes from each project's `docs/todo.md` without a setting. The icon keeps its state colour; set it by right-clicking a project header."
         }
       }
     },

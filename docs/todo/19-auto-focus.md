@@ -44,3 +44,13 @@ PeacefreeWeb gets its block and shows its row with no change to settings.json.
   row; with `"focus": false` it doesn't.
 - User, from the installed `.vsix`: remove the `focus` key from sc-map-library's entry; the row
   stays. A project without the block shows no row and nothing in the output channel.
+
+## Done (2026-11-03)
+Built in one step as planned. `projectFocus` returns `{ file, set }`: the setting's string
+(`set: true`), `undefined` for `false`, else `docs/todo.md` (`defaultFocus`). Only a hand-set path
+logs; the check runs on every read (not only on a text change), and a path that stops being set
+forgets its logged problem. Schema: `focus` is a non-empty string or `false`. The new-project
+skill's settings.json step was removed. Review (code-review, medium): two logging bugs fixed (above);
+left: every shown project now reads its `docs/todo.md` per update (small async reads, accepted by
+the #18 decision), and two projects sharing one file with one hand-set logs for both. Checks: lint,
+compile, tsc, 80 unit tests, 21 GUI tests, package. User tested from the installed `.vsix`.

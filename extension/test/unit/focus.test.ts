@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parseFocus, staleDays } from "../../src/focus.ts";
-import { projectFocus } from "../../src/projectLook.ts";
+import { defaultFocus, projectFocus } from "../../src/projectLook.ts";
 
 const todo = [
   "Next number: 38",
@@ -47,10 +47,14 @@ void test("stale only after more than 14 days, counted in local dates", () => {
   for (const updated of [undefined, "", "yesterday", "2026-11-2", "2026-13-01", "2026-02-31"]) assert.equal(staleDays(updated, today, 14), undefined);
 });
 
-void test("the focus file comes from the setting, matched ignoring case", () => {
-  const looks = { "SC-Map-Library": { icon: "map", focus: " docs/todo.md " }, other: { icon: "globe" } };
-  assert.equal(projectFocus(looks, "sc-map-library"), "docs/todo.md");
-  assert.equal(projectFocus(looks, "other"), undefined);
-  for (const focus of [5, "", "  ", null]) assert.equal(projectFocus({ demo: { focus } }, "demo"), undefined);
-  assert.equal(projectFocus(undefined, "demo"), undefined);
+void test("the focus file comes from the setting, matched ignoring case, else the default", () => {
+  assert.equal(defaultFocus, "docs/todo.md");
+  const byDefault = { file: defaultFocus, set: false };
+  const looks = { "SC-Map-Library": { icon: "map", focus: " notes/now.md " }, other: { icon: "globe" }, off: { focus: false } };
+  assert.deepEqual(projectFocus(looks, "sc-map-library"), { file: "notes/now.md", set: true });
+  assert.deepEqual(projectFocus(looks, "other"), byDefault);
+  assert.deepEqual(projectFocus(looks, "unlisted"), byDefault);
+  assert.equal(projectFocus(looks, "OFF"), undefined);
+  for (const focus of [5, "", "  ", null, true]) assert.deepEqual(projectFocus({ demo: { focus } }, "demo"), byDefault);
+  for (const looksValue of [undefined, null, [], "x"]) assert.deepEqual(projectFocus(looksValue, "demo"), byDefault);
 });

@@ -219,7 +219,7 @@ void test("right-click on a project header sets its icon, which keeps the state 
   await groupButton("Group by state").click();
 });
 
-void test("grouped by project, a project's focus file gives a Now row that follows the file", async () => {
+void test("grouped by project, a project's docs/todo.md gives a Now row that follows the file", async () => {
   const projectDir = mkdtempSync(join(tmpdir(), "session-inbox-project-"));
   // The setting is read live; put back what earlier tests left in it afterwards.
   const settings = JSON.parse(readFileSync(vscode.settingsFile, "utf8")) as Record<string, unknown>;
@@ -237,8 +237,7 @@ void test("grouped by project, a project's focus file gives a Now row that follo
   try {
     mkdirSync(join(focusFile, ".."));
     writeFocus("Step B (the parser)");
-    const focusSetting = { "sessionInbox.projects": { "DEMO-F": { focus: "docs/todo.md" } } };
-    writeFileSync(vscode.settingsFile, JSON.stringify({ ...settings, ...focusSetting }));
+    // No setting: docs/todo.md is every project's focus file by default.
     writeSampleSession(sessionsDir, "f");
     writeSampleStatus(statusDir, "f", "done", { projectDir });
     await groupButton("Group by project").click();
@@ -251,6 +250,10 @@ void test("grouped by project, a project's focus file gives a Now row that follo
     writeFocus("Step C (the row)");
     writeSampleStatus(statusDir, "f", "done", { projectDir });
     await waitFor(lastRows, ["demo-f | 1 done", "Step C (the row)", "Done | <1 min · Finished"], "demo-f's new focus");
+    // `"focus": false` turns the row off (the setting is re-read live).
+    const focusOff = { "sessionInbox.projects": { "DEMO-F": { focus: false } } };
+    writeFileSync(vscode.settingsFile, JSON.stringify({ ...settings, ...focusOff }));
+    await waitFor(async () => (await rows()).slice(-2), ["demo-f | 1 done", "Done | <1 min · Finished"], "demo-f without focus");
     await groupButton("Group by state").click();
     await waitFor(async () => (await rows())[0], "Waiting (1)", "first row by state");
     assert.ok(!(await rows()).some((row) => row.startsWith("Step C")), "no focus row by state");

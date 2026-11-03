@@ -36,12 +36,14 @@ Right-click a project header for "Set Icon…" (a pick of ~25 icons, e.g. a map 
 in the user setting `sessionInbox.projects` (`{ "sc-map-library": { "icon": "map" } }`), where any
 other [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name can
 be typed by hand.
-A project can also show where it stands: add `"focus": "docs/todo.md"` to its entry (a markdown file
-in the project folder, path relative to it). Grouped by project, the `Now:` line of that file's
-`## Where we are` section is the first row under the header (a target icon); hovering it shows the
-whole section, with a note when its `Updated:` date is more than 14 days old. The file is re-read
-with every session event and every 30 s, and never written. A missing file or section shows no row
-(one line in the "Session Inbox" output channel).
+A project also shows where it stands, with no setting: grouped by project, the `Now:` line of the
+`## Where we are` section in the project's `docs/todo.md` is the first row under the header (a
+target icon); hovering it shows the whole section, with a note when its `Updated:` date is more than
+14 days old. The file is re-read with every session event and every 30 s, and never written. A
+project without that file or section simply shows no row. For a project that keeps it elsewhere,
+add `"focus": "notes/status.md"` to its entry (a markdown file, path relative to the project
+folder); a problem with a path set this way gets one line in the "Session Inbox" output channel.
+`"focus": false` turns the row off.
 ```markdown
 ## Where we are
 - Now: To do 31, step F3b4b (Run translated)

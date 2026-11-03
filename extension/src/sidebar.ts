@@ -108,19 +108,22 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
     if (this.groupBy === "project") void this.readFocus();
   }
 
-  // The absolute path of a project's focus file, from the setting and the folder of its first
-  // session that has one; undefined when either is missing.
-  private focusPath(group: SessionGroup): string | undefined {
-    const file = projectFocus(this.looks, group.label);
+  // A project's focus file (from the setting, or the default) as an absolute path in the folder of
+  // its first session that has one; undefined when turned off or there's no folder.
+  private focusPath(group: SessionGroup): { path: string; file: string; set: boolean } | undefined {
+    const focus = projectFocus(this.looks, group.label);
     const folder = group.sessions.map(sessionFolder).find((dir) => dir !== undefined);
-    return file && folder ? resolve(folder, file) : undefined;
+    return focus && folder ? { ...focus, path: resolve(folder, focus.file) } : undefined;
   }
 
   // Reads every shown project's focus file and redraws when any text changed. A read that an
   // newer one overtook is dropped, so a slow disk can't put old text back.
   private async readFocus(): Promise<void> {
     const read = ++this.focusReads;
-    const paths = new Set(this.groups.map((group) => this.focusPath(group)).filter((path) => path !== undefined));
+    const focusPaths = this.groups.map((group) => this.focusPath(group)).filter((focus) => focus !== undefined);
+    const paths = new Set(focusPaths.map((focus) => focus.path));
+    // Only a path typed by hand logs; a default file without the block is a project that has none yet.
+    const setPaths = new Set(focusPaths.filter((focus) => focus.set).map((focus) => focus.path));
     const texts = new Map(
       await Promise.all(
         [...paths].map(async (path) => [path, await readFile(path, "utf8").catch(() => undefined)] as const),
@@ -130,12 +133,18 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
     const changed =
       texts.size !== this.focusFiles.size ||
       [...texts].some(([path, text]) => !this.focusFiles.has(path) || this.focusFiles.get(path)?.text !== text);
-    if (!changed) return;
-    this.focusFiles = new Map(
-      [...texts].map(([path, text]) => [path, { text, focus: text === undefined ? undefined : parseFocus(text) }]),
-    );
-    for (const [path, { text, focus }] of this.focusFiles) this.reportFocus(path, text, focus);
-    this.changed.fire(undefined);
+    if (changed) {
+      this.focusFiles = new Map(
+        [...texts].map(([path, text]) => [path, { text, focus: text === undefined ? undefined : parseFocus(text) }]),
+      );
+    }
+    // Checked on every read, not only on a text change: a path can become set by hand while its
+    // text stays the same. A path no longer set forgets its problem, so setting it again logs.
+    for (const path of this.reported.keys()) if (!setPaths.has(path)) this.reported.delete(path);
+    for (const [path, { text, focus }] of this.focusFiles) {
+      if (setPaths.has(path)) this.reportFocus(path, text, focus);
+    }
+    if (changed) this.changed.fire(undefined);
   }
 
   // One line in the output channel when a focus file can't be used, again only after it was fixed.
@@ -160,10 +169,9 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.Disposable
 
   // The focus row for a project, when its file is read and has a "Now:" line.
   private focusNode(group: SessionGroup): Node | undefined {
-    const path = this.focusPath(group);
-    const focus = path === undefined ? undefined : this.focusFiles.get(path)?.focus;
-    const file = projectFocus(this.looks, group.label);
-    return focus?.now && file ? { kind: "focus", groupId: group.id, file, focus } : undefined;
+    const target = this.focusPath(group);
+    const focus = target && this.focusFiles.get(target.path)?.focus;
+    return target && focus?.now ? { kind: "focus", groupId: group.id, file: target.file, focus } : undefined;
   }
 
   // Called with every read, including the 30 s tick that moves the age text on.

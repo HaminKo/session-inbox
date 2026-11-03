@@ -3,10 +3,27 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Every project's focus file is `docs/todo.md` by default; `focus` only overrides (to-do #19)
+- Decision: with no setting, grouped by project, a project gets its Now row from
+  `<project folder>/docs/todo.md`. `sessionInbox.projects` → `focus` is only for a project that
+  differs: another path (string), or `false` for no row. The default path is fixed, not a setting
+  of its own. Only a path set by hand logs a problem in the output channel; a default file that's
+  missing or has no `## Where we are` section is a project without the block yet, so it's silent.
+- Reason: the user's skills (new-project, finish-step, build-todo, add-todo) put the block in
+  `docs/todo.md` in every project, so opting in per project was busywork (user: "I shouldn't need
+  to add the focus entry manually into the json").
+- Decided by: the user, on Claude's suggestions.
+- Rejected: a right-click "Set Focus File…" on the project header (the user's first idea: still
+  six clicks now plus one per new project, for a value that's the same everywhere); a setting for
+  the default path (the per-project string covers the odd one out); logging default files too
+  (one warning per project that hasn't got the block).
+
 ## 2026-11-03 — A project's focus file is re-read on every sidebar update, not watched (to-do #18)
 - Decision: the sidebar's "Now" row (grouped by project) comes from the file named by
   `sessionInbox.projects` → `focus`, read again (async, only for projects shown that have `focus`)
-  on every sidebar update: each hook event from any chat, and the 30 s re-read. The row is its own
+  on every sidebar update: each hook event from any chat, and the 30 s re-read. (Since to-do #19
+  every project shown has a focus file, `docs/todo.md` unless `focus` says otherwise; see the
+  entry above.) The row is its own
   first child under the project header (icon `target`, not clickable); "Next:" shows only in the
   hover; only projects that already have a session appear. A file that can't be used shows no row
   and logs one line per file in a "Session Inbox" output channel (new in this to-do).

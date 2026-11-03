@@ -66,10 +66,15 @@ export function projectIcon(looks: unknown, label: string): string {
   return typeof icon === "string" && iconName.test(icon) ? icon : defaultIcon;
 }
 
-// The project's focus file (focus.ts), relative to its folder; undefined when not set.
-export function projectFocus(looks: unknown, label: string): string | undefined {
+// The focus file every project has unless its entry says otherwise (docs/decisions.md 2026-11-03).
+export const defaultFocus = "docs/todo.md";
+
+// The project's focus file (focus.ts), relative to its folder: the setting's string (`set`), none
+// for `false`, else the default. `set` tells a path typed by hand, whose problems get logged.
+export function projectFocus(looks: unknown, label: string): { file: string; set: boolean } | undefined {
   const focus = projectEntry(looks, label)?.focus;
-  return typeof focus === "string" && focus.trim() ? focus.trim() : undefined;
+  if (focus === false) return undefined;
+  return typeof focus === "string" && focus.trim() ? { file: focus.trim(), set: true } : { file: defaultFocus, set: false };
 }
 
 // The setting with `label`'s icon set, or removed when `icon` is undefined. Other fields of the
