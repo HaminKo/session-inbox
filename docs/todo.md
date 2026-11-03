@@ -1,3 +1,8 @@
+## Where we are
+- Now: Before a public release (no to-dos open)
+- Next: none yet
+- Updated: 2026-11-03
+
 Next number: 20
 
 ## To do
