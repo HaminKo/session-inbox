@@ -1,11 +1,12 @@
 ## Where we are
-- Now: Before a public release (README screenshot of the status bar + sidebar)
+- Now: To do 23 (screenshot of the status bar + sidebar in the README)
 - Next: the rest of "Before a public release"
 - Updated: 2026-11-03
 
-Next number: 23
+Next number: 24
 
 ## To do
+- 23. Screenshot of the status bar + sidebar in the README (small): docs/todo/23-readme-screenshot.md
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -15,7 +16,8 @@ Next number: 23
   code, and only reports (the user decides fixes) — done (to-do #21, findings 2–13 fixed;
   docs/research/readme-check.md). Finding 1 was To do 22 — done (popups stay the user's own
   `notify.ps1`; README "Optional: desktop popups").
-- Add a screenshot of the status bar + sidebar to the README (the extension has a UI).
+- Add a screenshot of the status bar + sidebar to the README (the extension has a UI): now To
+  do 23.
 - Start CHANGELOG.md (Keep a Changelog: Unreleased first, then versions newest first) with the
   first version.
 - Decide how to distribute: VS Code Marketplace (create the `session-inbox` publisher first) or a
