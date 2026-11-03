@@ -58,3 +58,30 @@ history, no second copy of the sidebar.
   script starts, shows the icon, and a second start exits.
 - User: with real chats, the tray count follows the status bar; clicking a session opens the right
   window and tab; Exit removes the icon; after a restart (if autostart was chosen) it comes back.
+
+## Answers (2026-11-03, user: "Go with your suggestions")
+- PowerShell 5.1 script, `tray/session-tray.ps1` in this repo (not a personal hook, not its own
+  repo: its data, rules and `.reveal` hand-off all belong to this project).
+- Started by the extension when the setting `sessionInbox.trayIcon` is on (default off), not a
+  Startup-folder shortcut; the tray exits when no `Code.exe` is left. One instance (named mutex).
+- Count drawn on the icon: orange if any `waiting`, blue if only `done`, grey "all clear".
+  Tooltip max 63 characters (.NET Framework limit): headline + as many projects as fit.
+- Counts `waiting` + `done`, like the status bar.
+- Left or right click opens the menu: one item per session that needs you (project, state) →
+  `code "<project_dir>"` + `.reveal`; then Exit.
+
+## Progress
+- [x] A — the tray script, run by hand; `-Once` prints the counts as JSON; a unit test compares
+  it with `countStates(onlyLive(...))` on the same temp folders (drift guard). Built and tested
+  by the user 2026-11-03: count and colour follow the status bar, click opens the window and tab,
+  a second copy exits, Exit removes the icon. The test also compares label and click folder with
+  `sessionLabel`/`sessionFolder`; a planted difference in the script fails it.
+- [ ] B — started from the extension: setting `sessionInbox.trayIcon`, the build copies the
+  script into `dist/`; unit + GUI test; README, docs. From step A's review: pass the launching
+  VS Code's main PID (e.g. `-VsCodePid`) and exit when it ends, instead of looking for a process
+  named `Code` / `Code - Insiders` (VSCodium, Cursor etc. have other names).
+
+Step A notes: polling costs ~11 ms per 2 s tick with 547 processes (measured 2026-11-03), so the
+full process list stays. Left as-is from the review (the hook never writes these): JSON keys in
+another case (PowerShell properties ignore case), a `pid` written as `1234.0`, a folder named
+`*.json`, a `%` in a folder name passed through `code.cmd`.

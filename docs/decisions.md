@@ -3,6 +3,22 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Tray indicator: a PowerShell script in this repo, started by the extension (to-do #16)
+- Decision: the tray icon is `tray/session-tray.ps1` in this repo (WinForms `NotifyIcon`, polls the
+  status folder every 2 s, same filter and count as `statusFolder.ts`). It is started by the
+  extension when the setting `sessionInbox.trayIcon` is on (default off); a named mutex keeps one
+  copy, and it exits when no `Code.exe` is running. A unit test runs it with `-Once` and compares
+  its counts with `countStates(onlyLive(...))`, so the two copies of the rules can't drift apart
+  silently.
+- Reason: every chat lives in VS Code, so a tray without VS Code always shows 0; tying it to VS
+  Code needs nothing in Windows startup. Its data (status files), rules and click hand-off
+  (`.reveal`) all belong to this project, so it lives here, not with the personal `notify.ps1`.
+- Decided by: the user ("go with your suggestions"; asked whether it belongs in its own repo).
+- Rejected: Electron/Node app (~100 MB for one icon, needs a build); a Startup-folder shortcut
+  (writes into the user's Startup folder, runs with no VS Code); its own repo (the drift test and
+  the status format would span two repos); default on (a public extension shouldn't start a
+  background process nobody asked for).
+
 ## 2026-11-02 — Install Hooks: "differs", not "out of date"; back up before replacing (to-do #15)
 - Decision: a command "Session Inbox: Install Hooks" copies the bundled `session-status.ps1` into
   `~/.claude/hooks/` and adds a new group `{ "hooks": [entry] }` to each of the 5 events in
