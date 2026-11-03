@@ -8,7 +8,8 @@ import { SessionSource } from "./sessionSource.ts";
 import { sessionFolder } from "./sessionList.ts";
 import { pickProjectIcon, setProjectIcon, Sidebar, type Node } from "./sidebar.ts";
 import { countStates, sessionsDir, statusDir, summarize, type SessionStatus } from "./statusFolder.ts";
-import { startTray, stopTray } from "./tray.ts";
+import { codiconFont, readCodicons } from "./codicons.ts";
+import { startTray, stopTray, trayLooks, writeTrayLooks } from "./tray.ts";
 
 export function activate(context: vscode.ExtensionContext): void {
   const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -53,17 +54,33 @@ function bundledHook(context: vscode.ExtensionContext): string {
 }
 
 // Starts the tray indicator at startup and when the setting is turned on; closes it when it's turned
-// off. Windows only: the tray is a WinForms script.
+// off. While it's on, keeps its menu icons (.tray-looks) in step with the project icons.
+// Windows only: the tray is a WinForms script.
 function trayIcon(context: vscode.ExtensionContext): void {
   if (process.platform !== "win32") return;
   const script = join(context.extensionPath, "dist", "session-tray.ps1");
-  const enabled = () => vscode.workspace.getConfiguration("sessionInbox").get<boolean>("trayIcon", false);
-  if (enabled()) startTray(script, process.ppid);
+  const settings = () => vscode.workspace.getConfiguration("sessionInbox");
+  const enabled = () => settings().get<boolean>("trayIcon", false);
+  const font = codiconFont(vscode.env.appRoot);
+  const chars = readCodicons(font); // read once: the font doesn't change while VS Code runs
+  // One write at a time, in order, so an older setting never lands last (they share a temp name).
+  let writing = Promise.resolve();
+  const writeLooks = () => {
+    writing = writing.then(async () => writeTrayLooks(statusDir(), trayLooks(font, await chars, settings().get("projects"))));
+    return writing;
+  };
+  if (enabled()) {
+    void writeLooks();
+    startTray(script, process.ppid);
+  }
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (!event.affectsConfiguration("sessionInbox.trayIcon")) return;
-      if (enabled()) startTray(script, process.ppid);
-      else stopTray(script);
+      if (event.affectsConfiguration("sessionInbox.trayIcon")) {
+        if (enabled()) {
+          void writeLooks();
+          startTray(script, process.ppid);
+        } else stopTray(script);
+      } else if (event.affectsConfiguration("sessionInbox.projects") && enabled()) void writeLooks();
     }),
   );
 }

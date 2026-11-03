@@ -5,6 +5,9 @@
 
 export const defaultIcon = "folder";
 
+// The sidebar's row icon per state that needs you; the tray menu draws the same ones.
+export const stateIcons = { waiting: "warning", done: "check" } as const;
+
 // The QuickPick's choices; any other codicon name can be typed into settings.json by hand.
 // All checked against the pinned VS Code (test/gui/launch.ts).
 export const iconChoices: readonly string[] = [

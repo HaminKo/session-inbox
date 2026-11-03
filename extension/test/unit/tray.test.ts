@@ -3,14 +3,17 @@
 // copy that isn't made in the other fails here. Windows only (Windows PowerShell 5.1).
 import assert from "node:assert/strict";
 import { execFile, spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { suite, test } from "node:test";
 import { promisify } from "node:util";
+import { readCodicons } from "../../src/codicons.ts";
+import { projectIcon } from "../../src/projectLook.ts";
 import { sessionFolder, sessionLabel } from "../../src/sessionList.ts";
 import { countStates, onlyLive, readLiveSessions, readStatuses } from "../../src/statusFolder.ts";
-import { startTray, stopTray } from "../../src/tray.ts";
+import { startTray, stopTray, trayLooks, writeTrayLooks } from "../../src/tray.ts";
+import { noFontSkip, pinnedFont } from "./pinnedFont.ts";
 
 const script = join(import.meta.dirname, "..", "..", "..", "tray", "session-tray.ps1");
 const skip = process.platform !== "win32" && "Windows PowerShell only";
@@ -20,7 +23,7 @@ interface TrayResult {
   done: number;
   working: number;
   needsYou: number;
-  needs: { session_id: string; state: string; label: string; project_dir: string }[];
+  needs: { session_id: string; state: string; label: string; project_dir: string; icon: string }[];
 }
 
 function powershell(args: string[], env: NodeJS.ProcessEnv) {
@@ -31,8 +34,8 @@ function powershell(args: string[], env: NodeJS.ProcessEnv) {
   });
 }
 
-async function runOnce(statusDir: string, sessionsDir: string): Promise<TrayResult> {
-  const { stdout } = await powershell(["-Once"], {
+async function runOnce(statusDir: string, sessionsDir: string, more: string[] = []): Promise<TrayResult> {
+  const { stdout } = await powershell(["-Once", ...more], {
     SESSION_INBOX_STATUS_DIR: statusDir,
     SESSION_INBOX_SESSIONS_DIR: sessionsDir,
   });
@@ -119,6 +122,36 @@ function exitsWithin(child: ChildProcess, ms: number): Promise<boolean> {
   });
 }
 
+void test("the tray's looks: each project's icon as projectIcon() has it, and only the characters used", () => {
+  const setting = { "SC-Map-Library": { icon: "library" }, "sc-map-library": { icon: "map" }, plain: { icon: "folder" }, typo: { icon: "Not An Icon" }, other: "x" };
+  const chars = new Map([["library", "L"], ["folder", "F"], ["warning", "W"], ["check", "C"], ["unused", "U"]]);
+  const looks = trayLooks("c:/font.ttf", chars, setting);
+  assert.deepEqual(looks.projects, { "sc-map-library": "library" }, "first spelling wins; the folder needs no entry");
+  assert.deepEqual(looks.chars, { folder: "F", warning: "W", check: "C", library: "L" });
+  assert.deepEqual(looks.states, { waiting: "warning", done: "check" });
+  assert.equal(looks.default, "folder");
+  assert.deepEqual(trayLooks("c:/font.ttf", undefined, setting).chars, {}, "no font: no characters");
+  assert.deepEqual(trayLooks("c:/font.ttf", chars, ["library"]).projects, {}, "a malformed setting");
+  for (const first of ["folder", "Bad Name"]) {
+    const both = { Foo: { icon: first }, foo: { icon: "map" } };
+    assert.equal(projectIcon(both, "foo"), "folder");
+    assert.deepEqual(trayLooks("c:/font.ttf", chars, both).projects, {}, `a first spelling on the folder (${first}) wins`);
+  }
+});
+
+void test("the looks file is written into a status folder no hook has made yet", async () => {
+  const root = mkdtempSync(join(tmpdir(), "session-inbox-unit-"));
+  try {
+    const dir = join(root, "session-status");
+    await writeTrayLooks(dir, trayLooks("c:/font.ttf", undefined, {}));
+    assert.deepEqual(readdirSync(dir), [".tray-looks"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+const font = pinnedFont();
+
 // Each test starts powershell.exe (~0.6 s), so they run side by side.
 void suite("tray script", { skip, concurrency: true }, () => {
   void test("counts and lists the same sessions as the extension", async () => {
@@ -184,6 +217,40 @@ void suite("tray script", { skip, concurrency: true }, () => {
       writeStatus(statusDir, "only", "waiting", { folder: undefined, cwd: "c:\\work\\from-cwd\\" });
       const tray = await assertSameAsExtension(statusDir, sessionsDir);
       assert.deepEqual(tray.needs.map((session) => session.label), ["from-cwd"], "a one-item list stays a list; label from cwd");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  void test("each row gets its project's icon, as the sidebar has it", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    try {
+      const setting = { "Project-A": { icon: "library" }, "project-b": { icon: "game" }, "project-c": { icon: "bad name" } };
+      for (const [id, state] of [["a", "done"], ["b", "waiting"], ["c", "done"], ["d", "done"]] as const) writeStatus(statusDir, id, state);
+      assert.deepEqual((await runOnce(statusDir, sessionsDir)).needs.map((need) => need.icon), ["folder", "folder", "folder", "folder"], "no looks file");
+      await writeTrayLooks(statusDir, trayLooks("c:/missing.ttf", new Map(), setting));
+      const tray = await runOnce(statusDir, sessionsDir);
+      for (const need of tray.needs) assert.equal(need.icon, projectIcon(setting, need.label), `icon of ${need.label}`);
+      assert.deepEqual(tray.needs.map((need) => need.icon), ["game", "library", "folder", "folder"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  void test("row pictures are drawn with the font, and left out without it", { skip: !font && noFontSkip }, async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    const images = join(root, "images");
+    mkdirSync(images);
+    try {
+      writeStatus(statusDir, "a", "done");
+      writeStatus(statusDir, "b", "waiting");
+      const chars = await readCodicons(font ?? "");
+      await writeTrayLooks(statusDir, trayLooks(join(root, "missing.ttf"), chars, {}));
+      assert.equal((await runOnce(statusDir, sessionsDir, ["-RowImages", images])).needsYou, 2);
+      assert.deepEqual(readdirSync(images), [], "a missing font: text only");
+      await writeTrayLooks(statusDir, trayLooks(font ?? "", chars, {}));
+      await runOnce(statusDir, sessionsDir, ["-RowImages", images]);
+      assert.deepEqual(readdirSync(images).sort(), ["0.png", "1.png"], "a picture per row");
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

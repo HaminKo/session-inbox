@@ -52,7 +52,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #17 (the tray looks like the sidebar), then "Before a public release" in docs/todo.md.
+Next: to-do #18 (each project's current focus in the sidebar), then "Before a public release" in docs/todo.md.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -88,6 +88,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - The tray icon (`tray/session-tray.ps1`) is started by the extension only while
   `sessionInbox.trayIcon` is on (default off), one copy by mutex, and ends with the VS Code that
   started it; its counting rules copy `statusFolder.ts`, kept equal by `test/unit/tray.test.ts`.
+- The tray draws the sidebar's codicons from VS Code's own `codicon.ttf`; the extension writes the
+  names, characters and font path into `~/.claude/session-status/.tray-looks` (no `.json`, so no
+  reader takes it for a status), and the script only looks them up.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

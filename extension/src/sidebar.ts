@@ -10,7 +10,7 @@ import {
   type GroupBy,
   type SessionGroup,
 } from "./sessionList.ts";
-import { defaultIcon, iconChoices, projectIcon, withIcon } from "./projectLook.ts";
+import { defaultIcon, iconChoices, projectIcon, stateIcons, withIcon } from "./projectLook.ts";
 import { countStates, summarize, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
 // Each node keeps the grouping it was built under, so a node VS Code still holds from before a
@@ -27,8 +27,8 @@ const colors: Record<SessionState, vscode.ThemeColor> = {
   open: new vscode.ThemeColor("descriptionForeground"),
 };
 const icons: Record<SessionState, vscode.ThemeIcon> = {
-  waiting: new vscode.ThemeIcon("warning", colors.waiting),
-  done: new vscode.ThemeIcon("check", colors.done),
+  waiting: new vscode.ThemeIcon(stateIcons.waiting, colors.waiting),
+  done: new vscode.ThemeIcon(stateIcons.done, colors.done),
   working: new vscode.ThemeIcon("loading~spin", colors.working),
   open: new vscode.ThemeIcon("circle-outline", colors.open),
 };

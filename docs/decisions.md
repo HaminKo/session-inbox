@@ -3,6 +3,29 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Tray looks like the sidebar: codicons from VS Code's font, via `.tray-looks` (to-do #17)
+- Decision: the tray badge uses the sidebar's state colours at VS Code's Dark values
+  (`list.warningForeground` #CCA700, `charts.green` #89D185, grey for clear) with a black number;
+  the menu rows get the state's and the project's codicon. The menu follows Windows' app mode
+  (`AppsUseLightTheme`): dark grey with a thin outline, white text and the Dark icon values in dark
+  mode (a custom `ToolStripProfessionalRenderer`), WinForms' own look with the Light values
+  (#855F00, #388A34) in light mode; rounded corners on Windows 11 (`DwmSetWindowAttribute`). One row per session, the project icon always shown (folder
+  by default). The extension reads `codicon.ttf` (`vscode.env.appRoot`/out/media) itself (`cmap` +
+  `post` tables, `codicons.ts`) and writes `.tray-looks` into the status folder: font path, the
+  state icons, project label (lowercase) -> icon name, and icon name -> character. It does so at
+  start and when `sessionInbox.trayIcon` or `sessionInbox.projects` changes. Without the file or
+  the font the menu shows text only.
+- Reason: one look for both; the name -> character work stays in TypeScript (unit-tested, reuses
+  `projectIcon()`), so the PowerShell copy of the rules doesn't grow; no settings.json parsing in
+  PowerShell. Characters are read from the installed font, not copied.
+- Decided by: the user ("go with your suggestions").
+- Rejected: project headers in the menu (a short menu, extra clicks); a hand-copied table of
+  characters (drifts with VS Code; only the alias `zap` is listed by hand, as the font has no
+  name for it); passing the icons as start arguments (the first tray copy wins and the setting can
+  change later); white number on the badge (hard to read on yellow); a OneDrive-style panel (its
+  own window with header and two-line rows: far more code than the rest of the tray for a list of
+  1-3 rows; can become its own to-do if the dark menu isn't enough).
+
 ## 2026-11-03 — Tray: ends with the VS Code that started it; the setting off closes it (to-do #16 B)
 - Decision: the extension passes its parent process (VS Code's main process) as `-VsCodePid`, and
   the tray exits when that process ends, instead of when no process named `Code` is left. Started

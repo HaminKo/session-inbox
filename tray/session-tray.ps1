@@ -15,12 +15,17 @@
 #                 runs until its Exit item.
 #   -Stop         close the running tray (the setting was turned off), then exit.
 #   -Once         print the counts and the sessions that need you as JSON, then exit (for the tests).
+#   -RowImages D  with -Once: also save each menu row's picture as D\<n>.png (for the tests).
+#
+# The menu icons are the sidebar's codicons, drawn with VS Code's own font. The extension writes what
+# to draw into <status folder>/.tray-looks (extension/src/tray.ts, trayLooks); without that file or
+# the font the menu shows text only.
 #
 # SESSION_INBOX_STATUS_DIR, SESSION_INBOX_SESSIONS_DIR and SESSION_INBOX_TRAY_MUTEX are for the tests
 # only, like in the extension.
 #
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads it in the ANSI codepage.
-param([switch]$Once, [int]$VsCodePid = 0, [switch]$Stop)
+param([switch]$Once, [int]$VsCodePid = 0, [switch]$Stop, [string]$RowImages = '')
 
 $statusDir = if ($env:SESSION_INBOX_STATUS_DIR) { $env:SESSION_INBOX_STATUS_DIR } else { Join-Path $env:USERPROFILE '.claude\session-status' }
 $sessionsDir = if ($env:SESSION_INBOX_SESSIONS_DIR) { $env:SESSION_INBOX_SESSIONS_DIR } else { Join-Path $env:USERPROFILE '.claude\sessions' }
@@ -93,6 +98,38 @@ function Session-Folder($status) {
     return ''
 }
 
+# The menu-icon file the extension writes, parsed: $null when missing or unreadable. Its text is kept
+# in $script:looksText, for telling whether it changed.
+$script:looksText = ''
+function Read-Looks {
+    $script:looksText = ''
+    try {
+        $bytes = [System.IO.File]::ReadAllBytes((Join-Path $statusDir '.tray-looks'))
+        $script:looksText = (New-Object System.Text.UTF8Encoding $false).GetString($bytes)
+        $looks = $script:looksText | ConvertFrom-Json
+        if ((Is-Object $looks) -and (Is-Object $looks.projects) -and (Is-Object $looks.chars) -and (Is-Object $looks.states)) { return $looks }
+    }
+    catch { }
+    $null
+}
+
+# A project's icon name, like projectIcon in projectLook.ts: the extension has already matched the
+# setting, so only the lowercase label is looked up (PowerShell properties ignore case anyway).
+function Project-Icon($looks, [string]$label) {
+    $default = 'folder'
+    if (-not $looks) { return $default }
+    if ($looks.default -is [string]) { $default = $looks.default }
+    $entry = $looks.projects.PSObject.Properties[$label.ToLowerInvariant()]
+    if ($entry -and $entry.Value -is [string]) { $entry.Value } else { $default }
+}
+
+# The character for an icon name, or $null when the font has none.
+function Icon-Char($looks, $name) {
+    if (-not $looks -or -not ($name -is [string])) { return $null }
+    $entry = $looks.chars.PSObject.Properties[$name]
+    if ($entry -and $entry.Value -is [string]) { $entry.Value } else { $null }
+}
+
 # One reading of the folder: counts of the live sessions, and the ones that need you (waiting first,
 # then done, each A-Z by label).
 function Read-Inbox {
@@ -107,6 +144,7 @@ function Read-Inbox {
     $live = Read-LiveIds $sessionsDir $runningPids
     if ($null -ne $live) { $statuses = @($statuses | Where-Object { $live.Contains($_.session_id) }) }
 
+    $looks = Read-Looks
     $counts = [ordered]@{ waiting = 0; done = 0; working = 0 }
     foreach ($status in $statuses) { $counts[$status.state]++ }
     $needs = @($statuses | Where-Object { $_.state -ne 'working' } | ForEach-Object {
@@ -115,9 +153,74 @@ function Read-Inbox {
                 state       = $_.state
                 label       = Session-Label $_
                 project_dir = Session-Folder $_
+                icon        = Project-Icon $looks (Session-Label $_)
             }
         } | Sort-Object @{ Expression = { if ($_.state -eq 'waiting') { 0 } else { 1 } } }, label, session_id)
-    [pscustomobject]@{ counts = $counts; needs = $needs }
+    [pscustomobject]@{ counts = $counts; needs = $needs; looks = $looks }
+}
+
+# The menu's state colours, the sidebar's (list.warningForeground, charts.green) at VS Code's Light
+# or Dark theme values, matching the menu, which follows Windows' app mode.
+$menuColors = @{
+    light = @{ waiting = '#855F00'; done = '#388A34' }
+    dark  = @{ waiting = '#CCA700'; done = '#89D185' }
+}
+
+# True when Windows is set to dark apps (Settings > Personalization > Colors); light when unknown.
+function Test-DarkApps {
+    try {
+        $value = Get-ItemPropertyValue -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -Name AppsUseLightTheme -ErrorAction Stop
+        $value -eq 0
+    }
+    catch { $false }
+}
+
+# VS Code's icon font, loaded once per path; $null when it can't be loaded. The collection is kept
+# too: its families are only valid while it lives.
+$script:fontPath = $null
+$script:fontCollection = $null
+$script:fontFamily = $null
+function Get-IconFont($looks) {
+    $path = if ($looks -and $looks.font -is [string]) { $looks.font } else { '' }
+    if ($path -ne $script:fontPath) {
+        $script:fontPath = $path
+        $script:fontFamily = $null
+        if ($script:fontCollection) { $script:fontCollection.Dispose() }
+        $script:fontCollection = $null
+        if ($path -and (Test-Path -LiteralPath $path -PathType Leaf)) {
+            try {
+                $script:fontCollection = New-Object System.Drawing.Text.PrivateFontCollection
+                $script:fontCollection.AddFontFile($path)
+                $script:fontFamily = $script:fontCollection.Families[0]
+            }
+            catch { $script:fontFamily = $null }
+        }
+    }
+    $script:fontFamily
+}
+
+# A row's picture, like the sidebar: the state's icon, then the project's, both in the state's
+# colour; $size high, for a dark or light menu. $null when there is nothing to draw (no font, or no
+# state icon in it).
+function New-RowImage($session, $looks, [int]$size, [bool]$dark = $false) {
+    $family = Get-IconFont $looks
+    $stateChar = if ($looks) { Icon-Char $looks $looks.states.($session.state) } else { $null }
+    if (-not $family -or -not $stateChar) { return $null }
+    $projectChar = Icon-Char $looks $session.icon
+    $gap = [int][Math]::Ceiling($size / 4)
+    $bitmap = New-Object System.Drawing.Bitmap (2 * $size + $gap), $size
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    $graphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
+    $font = New-Object System.Drawing.Font $family, $size, ([System.Drawing.FontStyle]::Regular), ([System.Drawing.GraphicsUnit]::Pixel)
+    $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.ColorTranslator]::FromHtml($menuColors[$(if ($dark) { 'dark' } else { 'light' })][$session.state]))
+    $format = [System.Drawing.StringFormat]::GenericTypographic
+    $graphics.DrawString($stateChar, $font, $brush, 0, 0, $format)
+    if ($projectChar) { $graphics.DrawString($projectChar, $font, $brush, ($size + $gap), 0, $format) }
+    $format.Dispose()  # GenericTypographic hands out a new copy each time
+    $brush.Dispose()
+    $font.Dispose()
+    $graphics.Dispose()
+    $bitmap
 }
 
 if ($Once) {
@@ -129,6 +232,18 @@ if ($Once) {
         needsYou = $inbox.counts.waiting + $inbox.counts.done
         needs    = @($inbox.needs)
     } | ConvertTo-Json -Compress -Depth 4
+    if ($RowImages) {
+        Add-Type -AssemblyName System.Drawing
+        $n = 0
+        foreach ($session in $inbox.needs) {
+            $image = New-RowImage $session $inbox.looks 16
+            if ($image) {
+                $image.Save((Join-Path $RowImages "$n.png"), [System.Drawing.Imaging.ImageFormat]::Png)
+                $image.Dispose()
+            }
+            $n++
+        }
+    }
     exit 0
 }
 
@@ -176,18 +291,61 @@ Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 Add-Type -Namespace SessionInbox -Name Native -MemberDefinition @'
 [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
 [DllImport("user32.dll")] public static extern bool DestroyIcon(System.IntPtr icon);
+[DllImport("dwmapi.dll")] public static extern int DwmSetWindowAttribute(System.IntPtr window, int attribute, ref int value, int size);
+'@
+# The menu in dark mode, like Windows 11's own dark menus: dark grey, a thin light outline, white
+# text. In light mode the menu keeps WinForms' own look.
+Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -TypeDefinition @'
+using System.Drawing;
+using System.Windows.Forms;
+namespace SessionInbox {
+    public class DarkColors : ProfessionalColorTable {
+        static readonly Color Back = Color.FromArgb(44, 44, 44);
+        static readonly Color Hover = Color.FromArgb(61, 61, 61);
+        static readonly Color Line = Color.FromArgb(80, 80, 80);
+        public override Color ToolStripDropDownBackground { get { return Back; } }
+        public override Color ImageMarginGradientBegin { get { return Back; } }
+        public override Color ImageMarginGradientMiddle { get { return Back; } }
+        public override Color ImageMarginGradientEnd { get { return Back; } }
+        public override Color MenuBorder { get { return Line; } }
+        public override Color MenuItemBorder { get { return Hover; } }
+        public override Color MenuItemSelected { get { return Hover; } }
+        public override Color MenuItemSelectedGradientBegin { get { return Hover; } }
+        public override Color MenuItemSelectedGradientEnd { get { return Hover; } }
+        public override Color MenuItemPressedGradientBegin { get { return Hover; } }
+        public override Color MenuItemPressedGradientEnd { get { return Hover; } }
+        public override Color SeparatorDark { get { return Line; } }
+        public override Color SeparatorLight { get { return Back; } }
+    }
+    public class DarkRenderer : ToolStripProfessionalRenderer {
+        public DarkRenderer() : base(new DarkColors()) { RoundedEdges = false; }
+        // Drawn here: the base class takes the system highlight (blue) for a selected row.
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e) {
+            if (!e.Item.Selected || !e.Item.Enabled) return;
+            using (var brush = new SolidBrush(Color.FromArgb(61, 61, 61))) {
+                e.Graphics.FillRectangle(brush, new Rectangle(2, 0, e.Item.Width - 4, e.Item.Height));
+            }
+        }
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e) {
+            e.TextColor = e.Item.Enabled ? Color.FromArgb(240, 240, 240) : Color.FromArgb(150, 150, 150);
+            base.OnRenderItemText(e);
+        }
+    }
+}
 '@
 # Without this Windows reports a 16 px icon size on a scaled screen and stretches the picture, blurry.
 [void][SessionInbox.Native]::SetProcessDPIAware()
 
+# The sidebar's state colours, VS Code's Dark theme values (the taskbar is usually dark):
+# list.warningForeground and charts.green.
 $colors = @{
-    waiting = [System.Drawing.Color]::FromArgb(232, 145, 45)   # orange: a permission or question
-    done    = [System.Drawing.Color]::FromArgb(55, 148, 255)   # blue: only finished replies
+    waiting = [System.Drawing.Color]::FromArgb(204, 167, 0)    # yellow: a permission or question
+    done    = [System.Drawing.Color]::FromArgb(137, 209, 133)  # green: only finished replies
     clear   = [System.Drawing.Color]::FromArgb(140, 140, 140)  # grey: nothing needs you
 }
 
-# A filled circle in the state's colour with the count in white ("9+" above 9); grey and empty for
-# none. The caller destroys the old icon's handle: Icon.FromHandle doesn't own it.
+# A filled circle in the state's colour with the count in black ("9+" above 9; white on yellow is
+# hard to read); grey and empty for none. The caller destroys the old icon's handle: Icon.FromHandle doesn't own it.
 function New-CountIcon([int]$count, [System.Drawing.Color]$color) {
     $size = [System.Windows.Forms.SystemInformation]::SmallIconSize.Width
     $bitmap = New-Object System.Drawing.Bitmap $size, $size
@@ -203,7 +361,7 @@ function New-CountIcon([int]$count, [System.Drawing.Color]$color) {
         $format = New-Object System.Drawing.StringFormat
         $format.Alignment = [System.Drawing.StringAlignment]::Center
         $format.LineAlignment = [System.Drawing.StringAlignment]::Center
-        $graphics.DrawString($text, $font, [System.Drawing.Brushes]::White, (New-Object System.Drawing.RectangleF 0, 0, $size, $size), $format)
+        $graphics.DrawString($text, $font, [System.Drawing.Brushes]::Black, (New-Object System.Drawing.RectangleF 0, 0, $size, $size), $format)
         $font.Dispose()
         $format.Dispose()
     }
@@ -262,6 +420,12 @@ function Open-Session($session) {
 $script:icon = New-Object System.Windows.Forms.NotifyIcon
 $script:menu = New-Object System.Windows.Forms.ContextMenuStrip
 $script:icon.ContextMenuStrip = $script:menu
+$script:dark = $false
+# Windows 11 rounds the menu's corners and gives it the system shadow; Windows 10 ignores the call.
+$script:menu.add_Opened({
+        $round = 2  # DWMWCP_ROUND
+        [void][SessionInbox.Native]::DwmSetWindowAttribute($script:menu.Handle, 33, [ref]$round, 4)  # DWMWA_WINDOW_CORNER_PREFERENCE
+    })
 $script:shown = $null       # what the icon shows now, to redraw only on a change
 $script:exited = $false
 $script:iconHandle = [IntPtr]::Zero
@@ -276,7 +440,10 @@ $exitTray = {
 }
 
 function Update-Menu($inbox) {
+    foreach ($old in @($script:menu.Items)) { if ($old.Image) { $old.Image.Dispose() } }
     $script:menu.Items.Clear()
+    $script:menu.Renderer = if ($script:dark) { New-Object SessionInbox.DarkRenderer } else { New-Object System.Windows.Forms.ToolStripProfessionalRenderer }
+    $size = [System.Windows.Forms.SystemInformation]::SmallIconSize.Height
     if ($inbox.needs.Count -eq 0) {
         $item = $script:menu.Items.Add('Nothing needs you')
         $item.Enabled = $false
@@ -286,6 +453,11 @@ function Update-Menu($inbox) {
         # '&&': a single '&' would underline the next letter instead of showing.
         $item = $script:menu.Items.Add("$($session.label.Replace('&', '&&')) - $what")
         $item.Tag = $session
+        $image = New-RowImage $session $inbox.looks $size $script:dark
+        if ($image) {
+            $item.Image = $image
+            $item.ImageScaling = [System.Windows.Forms.ToolStripItemImageScaling]::None
+        }
         if ($session.project_dir) { $item.add_Click({ param($clicked) Open-Session $clicked.Tag }) }
         else { $item.Enabled = $false }
     }
@@ -297,7 +469,9 @@ $refresh = {
     try {
         if ($script:stopEvent.WaitOne(0) -or ($script:vsCode -and $script:vsCode.HasExited)) { & $exitTray; return }
         $inbox = Read-Inbox
-        $key = ($inbox.needs | ForEach-Object { "$($_.session_id)|$($_.state)|$($_.label)|$($_.project_dir)" }) -join "`n"
+        $key = ($inbox.needs | ForEach-Object { "$($_.session_id)|$($_.state)|$($_.label)|$($_.project_dir)|$($_.icon)" }) -join "`n"
+        $script:dark = Test-DarkApps
+        $key += "`n" + $script:looksText + "`n" + $script:dark
         if ($key -eq $script:shown) { return }
         $color = if ($inbox.counts.waiting -gt 0) { $colors.waiting } elseif ($inbox.needs.Count -gt 0) { $colors.done } else { $colors.clear }
         $newIcon = New-CountIcon $inbox.needs.Count $color

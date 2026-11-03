@@ -47,9 +47,10 @@ the sidebar. A session still waiting on a permission prompt or a question after 
 `notify.ps1` popup once more ("Still waiting (12 min): …"); the setting
 `sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off.
 With the setting `sessionInbox.trayIcon` on (default off), a Windows tray icon next to the clock
-shows the same count, also when no VS Code window is in front: orange if any session is waiting,
-blue if only finished replies are, grey when all clear; hover for a summary. Click it for the list
-of sessions that need you; one opens its window and tab like a sidebar click. It closes when the
+shows the same count, also when no VS Code window is in front, in the sidebar's colours: yellow if
+any session is waiting, green if only finished replies are, grey when all clear; hover for a
+summary. Click it for the list of sessions that need you (dark when Windows apps are set to dark),
+each with the sidebar's state icon and its project's icon; one opens its window and tab like a sidebar click. It closes when the
 VS Code that started it quits, or when the setting is turned off (turn it off before uninstalling;
 otherwise the icon stays until VS Code quits).
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
@@ -112,6 +113,8 @@ Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet
   this project extends rather than replaces.
 - [Visual Studio Code Extension API](https://code.visualstudio.com/api) — Microsoft, MIT.
 - [esbuild](https://esbuild.github.io/) — Evan Wallace, MIT.
+- [Codicons](https://github.com/microsoft/vscode-codicons) — Microsoft, CC BY 4.0: the tray menu
+  draws them from the font that ships with VS Code (not copied into this project).
 - [ESLint](https://eslint.org/) — OpenJS Foundation, MIT.
 - [typescript-eslint](https://typescript-eslint.io/) — typescript-eslint team, MIT.
 - [TypeScript](https://www.typescriptlang.org/) — Microsoft, Apache-2.0.

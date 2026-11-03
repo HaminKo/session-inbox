@@ -56,3 +56,12 @@ books icon and a green check next to "sc-map-library".
   captured (the tray menu is outside VS Code's window, so maybe by hand).
 - User: tray badge colour matches the sidebar's state colour; menu rows show the same icons as the
   sidebar's project headers; changing a project's icon in the sidebar updates the tray menu.
+
+## Progress
+- [x] Built in one step and tested by the user 2026-11-03. Badge in the sidebar's colours (Dark
+  values, black number); each menu row shows the state's and the project's codicon, drawn from
+  VS Code's own `codicon.ttf`, which the extension reads (`codicons.ts`) and passes on in
+  `.tray-looks`. The menu follows Windows' app mode (dark menu with outline, rounded corners on
+  Windows 11). Choices and what was rejected (headers, a OneDrive-style panel): docs/decisions.md
+  2026-11-03. Alias `zap` has no glyph name in the font and is listed by hand. Unit tests: the
+  font reader, the drift test for `icon`, row pictures with and without the font.
