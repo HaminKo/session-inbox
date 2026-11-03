@@ -1,7 +1,7 @@
 // Starts a pinned VS Code with only this extension loaded, and returns its window for Playwright.
 // Everything it writes (user data, extensions dir) goes to a temp folder; the VS Code download is
 // cached in extension/.vscode-test/ (gitignored).
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { downloadAndUnzipVSCode } from "@vscode/test-electron";
@@ -16,16 +16,20 @@ const extensionDir = resolve(import.meta.dirname, "..", "..");
 export interface VsCode {
   app: ElectronApplication;
   window: Page;
+  // The user settings.json; VS Code picks up a change to it while running.
+  settingsFile: string;
   close: () => Promise<void>;
 }
 
 // `extraEnv` is added to VS Code's environment, e.g. SESSION_INBOX_STATUS_DIR for a temp status folder.
 // `folder`, if given, is opened in the window (by default it has none). `extensions` are more
-// extension folders to load next to this one, e.g. test/gui/fake-claude.
+// extension folders to load next to this one, e.g. test/gui/fake-claude. `settings` go into the
+// user settings.json before start.
 export async function launchVsCode(
   extraEnv: Record<string, string> = {},
   folder?: string,
   extensions: readonly string[] = [],
+  settings: Record<string, unknown> = {},
 ): Promise<VsCode> {
   const executablePath = await downloadAndUnzipVSCode({
     version: VSCODE_VERSION,
@@ -35,6 +39,9 @@ export async function launchVsCode(
   // A stand-in ~/.claude/ with the bundled hook installed (test:gui compiles first), so no test
   // window shows the hooks warning or reads the real one; a test of the warning passes its own.
   const claudeDir = join(tempDir, "claude");
+  const settingsFile = join(tempDir, "user-data", "User", "settings.json");
+  mkdirSync(join(settingsFile, ".."), { recursive: true });
+  writeFileSync(settingsFile, JSON.stringify(settings));
   if (!extraEnv.SESSION_INBOX_CLAUDE_DIR) installHooks(join(extensionDir, "dist", "session-status.ps1"), claudeDir);
   // A shell inside VS Code inherits ELECTRON_RUN_AS_NODE=1, which makes Code.exe start as plain
   // Node and reject every VS Code flag ("bad option").
@@ -75,6 +82,7 @@ export async function launchVsCode(
     return {
       app: started,
       window,
+      settingsFile,
       close: async () => {
         try {
           await started.close();

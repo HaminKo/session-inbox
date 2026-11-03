@@ -1,8 +1,8 @@
-Next number: 17
+Next number: 18
 
 ## To do
-- **16 — Standalone tray indicator** (medium): a tray icon with the "needs you" count, outside
-  VS Code. docs/todo/16-tray-indicator.md.
+- **17 — The tray looks like the sidebar** (medium): same state colours and icons, project icons
+  in the menu. docs/todo/17-tray-look.md.
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).

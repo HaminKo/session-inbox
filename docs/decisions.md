@@ -3,11 +3,25 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Tray: ends with the VS Code that started it; the setting off closes it (to-do #16 B)
+- Decision: the extension passes its parent process (VS Code's main process) as `-VsCodePid`, and
+  the tray exits when that process ends, instead of when no process named `Code` is left. Started
+  by hand without it, it runs until its Exit item. Turning `sessionInbox.trayIcon` off runs the
+  script with `-Stop`, which sets a named event (`<mutex>-stop`) the tray checks every tick. Exit
+  from the tray menu lasts until a window starts or the setting is turned on again.
+- Reason: a process name misses VSCodium, Cursor and other builds (step A's review); a handle to
+  the PID can't be fooled by Windows reusing it. The setting must work whichever window started
+  the tray.
+- Decided by: the user ("go with your suggestions").
+- Rejected: restarting the tray from every window regularly (a PowerShell start each time) to
+  cover a second VS Code app (Insiders) still running when the first quits; stopping the tray
+  when a window's extension host shuts down (that also happens on every reload and window close).
+
 ## 2026-11-03 — Tray indicator: a PowerShell script in this repo, started by the extension (to-do #16)
 - Decision: the tray icon is `tray/session-tray.ps1` in this repo (WinForms `NotifyIcon`, polls the
   status folder every 2 s, same filter and count as `statusFolder.ts`). It is started by the
   extension when the setting `sessionInbox.trayIcon` is on (default off); a named mutex keeps one
-  copy, and it exits when no `Code.exe` is running. A unit test runs it with `-Once` and compares
+  copy, and it exits when no `Code.exe` is running (replaced, see the entry above). A unit test runs it with `-Once` and compares
   its counts with `countStates(onlyLive(...))`, so the two copies of the rules can't drift apart
   silently.
 - Reason: every chat lives in VS Code, so a tray without VS Code always shows 0; tying it to VS

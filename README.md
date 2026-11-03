@@ -46,6 +46,12 @@ was last active); clicking a `notify.ps1` popup does the same. Clicking the stat
 the sidebar. A session still waiting on a permission prompt or a question after 10 minutes gets its
 `notify.ps1` popup once more ("Still waiting (12 min): …"); the setting
 `sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off.
+With the setting `sessionInbox.trayIcon` on (default off), a Windows tray icon next to the clock
+shows the same count, also when no VS Code window is in front: orange if any session is waiting,
+blue if only finished replies are, grey when all clear; hover for a summary. Click it for the list
+of sessions that need you; one opens its window and tab like a sidebar click. It closes when the
+VS Code that started it quits, or when the setting is turned off (turn it off before uninstalling;
+otherwise the icon stays until VS Code quits).
 Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet.
 
 ## Requirements

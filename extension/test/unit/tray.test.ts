@@ -2,7 +2,7 @@
 // tests run it with -Once on the same temp folders as the TypeScript and compare, so a change to one
 // copy that isn't made in the other fails here. Windows only (Windows PowerShell 5.1).
 import assert from "node:assert/strict";
-import { execFile, spawn, spawnSync } from "node:child_process";
+import { execFile, spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,6 +10,7 @@ import { suite, test } from "node:test";
 import { promisify } from "node:util";
 import { sessionFolder, sessionLabel } from "../../src/sessionList.ts";
 import { countStates, onlyLive, readLiveSessions, readStatuses } from "../../src/statusFolder.ts";
+import { startTray, stopTray } from "../../src/tray.ts";
 
 const script = join(import.meta.dirname, "..", "..", "..", "tray", "session-tray.ps1");
 const skip = process.platform !== "win32" && "Windows PowerShell only";
@@ -82,6 +83,42 @@ function deadPid(): number {
   return pid;
 }
 
+// Runs startTray/stopTray (which pass on process.env) with the test's own mutex and folders, so a
+// test never closes or stands in for the real tray. spawn copies the environment at once, so
+// setting it around the call is safe with the tests running side by side.
+function withTestEnv<T>(env: NodeJS.ProcessEnv, run: () => T): T {
+  const saved = { ...process.env };
+  Object.assign(process.env, env);
+  try {
+    return run();
+  } finally {
+    for (const key of Object.keys(env)) {
+      if (saved[key] === undefined) delete process.env[key];
+      else process.env[key] = saved[key];
+    }
+  }
+}
+
+function trayEnv(statusDir: string, sessionsDir: string, test: string): NodeJS.ProcessEnv {
+  return {
+    SESSION_INBOX_STATUS_DIR: statusDir,
+    SESSION_INBOX_SESSIONS_DIR: sessionsDir,
+    SESSION_INBOX_TRAY_MUTEX: `Local\\SessionInboxTray${test}-${process.pid}`,
+  };
+}
+
+// True if the process exits within `ms`.
+function exitsWithin(child: ChildProcess, ms: number): Promise<boolean> {
+  if (child.exitCode !== null) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms);
+    child.once("exit", () => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+}
+
 // Each test starts powershell.exe (~0.6 s), so they run side by side.
 void suite("tray script", { skip, concurrency: true }, () => {
   void test("counts and lists the same sessions as the extension", async () => {
@@ -148,6 +185,60 @@ void suite("tray script", { skip, concurrency: true }, () => {
       const tray = await assertSameAsExtension(statusDir, sessionsDir);
       assert.deepEqual(tray.needs.map((session) => session.label), ["from-cwd"], "a one-item list stays a list; label from cwd");
     } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The tray shows for 3 s first (its start takes ~1 s), so a tray that quits at once fails.
+  void test("exits when its VS Code process ends", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    const vsCode = spawn(process.execPath, ["-e", "setTimeout(() => {}, 60_000)"]);
+    const env = trayEnv(statusDir, sessionsDir, "Pid");
+    const tray = withTestEnv(env, () => startTray(script, vsCode.pid ?? 0));
+    try {
+      assert.equal(await exitsWithin(tray, 3_000), false, "the tray quit while its VS Code still ran");
+      vsCode.kill();
+      assert.ok(await exitsWithin(tray, 6_000), "the tray outlived its VS Code");
+    } finally {
+      vsCode.kill();
+      tray.kill();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  void test("-Stop closes the running tray", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    const env = trayEnv(statusDir, sessionsDir, "Stop");
+    const tray = withTestEnv(env, () => startTray(script, process.pid));
+    try {
+      assert.equal(await exitsWithin(tray, 3_000), false, "the tray quit before it was stopped");
+      const stop = withTestEnv(env, () => stopTray(script));
+      assert.ok(await exitsWithin(stop, 10_000), "-Stop didn't finish");
+      assert.equal(stop.exitCode, 0);
+      assert.ok(await exitsWithin(tray, 4_000), "the tray kept running after -Stop");
+    } finally {
+      tray.kill();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The setting turned off and straight on again: the new copy waits for the stopping one instead
+  // of leaving on its mutex.
+  void test("a tray started while the old one stops takes over", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    const env = trayEnv(statusDir, sessionsDir, "Again");
+    const old = withTestEnv(env, () => startTray(script, process.pid));
+    let next: ChildProcess | undefined;
+    try {
+      assert.equal(await exitsWithin(old, 3_000), false, "the first tray quit before it was stopped");
+      const stop = withTestEnv(env, () => stopTray(script));
+      assert.ok(await exitsWithin(stop, 10_000), "-Stop didn't finish");
+      next = withTestEnv(env, () => startTray(script, process.pid));
+      assert.ok(await exitsWithin(old, 4_000), "the first tray kept running after -Stop");
+      assert.equal(await exitsWithin(next, 4_000), false, "the new tray left instead of taking over");
+    } finally {
+      old.kill();
+      next?.kill();
       rmSync(root, { recursive: true, force: true });
     }
   });

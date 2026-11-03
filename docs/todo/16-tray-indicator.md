@@ -76,10 +76,26 @@ history, no second copy of the sidebar.
   by the user 2026-11-03: count and colour follow the status bar, click opens the window and tab,
   a second copy exits, Exit removes the icon. The test also compares label and click folder with
   `sessionLabel`/`sessionFolder`; a planted difference in the script fails it.
-- [ ] B — started from the extension: setting `sessionInbox.trayIcon`, the build copies the
+- [x] B — started from the extension: setting `sessionInbox.trayIcon`, the build copies the
   script into `dist/`; unit + GUI test; README, docs. From step A's review: pass the launching
   VS Code's main PID (e.g. `-VsCodePid`) and exit when it ends, instead of looking for a process
   named `Code` / `Code - Insiders` (VSCodium, Cursor etc. have other names).
+
+  Built 2026-11-03 (`src/tray.ts`): starts at activation and when the setting turns on, with
+  `-VsCodePid` = the extension host's parent (VS Code's main `Code.exe`, measured); off runs
+  `-Stop`, which sets a named event (`<mutex>-stop`) the tray checks every tick. Started by hand
+  (no `-VsCodePid`) it runs until Exit. Measured: the extension host, `claude.exe` and the main
+  `Code.exe` are all in a Windows job object, so the tray should outlive the window that started
+  it (user test). The setting off and on quickly: the new copy waits up to 5 s for the stopping
+  one (a unit test). Left from the review: a `-Stop` in the ~1 s while a tray starts is missed,
+  and with several windows a late `-Stop` from another window can close the new tray (reload fixes
+  it); every window start runs one PowerShell (~0.6 s) that exits on the mutex; a tray started by
+  VS Code closes with it even if another VS Code app (Insiders) still runs, until one of its windows
+  starts.
+
+  Tested by the user 2026-11-03 ("Tests look good"): the setting starts and stops the icon, one
+  icon with two windows, it outlives the window that started it, a click opens the window and tab,
+  it closes when VS Code quits. Finished.
 
 Step A notes: polling costs ~11 ms per 2 s tick with 547 processes (measured 2026-11-03), so the
 full process list stays. Left as-is from the review (the hook never writes these): JSON keys in

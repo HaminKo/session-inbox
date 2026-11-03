@@ -1,6 +1,7 @@
 **
 !dist/extension.js
 !dist/session-status.ps1
+!dist/session-tray.ps1
 !package.json
 !media/**
 !README.md

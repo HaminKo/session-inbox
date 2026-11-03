@@ -131,6 +131,12 @@
           "scope": "application",
           "markdownDescription": "Minutes a session may wait on you (a permission prompt or a question) before its popup is shown once more. `0` turns reminders off. Uses `~/.claude/hooks/notify.ps1`."
         },
+        "sessionInbox.trayIcon": {
+          "type": "boolean",
+          "default": false,
+          "scope": "application",
+          "markdownDescription": "Show the number of sessions that need you in the Windows system tray, next to the clock, also when no VS Code window is in front. Click it for the list; a session opens its window. Closes with VS Code."
+        },
         "sessionInbox.projects": {
           "type": "object",
           "default": {},
@@ -157,7 +163,7 @@
     ]
   },
   "scripts": {
-    "bundle": "node -e \"require('node:fs').mkdirSync('dist',{recursive:true});require('node:fs').copyFileSync('../hooks/session-status.ps1','dist/session-status.ps1')\" && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+    "bundle": "node -e \"require('node:fs').mkdirSync('dist',{recursive:true});require('node:fs').copyFileSync('../hooks/session-status.ps1','dist/session-status.ps1');require('node:fs').copyFileSync('../tray/session-tray.ps1','dist/session-tray.ps1')\" && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
     "compile": "npm run bundle -- --sourcemap",
     "watch": "npm run bundle -- --sourcemap --watch",
     "check-types": "tsc --noEmit",

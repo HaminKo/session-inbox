@@ -52,7 +52,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #16 (standalone tray indicator), then "Before a public release" in docs/todo.md.
+Next: to-do #17 (the tray looks like the sidebar), then "Before a public release" in docs/todo.md.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -85,6 +85,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - Install Hooks says a hook "differs" (never "out of date": the installed one may be newer) and
   backs up what it replaces; it adds only missing entries and refuses a `settings.json` that
   doesn't parse.
+- The tray icon (`tray/session-tray.ps1`) is started by the extension only while
+  `sessionInbox.trayIcon` is on (default off), one copy by mutex, and ends with the VS Code that
+  started it; its counting rules copy `statusFolder.ts`, kept equal by `test/unit/tray.test.ts`.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

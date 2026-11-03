@@ -8,16 +8,19 @@
 # (readStatuses, readLiveSessions, onlyLive, countStates). Keep the two the same: the unit test
 # test/unit/tray.test.ts runs this script with -Once and compares its result with the TypeScript.
 #
-# One copy runs at a time (a named mutex); it exits when no VS Code (Code.exe) is running, since every
-# chat lives in VS Code.
+# One copy runs at a time (a named mutex). The extension starts it (setting sessionInbox.trayIcon,
+# extension/src/tray.ts) and every window tries; the copies after the first exit at once.
 #
-#   -Once  print the counts and the sessions that need you as JSON, then exit (for the tests).
+#   -VsCodePid N  exit when that process (the VS Code that started it) ends. Without it, the tray
+#                 runs until its Exit item.
+#   -Stop         close the running tray (the setting was turned off), then exit.
+#   -Once         print the counts and the sessions that need you as JSON, then exit (for the tests).
 #
 # SESSION_INBOX_STATUS_DIR, SESSION_INBOX_SESSIONS_DIR and SESSION_INBOX_TRAY_MUTEX are for the tests
 # only, like in the extension.
 #
 # Keep this file ASCII-only: Windows PowerShell 5.1 reads it in the ANSI codepage.
-param([switch]$Once)
+param([switch]$Once, [int]$VsCodePid = 0, [switch]$Stop)
 
 $statusDir = if ($env:SESSION_INBOX_STATUS_DIR) { $env:SESSION_INBOX_STATUS_DIR } else { Join-Path $env:USERPROFILE '.claude\session-status' }
 $sessionsDir = if ($env:SESSION_INBOX_SESSIONS_DIR) { $env:SESSION_INBOX_SESSIONS_DIR } else { Join-Path $env:USERPROFILE '.claude\sessions' }
@@ -95,10 +98,8 @@ function Session-Folder($status) {
 function Read-Inbox {
     $processes = [System.Diagnostics.Process]::GetProcesses()
     $runningPids = New-Object 'System.Collections.Generic.HashSet[int]'
-    $vsCode = $false
     foreach ($process in $processes) {
         [void]$runningPids.Add($process.Id)
-        if ($process.ProcessName -eq 'Code' -or $process.ProcessName -eq 'Code - Insiders') { $vsCode = $true }
         $process.Dispose()
     }
     $files = Read-JsonFiles $statusDir  # assigned first: piping the call would pass the list as one item
@@ -116,7 +117,7 @@ function Read-Inbox {
                 project_dir = Session-Folder $_
             }
         } | Sort-Object @{ Expression = { if ($_.state -eq 'waiting') { 0 } else { 1 } } }, label, session_id)
-    [pscustomobject]@{ counts = $counts; needs = $needs; vsCode = $vsCode }
+    [pscustomobject]@{ counts = $counts; needs = $needs }
 }
 
 if ($Once) {
@@ -132,9 +133,44 @@ if ($Once) {
 }
 
 $mutexName = if ($env:SESSION_INBOX_TRAY_MUTEX) { $env:SESSION_INBOX_TRAY_MUTEX } else { 'Local\SessionInboxTray' }
+# Named after the mutex, so a test's -Stop never closes the real tray. A -Stop before the tray has
+# made the event does nothing (a tray still starting up, under a second).
+$stopName = "$mutexName-stop"
+if ($Stop) {
+    $stopEvent = $null
+    if ([System.Threading.EventWaitHandle]::TryOpenExisting($stopName, [ref]$stopEvent)) {
+        [void]$stopEvent.Set()
+        $stopEvent.Dispose()
+    }
+    exit 0
+}
+
 $createdNew = $false
 $mutex = New-Object System.Threading.Mutex($true, $mutexName, [ref]$createdNew)
-if (-not $createdNew) { exit 0 }  # another copy already shows the icon
+if (-not $createdNew) {
+    # Another copy shows the icon: leave it, unless it was just told to stop (the setting turned off
+    # and on again quickly). It notices on its next tick (2 s), so wait for it to let go.
+    $owned = $false
+    $quitting = $null
+    if ([System.Threading.EventWaitHandle]::TryOpenExisting($stopName, [ref]$quitting) -and $quitting.WaitOne(0)) {
+        try { $owned = $mutex.WaitOne(5000) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
+    }
+    if ($quitting) { $quitting.Dispose() }
+    if (-not $owned) { exit 0 }
+}
+$script:stopEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::ManualReset, $stopName)
+[void]$script:stopEvent.Reset()  # still set if this copy waited for a stopping one
+
+# A handle to the VS Code that started the tray, held from the start so a PID that Windows reuses
+# later can't keep the tray alive. Gone already: nothing to show for.
+$script:vsCode = $null
+if ($VsCodePid) {
+    try {
+        $script:vsCode = [System.Diagnostics.Process]::GetProcessById($VsCodePid)
+        [void]$script:vsCode.Handle  # opens and keeps the handle; HasExited then asks that one
+    }
+    catch { exit 0 }
+}
 
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 Add-Type -Namespace SessionInbox -Name Native -MemberDefinition @'
@@ -259,8 +295,8 @@ function Update-Menu($inbox) {
 
 $refresh = {
     try {
+        if ($script:stopEvent.WaitOne(0) -or ($script:vsCode -and $script:vsCode.HasExited)) { & $exitTray; return }
         $inbox = Read-Inbox
-        if (-not $inbox.vsCode) { & $exitTray; return }
         $key = ($inbox.needs | ForEach-Object { "$($_.session_id)|$($_.state)|$($_.label)|$($_.project_dir)" }) -join "`n"
         if ($key -eq $script:shown) { return }
         $color = if ($inbox.counts.waiting -gt 0) { $colors.waiting } elseif ($inbox.needs.Count -gt 0) { $colors.done } else { $colors.clear }
@@ -283,8 +319,8 @@ $script:icon.add_MouseUp({
         if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left -and $script:showMenu) { [void]$script:showMenu.Invoke($script:icon, $null) }
     })
 
-# The first reading before the icon shows, so it never flashes an empty picture; with no VS Code
-# running it exits right away.
+# The first reading before the icon shows, so it never flashes an empty picture; with its VS Code
+# gone already it exits right away.
 & $refresh
 if (-not $script:exited) {
     $script:icon.Visible = $true
@@ -296,5 +332,6 @@ if (-not $script:exited) {
 }
 
 if ($script:iconHandle -ne [IntPtr]::Zero) { [void][SessionInbox.Native]::DestroyIcon($script:iconHandle) }
+$script:stopEvent.Dispose()
 $mutex.ReleaseMutex()
 $mutex.Dispose()
