@@ -52,8 +52,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: "Before a public release" in docs/todo.md (no to-dos left; #15, Install Hooks, done
-2026-11-03).
+Next: to-do #16 (standalone tray indicator), then "Before a public release" in docs/todo.md.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

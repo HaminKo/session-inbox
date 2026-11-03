@@ -1,7 +1,8 @@
-Next number: 16
+Next number: 17
 
 ## To do
-(none)
+- **16 — Standalone tray indicator** (medium): a tray icon with the "needs you" count, outside
+  VS Code. docs/todo/16-tray-indicator.md.
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -19,9 +20,6 @@ Next number: 16
 - Add a 128×128 PNG icon (`"icon"` in `extension/package.json`) if publishing to the Marketplace.
 
 ## Later, only if the user asks
-- **Standalone tray indicator** (not a full app): a small system-tray process reading the same
-  `session-status/` folder, for a glanceable waiting count when no VS Code window is focused. See
-  docs/decisions.md (2026-11-01) for why it's deferred and scoped down.
 - Cross-machine sync of session status.
 - Editors other than VS Code.
 - Claude-desktop-app / CLI sessions (currently VS-Code-extension sessions only).
