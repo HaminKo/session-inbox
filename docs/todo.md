@@ -1,18 +1,16 @@
 ## Where we are
-- Now: Before a public release (no to-dos open)
-- Next: none yet
+- Now: To do 20 (check all tracked files for private info)
+- Next: the rest of "Before a public release"
 - Updated: 2026-11-03
 
-Next number: 20
+Next number: 21
 
 ## To do
-(none open)
+- 20. Check all tracked files for private info (small): docs/todo/20-private-info-check.md
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
-- Search all tracked files for the "Never in tracked files" list (real name, personal paths,
-  GitHub login). If old commits hold any of it, publish a fresh repo with one clean commit rather
-  than rewriting history.
+- Search all tracked files for the "Never in tracked files" list: now To do 20.
 - A fresh subagent that hasn't seen the project checks README.md and the docs it links against the
   code, and only reports (the user decides fixes).
 - Add a screenshot of the status bar + sidebar to the README (the extension has a UI).
