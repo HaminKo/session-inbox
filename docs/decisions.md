@@ -3,6 +3,25 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — README pictures come from `npm run screenshots` (to-do #23)
+- Decision: README.md shows two pictures, `docs/images/statusbar.png` and
+  `docs/images/sidebar.png`, one above the other after the feature list, copied unedited from
+  `npm run screenshots -- statusbar sidebar` (dark theme, sample sessions `demo-a/b/c`). A change
+  to a picture is made in `extension/test/gui/screenshots.ts`, never in the PNG, so a re-take gives
+  the same picture (measured: two takes in a row are byte-identical with VS Code 1.144, the version
+  pinned in `test/gui/launch.ts`; a version bump may change them). The sidebar shot drags the
+  sidebar 150 px wider so the waiting message isn't cut off. `extension/README.md` (the Marketplace
+  page) has no pictures for now.
+- Reason: the shots already come from a real VS Code with sample data, so nothing private shows;
+  `docs/` keeps them out of the `.vsix`. `vsce package` stops on a relative image link when there
+  is no `repository` field (read in `@vscode/vsce/out/package.js`), and that field is left out on
+  purpose (see "Decide how to distribute" in docs/todo.md).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: one combined picture (the status bar and the sidebar are far apart in the window, so
+  one shot is mostly empty); side by side (too wide for GitHub's column, it wraps); a light theme;
+  pictures of the tray icon or a popup (both optional, the pictures show what every user gets);
+  the default sidebar width (cuts the message to "Needs permis…").
+
 ## 2026-11-03 — Popups stay the user's own hook; the README says so (to-do #22)
 - Decision: Session Inbox ships no desktop-popup hook. The README says reminders and popup clicks
   need your own `~/.claude/hooks/notify.ps1` and gives what it receives (reminder payload) and what

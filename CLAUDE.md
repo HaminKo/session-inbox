@@ -41,7 +41,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
     briefly). A UI change gets a step in it. Details: docs/research/gui-testing.md.
   - Screenshots: `npm run screenshots` (or `-- statusbar` / `-- sidebar` / `-- window`) → PNGs in
     `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens,
-    sidebar ~270, window ~2,900.
+    sidebar ~390, window ~2,900.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
 - **Docs to update when behaviour changes:** README.md (headline features, install/run steps,
   Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md once it exists.
@@ -98,6 +98,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   "Optional: desktop popups"); a missing one is said once per window, on the first failed reminder.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
+- README pictures (`docs/images/`) are unedited `npm run screenshots` output: change
+  `screenshots.ts`, never the PNG; `extension/README.md` gets none until `repository` is set.
 
 ## Project docs
 README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).

@@ -49,3 +49,17 @@ done, one working).
   changed.
 - User: look at the README preview (Ctrl+Shift+V) and say if the pictures are clear and the right
   size; after pushing, check them on GitHub.
+
+## Done (2026-11-03)
+- Two pictures, one above the other, after the "Desktop popups are not part of Session Inbox"
+  paragraph (it belongs to the list, so the pictures go after it): `docs/images/statusbar.png`
+  (410×42) and `docs/images/sidebar.png` (747×389), dark theme, no tray or popup picture.
+- `screenshots.ts`: the sidebar shot drags the sidebar 150 px wider (the message was cut to
+  "Needs permis…"); the status bar shot waits for VS Code's problems counter; the sidebar shot
+  freezes the spinner. Two takes in a row are byte-identical.
+- `extension/README.md` keeps no pictures: `vsce package` stops on a relative image link without
+  `repository` (noted under "Decide how to distribute").
+- Checks: lint, tsc, 80 unit tests, 22 GUI tests (~76 s), `.vsix` builds without the images.
+- Review notes left: the drag assumes the sidebar is on the left and the window wide enough (true
+  for the test window); `npm run screenshots` with no names takes `window` after `sidebar`, so it
+  shows the widened sidebar.

@@ -8,11 +8,14 @@ import { join } from "node:path";
 import type { Page } from "playwright-core";
 import { launchVsCode } from "./launch.ts";
 import { writeSampleSession, writeSampleStatus } from "./samples.ts";
-import { activityItem, sideBar, statusBar, statusItem, treeRow } from "./selectors.ts";
+import { activityItem, problemsItem, sideBar, statusBar, statusItem, treeRow } from "./selectors.ts";
 
 const shots: Record<string, (window: Page, path: string) => Promise<void>> = {
   // The right half of the status bar is empty here; crop to the left part with our item.
+  // VS Code's problems counter, right of our item, is drawn a moment later: wait for it so every
+  // re-take has it.
   statusbar: async (window, path) => {
+    await window.locator(problemsItem).waitFor({ state: "visible", timeout: 10_000 });
     const bar = await window.locator(statusBar).boundingBox();
     const item = await window.locator(statusItem).boundingBox();
     if (!bar || !item) throw new Error("status bar or item not found");
@@ -20,14 +23,25 @@ const shots: Record<string, (window: Page, path: string) => Promise<void>> = {
     await window.screenshot({ path, clip: { x: bar.x, y: bar.y, width, height: bar.height } });
   },
   // The Activity Bar icon with its badge and the open Session Inbox view, top part only.
+  // VS Code's default sidebar width cuts off the waiting row's message, so its right edge is
+  // dragged wider first (each launch has a fresh profile, so the width doesn't stick).
   sidebar: async (window, path) => {
     await window.locator(activityItem).click();
     await window.locator(treeRow).nth(5).waitFor({ state: "visible", timeout: 5_000 });
+    const narrow = await window.locator(sideBar).boundingBox();
+    if (!narrow) throw new Error("sidebar not found");
+    const edge = { x: narrow.x + narrow.width, y: narrow.y + narrow.height / 2 };
+    await window.mouse.move(edge.x, edge.y);
+    await window.mouse.down();
+    await window.mouse.move(edge.x + 150, edge.y, { steps: 5 });
+    await window.mouse.up();
     const bar = await window.locator(activityItem).boundingBox();
     const side = await window.locator(sideBar).boundingBox();
     if (!bar || !side) throw new Error("activity bar item or sidebar not found");
+    if (side.width < narrow.width + 100) throw new Error(`sidebar did not widen (${narrow.width} → ${side.width} px)`);
     const height = Math.max(bar.y + bar.height, side.y + 200) - side.y;
-    await window.screenshot({ path, clip: { x: 0, y: side.y, width: side.x + side.width, height } });
+    // "disabled" stops the working row's spinner at its first frame, so re-takes match.
+    await window.screenshot({ path, animations: "disabled", clip: { x: 0, y: side.y, width: side.x + side.width, height } });
   },
   window: async (window, path) => {
     await window.screenshot({ path });

@@ -23,6 +23,10 @@ It has two parts:
 Desktop popups are not part of Session Inbox: the status hook works on its own, next to any popup
 hook you already have, and never changes it.
 
+![Status bar item reading "2 waiting"](docs/images/statusbar.png)
+
+![Session Inbox sidebar: groups Waiting, Done and Working, with a session waiting 12 min in a worktree](docs/images/sidebar.png)
+
 ## Status
 
 The status-writer hook works. The extension's status bar item shows the live count from the status
