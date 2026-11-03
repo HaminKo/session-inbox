@@ -1,7 +1,7 @@
 Next number: 16
 
 ## To do
-- **To do 15 — "Install hooks" command** (medium): one command copies the status hook and adds it to `~/.claude/settings.json`; warns when the installed hook is missing or out of date. See docs/todo/15-install-hooks.md.
+(none)
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).

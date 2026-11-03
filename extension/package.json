@@ -66,6 +66,11 @@
         "command": "sessionInbox.resetProjectIcon",
         "title": "Reset Icon",
         "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.installHooks",
+        "title": "Install Hooks",
+        "category": "Session Inbox"
       }
     ],
     "menus": {
@@ -152,7 +157,7 @@
     ]
   },
   "scripts": {
-    "bundle": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+    "bundle": "node -e \"require('node:fs').mkdirSync('dist',{recursive:true});require('node:fs').copyFileSync('../hooks/session-status.ps1','dist/session-status.ps1')\" && esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
     "compile": "npm run bundle -- --sourcemap",
     "watch": "npm run bundle -- --sourcemap --watch",
     "check-types": "tsc --noEmit",

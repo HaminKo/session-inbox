@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs";
+import { join } from "node:path";
 import * as vscode from "vscode";
+import { checkHooks, describeProblem, hookVersion, installHooks } from "./installHooks.ts";
 import { dueReminders, notifyScript, reminderPayload, sendReminder } from "./renotify.ts";
 import { holdsFolder, readRevealRequest, shouldReveal, writeRevealRequest } from "./reveal.ts";
 import { SessionSource } from "./sessionSource.ts";
@@ -22,7 +24,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("sessionInbox.resetProjectIcon", (node?: Node) =>
       node?.kind === "group" ? setProjectIcon(node.group.label, undefined) : undefined,
     ),
+    vscode.commands.registerCommand("sessionInbox.installHooks", () => runInstall(bundledHook(context))),
   );
+  warnAboutHooks(context);
 
   const source = new SessionSource(statusDir(), sessionsDir());
   context.subscriptions.push(
@@ -39,6 +43,54 @@ export function activate(context: vscode.ExtensionContext): void {
     source,
     sidebar,
   );
+}
+
+// Copied into dist/ by the build (package.json "bundle") from the repo's hooks/session-status.ps1.
+function bundledHook(context: vscode.ExtensionContext): string {
+  return join(context.extensionPath, "dist", "session-status.ps1");
+}
+
+const hooksDismissedKey = "hooksDismissedVersion";
+
+// One warning per window at startup when the hook is missing, differs, or isn't in settings.json.
+// "Don't ask again" holds for this bundled hook only: a new version asks again.
+function warnAboutHooks(context: vscode.ExtensionContext): void {
+  const source = bundledHook(context);
+  let problem: string | undefined;
+  let version = "";
+  try {
+    problem = describeProblem(checkHooks(source));
+    if (problem) version = hookVersion(source);
+  } catch (error) {
+    console.error("Session Inbox: couldn't check the hooks", error);
+    return;
+  }
+  if (!problem || context.globalState.get(hooksDismissedKey) === version) return;
+  void vscode.window.showWarningMessage(problem, "Install Hooks", "Don't ask again").then((choice) => {
+    if (choice === "Install Hooks") void runInstall(source);
+    if (choice === "Don't ask again") void context.globalState.update(hooksDismissedKey, version);
+  });
+}
+
+async function runInstall(source: string): Promise<void> {
+  try {
+    const result = installHooks(source);
+    if (!result.copied && result.addedEvents.length === 0) {
+      void vscode.window.showInformationMessage("Session Inbox: the hooks are already installed.");
+      return;
+    }
+    const done: string[] = [];
+    if (result.copied) done.push("copied the status hook to ~/.claude/hooks/");
+    if (result.addedEvents.length > 0) done.push(`added it to ${result.addedEvents.join(", ")} in settings.json`);
+    const backups = [result.hookBackup, result.settingsBackup].filter((path) => path !== undefined);
+    // Claude Code reads hooks in settings.json when a chat starts.
+    const restart = result.addedEvents.length > 0 ? " New chats use it; restart chats already running." : "";
+    await vscode.window.showInformationMessage(
+      `Session Inbox: ${done.join(" and ")}.${restart}${backups.length > 0 ? ` Backup: ${backups.join(", ")}` : ""}`,
+    );
+  } catch (error) {
+    void vscode.window.showErrorMessage(`Session Inbox: couldn't install the hooks: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 function workspaceFolders(): string[] {

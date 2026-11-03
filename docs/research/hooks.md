@@ -410,6 +410,18 @@ not "lowest free spot": docs/decisions.md.
   whose C# doesn't compile still reaches `Application.Run` with no window and never exits (stop it
   by hand); compile-check the type alone first.
 
+## Install Hooks command (to-do #15, 2026-11-02)
+- The build (`npm run bundle`) copies `hooks/session-status.ps1` to `extension/dist/`, which the
+  `.vsix` includes (`.vscodeignore`); the extension reads it from `<extensionPath>/dist/`.
+- `extension/src/installHooks.ts` does the check and the install; `SESSION_INBOX_CLAUDE_DIR` points it
+  at a stand-in `~/.claude/` (unit tests, and every GUI test window, which gets one with the hooks
+  installed so it shows no warning).
+- Measured: install into a temp `.claude` folder, then the payload test above run against the
+  installed copy with `USERPROFILE` set to that temp folder: `waiting`, then `done`.
+- The command's message says chats already running may need a restart for new `settings.json`
+  entries (estimated, not measured: Claude Code reads hooks when a chat starts). A replaced hook
+  file takes effect at once, since every event starts the script anew.
+
 ## Sources
 - `~/.claude/hooks/notify.ps1` (author's existing hook; comments carry dated measurements).
 - Claude Code hooks reference: https://docs.claude.com/en/docs/claude-code/hooks

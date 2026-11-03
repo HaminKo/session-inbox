@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { _electron, type ElectronApplication, type Page } from "playwright-core";
+import { installHooks } from "../../src/installHooks.ts";
 
 // Pinned so the test doesn't re-download ~350 MB after every VS Code release; bump by hand.
 export const VSCODE_VERSION = "1.144.0";
@@ -31,6 +32,10 @@ export async function launchVsCode(
     cachePath: join(extensionDir, ".vscode-test"),
   });
   const tempDir = mkdtempSync(join(tmpdir(), "session-inbox-gui-"));
+  // A stand-in ~/.claude/ with the bundled hook installed (test:gui compiles first), so no test
+  // window shows the hooks warning or reads the real one; a test of the warning passes its own.
+  const claudeDir = join(tempDir, "claude");
+  if (!extraEnv.SESSION_INBOX_CLAUDE_DIR) installHooks(join(extensionDir, "dist", "session-status.ps1"), claudeDir);
   // A shell inside VS Code inherits ELECTRON_RUN_AS_NODE=1, which makes Code.exe start as plain
   // Node and reject every VS Code flag ("bad option").
   const env = {
@@ -41,6 +46,7 @@ export async function launchVsCode(
     ),
     // A sample chat past the re-notify threshold must never start the real notify.ps1.
     SESSION_INBOX_NOTIFY_SCRIPT: join(tempDir, "no-notify.ps1"),
+    SESSION_INBOX_CLAUDE_DIR: claudeDir,
     ...extraEnv,
   };
   const removeTemp = () =>

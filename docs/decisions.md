@@ -3,6 +3,26 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-02 — Install Hooks: "differs", not "out of date"; back up before replacing (to-do #15)
+- Decision: a command "Session Inbox: Install Hooks" copies the bundled `session-status.ps1` into
+  `~/.claude/hooks/` and adds a new group `{ "hooks": [entry] }` to each of the 5 events in
+  `~/.claude/settings.json` that has no hook naming `session-status.ps1` (any path counts). Other
+  groups, including `notify.ps1`'s, are not touched. `settings.json` is parsed and rewritten with a
+  2-space indent; one that doesn't parse (or whose `hooks` has the wrong shape) is refused and left
+  as it is. It is saved once as `settings.json.before-session-inbox` (never overwritten). A hook
+  file that differs from the bundled one is backed up to `~/.claude/hooks/backups/` before it is
+  replaced. At startup each window shows one warning when something is missing or differs, with
+  "Install Hooks" and "Don't ask again" (saved in `globalState` for that bundled hook's hash, so a
+  new version asks again). No Uninstall command.
+- Reason: a differing hook isn't necessarily older: while developing, the installed hook can be
+  newer than the one in the `.vsix`. So the warning only says "differs", and the button (itself the
+  confirmation) never loses a version thanks to the backup.
+- Decided by: the user ("go with your suggestions" on Claude's questions).
+- Rejected: calling it "out of date" (can't be told from the bytes); a version number in the hook
+  (one more thing to bump by hand); a second confirmation before replacing (the backup covers it);
+  editing inside the existing `notify.ps1` group (touches another hook's entry); keeping comments /
+  formatting of `settings.json` (it's plain JSON); an Uninstall command (not asked for).
+
 ## 2026-11-02 — A project header gets its own icon, not its own colour (to-do #12)
 - Decision: right-click a project header (grouped by project) for "Set Icon…" (a QuickPick of ~25
   curated codicons) or "Reset Icon". Stored in the user setting `sessionInbox.projects`

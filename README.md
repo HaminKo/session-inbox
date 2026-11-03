@@ -58,17 +58,26 @@ Both are built as numbered to-dos (see `docs/todo.md`); nothing is published yet
 
 > Build steps land here as they're implemented. For now:
 
-- **Hooks:** copy the status-writer into place (in PowerShell, from this folder):
+- **Hooks:** run **Session Inbox: Install Hooks** from the Command Palette. It copies the
+  status-writer (bundled in the extension from `hooks/session-status.ps1`) into `~/.claude/hooks/`
+  and adds it to `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse` and `SessionEnd`
+  in `~/.claude/settings.json`, next to any hooks already there. It never changes other hooks or
+  settings, refuses a `settings.json` that isn't valid JSON, saves the original once as
+  `settings.json.before-session-inbox`, and backs up a replaced hook to `~/.claude/hooks/backups/`.
+  At startup the extension warns when the hook is missing, differs from its own copy, or isn't in
+  `settings.json` ("Install Hooks" / "Don't ask again", the latter until the bundled hook changes).
+  New chats pick up the `settings.json` entries; restart chats already running.
+
+  By hand instead (in PowerShell, from this folder):
 
   ```powershell
   New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\hooks" | Out-Null
   Copy-Item hooks\session-status.ps1 "$env:USERPROFILE\.claude\hooks\"
   ```
 
-  Then, in `~/.claude/settings.json`, add this entry to the `hooks` list of each of
-  `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse` and `SessionEnd`, next to any hooks
-  already there. Leave out `"async": true`: the hook has to run in order, so that a late `working`
-  can't overwrite `done`.
+  Then, in `~/.claude/settings.json`, add this entry to the `hooks` list of each of those 5 events,
+  next to any hooks already there. Leave out `"async": true`: the hook has to run in order, so that
+  a late `working` can't overwrite `done`.
 
   ```json
   {

@@ -52,8 +52,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: to-do #15, an "Install hooks" command (docs/todo/15-install-hooks.md). Then
-"Before a public release" in docs/todo.md.
+Next: "Before a public release" in docs/todo.md (no to-dos left; #15, Install Hooks, done
+2026-11-03).
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.
@@ -83,6 +83,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   window that has its `project_dir` open (Claude's `claude-vscode.primaryEditor.open`), not a URI.
 - A project header can get its own icon (setting `sessionInbox.projects`), never its own colour:
   the colour stays the state.
+- Install Hooks says a hook "differs" (never "out of date": the installed one may be newer) and
+  backs up what it replaces; it adds only missing entries and refuses a `settings.json` that
+  doesn't parse.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

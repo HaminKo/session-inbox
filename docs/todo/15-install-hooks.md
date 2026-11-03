@@ -54,3 +54,15 @@ extension says so when the hooks are missing or out of date.
 - User: install the `.vsix`, run the command against the real `~/.claude/`, check settings.json
   still holds the `notify.ps1` hooks, and that popups and the inbox still work. Then edit the
   repo hook, rebuild, and see the out-of-date warning.
+
+## Progress
+- [x] **Done 2026-11-03, one step.** Command "Session Inbox: Install Hooks" and a startup warning
+  (`extension/src/installHooks.ts`); the build bundles the hook into `dist/`. Choices: the user's
+  "go with your suggestions" (docs/decisions.md 2026-11-02, Install Hooks). Checks: 62 unit tests,
+  19 GUI tests, payload test on a temp install. User test on the real `~/.claude/`: already
+  installed → no warning, "already installed", no settings backup; an edited bundled hook →
+  "differs" warning, install made a backup, then restoring gave a matching hash; `notify.ps1`
+  entries, popups and the inbox count still work. "Don't ask again" not user-tested (skipped).
+- Left from the review: an entry with `async: true` or pointing elsewhere still counts as
+  installed; `npm run watch` copies the hook only at start; `claudeDir()` doesn't share a base
+  with `statusDir()`/`sessionsDir()`.
