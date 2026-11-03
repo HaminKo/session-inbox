@@ -52,7 +52,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   the project has its own rules.
 
 ## Status
-Next: "Before a public release" in docs/todo.md.
+Next: to-do #19 (find the focus file automatically), then "Before a public release" in docs/todo.md.
 
 ## Decisions
 One line each; reasons, who decided and what was rejected: docs/decisions.md.

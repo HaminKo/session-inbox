@@ -1,7 +1,8 @@
-Next number: 19
+Next number: 20
 
 ## To do
-(none open: next, "Before a public release" below)
+- **19 — Find the focus file automatically** (small): the Now row with no setting, from
+  `docs/todo.md`; `focus` only overrides (another path, or `false`). docs/todo/19-auto-focus.md.
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
