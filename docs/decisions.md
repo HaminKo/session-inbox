@@ -3,6 +3,19 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Project focus goes in the extension's sidebar, not a standalone app (to-do #18)
+- Decision: show each project's "Where we are" line in the sidebar (to-do #18). A richer overview
+  (Now/Next for every opted-in project, running or not) goes under "Later" as a webview panel
+  inside the extension.
+- Reason: projects are switched inside VS Code, where the sidebar already lists every window's
+  sessions. A standalone app would be a third copy of the counting rules (after `statusFolder.ts`
+  and the tray script) and would need its own install, autostart, updates and GUI tests. The
+  tray (to-do #16/#17) already covers "outside VS Code".
+- Decided by: the user asked about a standalone GUI app; Claude recommended this, and the user
+  agreed ("Go with your suggestions").
+- Rejected: a standalone app (Electron is ~100 MB, Tauri needs Rust, WinForms gets clumsy past a
+  menu). Revisit only if the overview is often wanted while VS Code is closed.
+
 ## 2026-11-03 — Tray looks like the sidebar: codicons from VS Code's font, via `.tray-looks` (to-do #17)
 - Decision: the tray badge uses the sidebar's state colours at VS Code's Dark values
   (`list.warningForeground` #CCA700, `charts.green` #89D185, grey for clear) with a black number;
