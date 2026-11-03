@@ -111,6 +111,8 @@ Report first, then the user picked (2026-11-03, accepting Claude's suggestion):
 - Finding 1 → its own to-do, #22 (docs/todo/22-popups-not-shipped.md): ship a popup hook or
   document it as the user's own. README lines on `notify.ps1` (incl. line 21 and the Credits entry)
   are left for it.
+  Done 2026-11-03: documented as the user's own hook (README "Optional: desktop popups"), plus a
+  one-time warning when a reminder can't be sent (docs/decisions.md).
 - Findings 2–13 → fixed in to-do #21 by wording edits in README.md and extension/README.md. The
   Node minimum (22.18) written into README Requirements is still the estimate from finding 8, not
   tested on an older Node.

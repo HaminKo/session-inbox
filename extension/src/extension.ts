@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import { checkHooks, describeProblem, hookVersion, installHooks } from "./installHooks.ts";
-import { dueReminders, notifyScript, reminderPayload, sendReminder } from "./renotify.ts";
+import { dueReminders, notifyScript, reminderPayload, sendReminder, waitKey } from "./renotify.ts";
 import { holdsFolder, readRevealRequest, shouldReveal, writeRevealRequest } from "./reveal.ts";
 import { SessionSource } from "./sessionSource.ts";
 import { sessionFolder } from "./sessionList.ts";
@@ -155,6 +155,7 @@ function revealRequests(dir: string): () => void {
 // kept in memory: after a reload, a chat already past the threshold is reminded once more.
 function reminders(): (statuses: readonly SessionStatus[]) => void {
   const sent = new Set<string>();
+  let toldMissing = false;
   return (statuses) => {
     // notify.ps1 shows nothing while this window has focus; held back instead, the reminder comes
     // on the first read after you leave the window without acting.
@@ -170,14 +171,48 @@ function reminders(): (statuses: readonly SessionStatus[]) => void {
       if (folder !== undefined && holdsFolder(folders, folder)) folderOf.set(status, folder);
     }
     const now = Date.now();
+    const due = dueReminders([...folderOf.keys()], now, minutes, sent);
+    if (due.length === 0) return;
     const script = notifyScript();
-    for (const status of dueReminders([...folderOf.keys()], now, minutes, sent)) {
-      const folder = folderOf.get(status) ?? "";
-      if (!sendReminder(script, reminderPayload(status, folder, now), folder)) {
+    if (!existsSync(script)) {
+      // Not spent: once a notify.ps1 is there, these waits get their reminder on the next read.
+      for (const status of due) sent.delete(waitKey(status));
+      if (!toldMissing) {
+        toldMissing = true;
         console.error(`Session Inbox: no reminder, ${script} not found`);
+        tellNotifyMissing(script);
       }
+      return;
+    }
+    // Said again if the script goes missing later.
+    toldMissing = false;
+    for (const status of due) {
+      const folder = folderOf.get(status) ?? "";
+      sendReminder(script, reminderPayload(status, folder, now), folder);
     }
   };
+}
+
+// notify.ps1 isn't part of Session Inbox (README "Optional: desktop popups"). Said once per window
+// (until the script turns up), on the first reminder that couldn't be sent, so nobody is nagged who
+// never lets a chat wait.
+function tellNotifyMissing(script: string): void {
+  const message =
+    `Session Inbox: reminder not sent, ${script} not found. Reminders need your own popup hook ` +
+    "there (see the project's README); or turn them off.";
+  void vscode.window.showWarningMessage(message, "Turn Off Reminders").then(async (choice) => {
+    if (choice !== "Turn Off Reminders") return;
+    try {
+      await vscode.workspace
+        .getConfiguration("sessionInbox")
+        .update("renotifyMinutes", 0, vscode.ConfigurationTarget.Global);
+    } catch (error) {
+      console.error("Session Inbox: couldn't turn reminders off", error);
+      void vscode.window.showErrorMessage(
+        "Session Inbox: couldn't turn reminders off (is settings.json valid?). Set sessionInbox.renotifyMinutes to 0 by hand.",
+      );
+    }
+  });
 }
 
 // Claude Code's own command (internal, docs/research/claude-tabs.md): brings the chat's tab to the

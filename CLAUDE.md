@@ -94,6 +94,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - A project's focus row comes from its `docs/todo.md` with no setting (`sessionInbox.projects` →
   `focus` only overrides: another path, or `false`); re-read on every sidebar update, never
   watched or written by the extension; only a hand-set path logs problems.
+- No popup hook is shipped: reminders and popup clicks need the user's own `notify.ps1` (README
+  "Optional: desktop popups"); a missing one is said once per window, on the first failed reminder.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 

@@ -40,3 +40,11 @@ Two options for the build session to put to the user:
 - Claude: the README no longer promises popups without saying where they come from; for a hint,
   a unit or GUI test with no `notify.ps1` in a temp hooks folder.
 - The user reads the changed README lines.
+
+## Done (2026-11-03)
+- Option A, with the warning: shown on the first reminder that can't be sent, once per window
+  (again only after the script was found), button **Turn Off Reminders**; failed reminders aren't
+  spent and go out once a `notify.ps1` exists. No "Learn More" button (no repository URL yet).
+- Checks: lint, tsc, 80 unit tests, 22 GUI tests (new `renotify-missing.gui.ts`), `.vsix` builds.
+- Review notes left: the warning appears in a background window; a `notify.ps1` that exists but
+  fails isn't detected; a `.vsix`-only user has no README link until release.

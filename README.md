@@ -16,10 +16,12 @@ It has two parts:
      replies, both are your turn);
    - a sidebar listing every session across all windows (waiting first, with how long each has
      waited, and a badge for worktrees);
-   - click a session (or its desktop popup) to bring up its VS Code window and its own Claude tab;
-   - a re-notification if a session has waited longer than a configurable threshold.
+   - click a session to bring up its VS Code window and its own Claude tab;
+   - a re-notification if a session has waited longer than a configurable threshold (this one
+     needs a desktop-popup hook of your own, see [Optional: desktop popups](#optional-desktop-popups)).
 
-The hooks extend an existing desktop-notification hook rather than replacing it.
+Desktop popups are not part of Session Inbox: the status hook works on its own, next to any popup
+hook you already have, and never changes it.
 
 ## Status
 
@@ -57,11 +59,14 @@ collapsed), not counted in the badge or the status bar; it moves to its real sta
 prompt or tool call.
 Clicking a session brings up the VS Code window that has its project folder open, or opens the
 folder in a new window if none has, and shows that chat's own Claude tab (not whichever Claude tab
-was last active); clicking a `notify.ps1` popup does the same. Clicking the status bar item opens
+was last active); clicking a popup from your own `notify.ps1` can do the same (see
+[Optional: desktop popups](#optional-desktop-popups)). Clicking the status bar item opens
 the sidebar. A session still waiting on a permission prompt or a question after 10 minutes gets its
 `notify.ps1` popup once more ("Still waiting (12 min): …"); the setting
 `sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off. The reminder is sent only by
-a window that has the chat's folder open and isn't in front, and can come up to ~30 s late.
+a window that has the chat's folder open and isn't in front, and can come up to ~30 s late. Without
+a `notify.ps1`, the first reminder that can't be sent says so once per window, with a **Turn Off
+Reminders** button.
 An empty sidebar says "No Claude Code sessions running."; clicking a session whose folder no longer
 exists (a removed worktree) shows "Folder not found" instead of opening it.
 With the setting `sessionInbox.trayIcon` on (default off), a Windows tray icon next to the clock
@@ -81,6 +86,7 @@ nothing is published yet.
 - Windows (the hook and the tray icon are Windows PowerShell scripts).
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) with the VS Code extension.
 - VS Code 1.100 or newer.
+- Optional, for desktop popups and reminders: your own `~/.claude/hooks/notify.ps1` (not included).
 - For building: Node.js 22.18 or newer (the unit tests run `.ts` files directly with
   `node --test`).
 
@@ -150,10 +156,27 @@ nothing is published yet.
   `-- window` for one) saves PNGs to the temp folder (`session-inbox-shots`). The first run downloads VS Code (~350 MB) into
   `extension/.vscode-test/`.
 
+## Optional: desktop popups
+
+Session Inbox doesn't ship a desktop-popup hook. Reminders, and clicking a popup to show its chat,
+work with one of your own at `~/.claude/hooks/notify.ps1` (a Windows PowerShell script; the author
+uses a personal one that isn't in this repo). What it needs to handle:
+
+- **Reminders:** the extension starts it as
+  `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ~/.claude/hooks/notify.ps1`, with
+  `CLAUDE_PROJECT_DIR` set to the chat's project folder and this JSON on stdin (UTF-8):
+  `{"hook_event_name":"SessionInboxReminder","session_id":"…","cwd":"<project folder>","message":"Still waiting (12 min): …"}`.
+  Show `message` in a popup. Details: [docs/research/hooks.md](docs/research/hooks.md), "Re-notify".
+- **Click shows the chat's tab (optional):** on a click, write
+  `~/.claude/session-status/.reveal` as UTF-8 without BOM:
+  `{"session_id":"…","project_dir":"<project folder>","at":<milliseconds since 1970>}`. The window
+  that has that folder open shows the chat's own Claude tab if `at` is at most 15 s old. Details:
+  [docs/research/hooks.md](docs/research/hooks.md), "Popup click shows the chat's own tab".
+
 ## Credits
 
-- Builds on the project author's own Claude Code desktop-notification hook (`notify.ps1`), which
-  this project extends rather than replaces.
+- Grew out of the project author's own Claude Code desktop-notification hook (`notify.ps1`, not
+  included), which it works next to rather than replaces.
 - [Visual Studio Code Extension API](https://code.visualstudio.com/api) — Microsoft, MIT.
 - [esbuild](https://esbuild.github.io/) — Evan Wallace, MIT.
 - [Codicons](https://github.com/microsoft/vscode-codicons) — Microsoft, CC BY 4.0: the tray menu

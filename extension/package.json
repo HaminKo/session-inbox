@@ -129,7 +129,7 @@
           "default": 10,
           "minimum": 0,
           "scope": "application",
-          "markdownDescription": "Minutes a session may wait on you (a permission prompt or a question) before its popup is shown once more. `0` turns reminders off. Uses `~/.claude/hooks/notify.ps1`."
+          "markdownDescription": "Minutes a session may wait on you (a permission prompt or a question) before its popup is shown once more. `0` turns reminders off. Needs your own popup hook at `~/.claude/hooks/notify.ps1` (not included)."
         },
         "sessionInbox.trayIcon": {
           "type": "boolean",

@@ -13,6 +13,8 @@ to bring up its window and chat tab), and an optional Windows tray icon.
 - Windows.
 - Claude Code with its VS Code extension, plus the Session Inbox status hook in
   `~/.claude/settings.json` (setup steps are in the project's main README).
+- Optional: desktop popups and reminders need your own popup hook at
+  `~/.claude/hooks/notify.ps1` (not included; the main README says what it receives).
 
 ## License
 

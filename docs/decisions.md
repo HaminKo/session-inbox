@@ -3,6 +3,20 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Popups stay the user's own hook; the README says so (to-do #22)
+- Decision: Session Inbox ships no desktop-popup hook. The README says reminders and popup clicks
+  need your own `~/.claude/hooks/notify.ps1` and gives what it receives (reminder payload) and what
+  a click writes (`.reveal`). The first reminder that can't be sent shows one warning per window,
+  with **Turn Off Reminders** (sets `sessionInbox.renotifyMinutes` to 0).
+- Reason: the author's `notify.ps1` is mostly focus-fallback code tuned to one machine; a shipped
+  hook would be its own medium to-do (design, installer, tests, never overwrite an existing one),
+  and the status bar, sidebar and tray already do the inbox's job without popups.
+- Decided by: the user, on Claude's suggestions.
+- Rejected: shipping a minimal popup hook now (option B; can be a later to-do); a warning at
+  startup (would nag every window, also for people who never let a chat wait); a VS Code
+  notification as fallback reminder (the reminding window is by design not in front, so it would
+  go unseen); a "Learn More" button (the extension has no repository URL to link yet).
+
 ## 2026-11-03 — Private-info check: nothing to fix, no fresh repo (to-do #20)
 - Decision: the repo stays as it is. No edits to current files, no history rewrite or fresh repo,
   the commit identity (name and email) stays, and the names of the user's other projects stay in

@@ -1,12 +1,11 @@
 ## Where we are
-- Now: To do 22 (popups come from a hook that isn't shipped)
+- Now: Before a public release (README screenshot of the status bar + sidebar)
 - Next: the rest of "Before a public release"
 - Updated: 2026-11-03
 
 Next number: 23
 
 ## To do
-- 22. README: popups come from a hook that isn't shipped (small): docs/todo/22-popups-not-shipped.md
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -14,7 +13,8 @@ Next number: 23
   fix; docs/research/private-info-check.md).
 - A fresh subagent that hasn't seen the project checks README.md and the docs it links against the
   code, and only reports (the user decides fixes) — done (to-do #21, findings 2–13 fixed;
-  docs/research/readme-check.md). Finding 1 is To do 22.
+  docs/research/readme-check.md). Finding 1 was To do 22 — done (popups stay the user's own
+  `notify.ps1`; README "Optional: desktop popups").
 - Add a screenshot of the status bar + sidebar to the README (the extension has a UI).
 - Start CHANGELOG.md (Keep a Changelog: Unreleased first, then versions newest first) with the
   first version.

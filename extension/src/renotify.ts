@@ -17,7 +17,7 @@ export function notifyScript(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 // One wait is a chat in `waiting` since one timestamp; a new permission prompt is a new wait.
-function waitKey(status: SessionStatus): string {
+export function waitKey(status: SessionStatus): string {
   return `${status.session_id}@${status.timestamp ?? ""}`;
 }
 

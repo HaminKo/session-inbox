@@ -354,6 +354,11 @@ Fix (installed 21:11, hashes checked): both hooks use `Project-Dir` (docs/decisi
   close or reload is a user-test item.
 - `SESSION_INBOX_NOTIFY_SCRIPT` overrides the script path (tests only; the GUI tests default it to
   a missing file, so no test shows a real popup).
+- No script (to-do #22, 2026-11-03): the first reminder that can't be sent shows one warning per
+  window ("reminder not sent, … not found"), with **Turn Off Reminders** (user setting
+  `renotifyMinutes` = 0), said again only after the script was found once. Those reminders aren't
+  spent: they go out on the first read after a `notify.ps1` turns up. `notify.ps1` isn't shipped; the README's
+  "Optional: desktop popups" says what a user's own one gets. GUI test: `renotify-missing.gui.ts`.
 
 ## Character picture in the popup (to-do #11, 2026-11-01)
 
