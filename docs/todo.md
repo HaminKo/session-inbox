@@ -1,16 +1,17 @@
 ## Where we are
-- Now: To do 20 (check all tracked files for private info)
-- Next: the rest of "Before a public release"
+- Now: Before a public release (next item: fresh-eyes check of README.md and docs)
+- Next: none yet
 - Updated: 2026-11-03
 
 Next number: 21
 
 ## To do
-- 20. Check all tracked files for private info (small): docs/todo/20-private-info-check.md
+- none yet
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
-- Search all tracked files for the "Never in tracked files" list: now To do 20.
+- Search all tracked files for the "Never in tracked files" list — done (to-do #20, nothing to
+  fix; docs/research/private-info-check.md).
 - A fresh subagent that hasn't seen the project checks README.md and the docs it links against the
   code, and only reports (the user decides fixes).
 - Add a screenshot of the status bar + sidebar to the README (the extension has a UI).

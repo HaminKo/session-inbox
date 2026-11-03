@@ -3,6 +3,21 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — Private-info check: nothing to fix, no fresh repo (to-do #20)
+- Decision: the repo stays as it is. No edits to current files, no history rewrite or fresh repo,
+  the commit identity (name and email) stays, and the names of the user's other projects stay in
+  docs and tests. Findings: docs/research/private-info-check.md.
+- Reason: current files hold none of the "Never in tracked files" items. History holds only the
+  login (once, in the first LICENSE, removed since) and the commit identity on every commit, which
+  the global rule allows; the repo was already public with most commits pushed, so a rewrite
+  couldn't take anything back. The other project names link the pseudonym to this repo; the user
+  is fine with that ("these are under the pseudonym but I'm fine with that").
+- Decided by: the user, on Claude's suggestions.
+- Rejected: a fresh one-commit repo (nothing in history calls for it, and pushed commits are
+  already public); a GitHub `noreply` commit email (the address is already on the public commits;
+  the user can still switch it in git config later); generic names for the other projects (the
+  user accepts the link).
+
 ## 2026-11-03 — Every project's focus file is `docs/todo.md` by default; `focus` only overrides (to-do #19)
 - Decision: with no setting, grouped by project, a project gets its Now row from
   `<project folder>/docs/todo.md`. `sessionInbox.projects` → `focus` is only for a project that
