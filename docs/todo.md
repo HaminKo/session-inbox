@@ -1,11 +1,12 @@
 ## Where we are
-- Now: Before a public release (decide how to distribute)
+- Now: To do 25 (decide how to distribute, then the repository link)
 - Next: the rest of "Before a public release"
 - Updated: 2026-11-03
 
-Next number: 25
+Next number: 26
 
 ## To do
+- 25. Decide how to distribute, then the repository link (medium): docs/todo/25-distribution.md
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -20,7 +21,7 @@ Next number: 25
 - Start CHANGELOG.md (Keep a Changelog: Unreleased first, then versions newest first) with the
   first version — done (to-do #24; `0.1.0`, packed into the `.vsix` by `npm run package`).
 - Decide how to distribute: VS Code Marketplace (create the `session-inbox` publisher first) or a
-  `.vsix` attached to a GitHub release. Then decide the `repository` link in
+  `.vsix` attached to a GitHub release: now To do 25. Then decide the `repository` link in
   `extension/package.json` (left out because the repo URL holds the GitHub login). With it (or
   vsce's `--baseImagesUrl`), `extension/README.md` can get the `docs/images/` pictures too:
   without one, `vsce package` stops on a relative image link ("Couldn't detect the repository").
