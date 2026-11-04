@@ -8,14 +8,20 @@ VS Code window that stays until you act on each session that is waiting for you.
 **Early development:** a status bar count, a sidebar of every session across windows (click one
 to bring up its window and chat tab), and an optional Windows tray icon.
 
+![Status bar item reading "2 waiting"](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/statusbar.png)
+
+![Session Inbox sidebar: groups Waiting, Done and Working, with a session waiting 12 min in a worktree](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/sidebar.png)
+
 ## Requirements
 
 - Windows.
 - Claude Code with its VS Code extension, plus the Session Inbox status hook in
-  `~/.claude/settings.json` (setup steps are in the project's main README).
+  `~/.claude/settings.json` (setup steps are in the
+  [main README](https://github.com/HaminKo/session-inbox#install-and-run)).
 - Optional: desktop popups and reminders need your own popup hook at
-  `~/.claude/hooks/notify.ps1` (not included; the main README says what it receives).
+  `~/.claude/hooks/notify.ps1` (not included; the
+  [main README](https://github.com/HaminKo/session-inbox#optional-desktop-popups) says what it receives).
 
 ## License
 
-MIT — see the LICENSE file included with the extension.
+MIT — see [LICENSE](LICENSE).

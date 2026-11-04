@@ -37,3 +37,7 @@ commits pushed, so their content was already published.
 The commands are in docs/local.md, "Private values". Also re-check the generic patterns:
 `git grep -n -I -E '[A-Za-z]:\\'`, `git grep -n -I -i -E 'Users[/\\]|AppData|@gmail'`, and
 `git log --all --format='%an %ae %cn %ce' | sort -u`.
+
+Since to-do #25 (2026-11-03) the search hits the repo URL in `extension/package.json`, README.md,
+CHANGELOG.md and `extension/README.md` (8 lines). Those are allowed (docs/decisions.md 2026-11-03);
+any other hit is still a finding.

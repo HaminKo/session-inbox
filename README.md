@@ -82,8 +82,8 @@ sidebar click (this needs VS Code's `code` command on PATH). It closes when the 
 started it quits, when the setting is turned off (turn it off before uninstalling; otherwise the
 icon stays until VS Code quits), or with **Exit** in its menu (it comes back when a VS Code window
 starts or the setting is turned off and on).
-Each part is built as a numbered to-do (listed in `docs/todo.md`, details in `docs/todo/`);
-nothing is published yet. What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+Each part is built as a numbered to-do (listed in `docs/todo.md`, details in `docs/todo/`).
+What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Requirements
 
@@ -96,12 +96,11 @@ nothing is published yet. What changed in each version: [CHANGELOG.md](CHANGELOG
 
 ## Install and run
 
-> Build steps land here as they're implemented. For now:
-
-- **Extension:** run `npm install` once in `extension/`, then `npm run package` (from
-  `extension/`) to build `session-inbox-0.1.0.vsix`, and install it with
+- **Extension:** download the `.vsix` file (such as `session-inbox-0.1.0.vsix`) from the
+  [latest release](https://github.com/HaminKo/session-inbox/releases/latest) and install it with
   `code --install-extension session-inbox-0.1.0.vsix` (or Extensions view → `…` → Install from
-  VSIX…).
+  VSIX…). To build it yourself instead: run `npm install` once in `extension/`, then
+  `npm run package` (from `extension/`).
 - **Hooks:** with the extension installed, run **Session Inbox: Install Hooks** from the Command
   Palette. It copies the
   status-writer (bundled in the extension from `hooks/session-status.ps1`) into `~/.claude/hooks/`

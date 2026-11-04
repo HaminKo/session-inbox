@@ -71,3 +71,21 @@ release itself is only "tag, build, upload".
 - User: install the new `.vsix`, open the extension's page in the Extensions view: the pictures
   show (once `docs/images/` is pushed), the repository link opens the repo, the Changelog tab is
   there.
+
+## Done (2026-11-03)
+- Decision (user, on Claude's suggestions): a `.vsix` on a GitHub release, tags `v<version>`; the
+  repo URL is allowed in tracked files where a link is needed; Marketplace, icon and Open VSX moved
+  to "Later". No organization move: the public commits link to the account anyway (measured).
+  Findings: docs/research/distribution.md; docs/decisions.md 2026-11-03.
+- `extension/package.json`: `repository` (with `directory: extension`), `npm run package` without
+  `--allow-missing-repository`. `extension/README.md`: both pictures by absolute `…/raw/HEAD/…`
+  URLs, links to the main README sections and LICENSE. CHANGELOG.md: `[Unreleased]` and `[0.1.0]`
+  link references. README.md: download from the latest release first, building second.
+- No line under Unreleased: 0.1.0 isn't released yet, so the first release is v0.1.0.
+- Checks: lint, tsc, 80 unit tests, 22 GUI tests; in the `.vsix`, LICENSE points at the root file,
+  both picture URLs answer 200 `image/png`, no `#number` became an issue link. The user saw the
+  pictures, links and Changelog tab on the installed extension's page.
+- Review fixes: a missing `)` in `extension/README.md`; "nothing is published yet" removed from
+  README.md; the outdated toolchain finding marked as such. Left: CHANGELOG links 404 until the
+  tag exists; pictures follow `HEAD` (decided).
+- Release commands (tag, `gh release create`) are in docs/local.md; the user runs them.

@@ -46,3 +46,6 @@ First version.
 - A Windows tray icon next to the clock (`sessionInbox.trayIcon`, off by default) with the same
   count in the sidebar's colours, also when no VS Code window is in front. Click it for the
   sessions that need you; one opens its window and tab.
+
+[Unreleased]: https://github.com/HaminKo/session-inbox/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/HaminKo/session-inbox/releases/tag/v0.1.0

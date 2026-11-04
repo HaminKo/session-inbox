@@ -3,6 +3,31 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — A `.vsix` on a GitHub release; the repo URL is allowed in tracked files (to-do #25)
+- Decision: releases are a `.vsix` attached to a GitHub release, tagged `v<version>` (`v0.1.0`
+  first). `extension/package.json` gets `repository` (the GitHub URL, `directory: extension`) and
+  `npm run package` drops `--allow-missing-repository`. That URL, which holds the GitHub login, is
+  allowed in tracked files where a link to the repo is needed: `repository`, README.md's release
+  link, CHANGELOG.md's link references and `extension/README.md`. `extension/README.md` shows the
+  two `docs/images/` pictures by absolute `…/raw/HEAD/…` URLs and links to the main README; LICENSE
+  stays a relative link (vsce rewrites it to the root LICENSE, measured). CHANGELOG.md gets
+  `[Unreleased]` (compare `v0.1.0...HEAD`) and `[0.1.0]` (`releases/tag/v0.1.0`). The Marketplace
+  (publisher, PNG icon, Windows-only targets) and Open VSX moved to "Later". No line under
+  Unreleased for the extension page's pictures and links: 0.1.0 isn't released yet, so the first
+  GitHub release is v0.1.0 and they ship in it (Claude's choice; the user can change it).
+- Reason: a GitHub release needs no new account, token or icon, and makes nothing new public. The
+  Marketplace's gains (search, automatic updates) can come later; Azure DevOps global tokens retire
+  on 2026-12-01, so publishing there would mean a hand upload or a GitHub Actions setup
+  (docs/research/distribution.md). The login in the URL shows people nothing new: they get the
+  `.vsix` from that repo page, and the public commits are linked to the account anyway (measured).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: the Marketplace now; moving the repo to a GitHub organization (takes the login out of
+  URLs but not off the repo page, where the latest commit shows the linked account); relative
+  picture paths in `extension/README.md` (vsce ignores `repository.directory` and resolves them
+  from the repo root, so `../docs/images/…` breaks in the `.vsix` and `docs/images/…` breaks on
+  GitHub's view of the file); picture links tied to the tag with `--githubBranch` (needs the
+  version in the npm script; `HEAD` shows the current look, fine for screenshots); Open VSX now.
+
 ## 2026-11-03 — CHANGELOG.md at the root, first version 0.1.0, copied into the `.vsix` by `npm run package` (to-do #24)
 - Decision: one CHANGELOG.md for the whole repo (extension, hook, tray) at the root, in the Keep a
   Changelog 1.1.0 shape: an empty `## [Unreleased]`, then `## [0.1.0] - 2026-11-03` with one

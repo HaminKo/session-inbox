@@ -30,7 +30,9 @@ Check with: `npm view typescript-eslint peerDependencies`.
   finds its platform binary (`@esbuild/win32-x64`) without it, and `vsce package` works.
   `vsce-sign` is only for signing/publishing; recheck if publishing ever fails.
 - **vsce rejects relative links in README.md without a `repository` field** ("The link 'LICENSE'
-  will be broken"). `extension/README.md` therefore uses plain text instead of relative links.
+  will be broken"). ~~`extension/README.md` therefore uses plain text instead of relative links.~~
+  Outdated since to-do #25: `repository` is set and `extension/README.md` has links and pictures
+  (docs/research/distribution.md).
 - **vsce renames files in the .vsix**: `LICENSE` → `LICENSE.txt`, `README.md` → `readme.md`.
   The .vsix holds only `dist/extension.js`, `package.json`, README and LICENSE (`.vscodeignore`
   is an allow-list).

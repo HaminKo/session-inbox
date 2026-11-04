@@ -1,12 +1,11 @@
 ## Where we are
-- Now: To do 25 (decide how to distribute, then the repository link)
-- Next: the rest of "Before a public release"
+- Now: Before a public release (the release: tag v0.1.0, `.vsix` on GitHub)
+- Next: none (the Later list only when asked)
 - Updated: 2026-11-03
 
 Next number: 26
 
 ## To do
-- 25. Decide how to distribute, then the repository link (medium): docs/todo/25-distribution.md
 
 ## Before a public release
 - License: **MIT** — done (LICENSE file written, README points to it).
@@ -20,19 +19,20 @@ Next number: 26
   (to-do #23; `docs/images/`, taken by `npm run screenshots`).
 - Start CHANGELOG.md (Keep a Changelog: Unreleased first, then versions newest first) with the
   first version — done (to-do #24; `0.1.0`, packed into the `.vsix` by `npm run package`).
-- Decide how to distribute: VS Code Marketplace (create the `session-inbox` publisher first) or a
-  `.vsix` attached to a GitHub release: now To do 25. Then decide the `repository` link in
-  `extension/package.json` (left out because the repo URL holds the GitHub login). With it (or
-  vsce's `--baseImagesUrl`), `extension/README.md` can get the `docs/images/` pictures too:
-  without one, `vsce package` stops on a relative image link ("Couldn't detect the repository").
-  The repo URL also gives CHANGELOG.md its Keep a Changelog link references at the bottom
-  (`[Unreleased]: …/compare/v0.1.0...HEAD`, one per version), left out until then (to-do #24).
+- Decide how to distribute, then the `repository` link — done (to-do #25: a `.vsix` on a GitHub
+  release; `repository` set, pictures in `extension/README.md`, CHANGELOG.md link references;
+  docs/research/distribution.md).
 - At the release: lines under Unreleased in CHANGELOG.md become the next version with the release
-  date; 0.1.0 (2026-11-03) stays as the first version, the one installed from a local `.vsix`
-  (to-do #24).
-- Add a 128×128 PNG icon (`"icon"` in `extension/package.json`) if publishing to the Marketplace.
+  date, plus its link reference at the bottom; with Unreleased still empty, the release is 0.1.0
+  (its date set to the release day if later). Tag `v<version>` and attach the `.vsix` with
+  `gh release create` (copy-ready commands in docs/local.md).
 
 ## Later, only if the user asks
+- VS Code Marketplace too (from to-do #25): create the `session-inbox` publisher, add a 128×128
+  PNG `"icon"`, package with `--target win32-x64` and `win32-arm64` (Windows only), and upload by
+  hand on the publisher page or set up GitHub Actions Trusted Publishing (Azure DevOps global
+  tokens retire 2026-12-01). Open VSX (VSCodium, Cursor) would be a similar step. See
+  docs/research/distribution.md.
 - Cross-machine sync of session status.
 - Editors other than VS Code.
 - Claude-desktop-app / CLI sessions (currently VS-Code-extension sessions only).

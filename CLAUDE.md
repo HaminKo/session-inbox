@@ -69,7 +69,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   `cwd`, which follows the shell into subfolders.
 - TypeScript stays on `~6.0.x` until typescript-eslint supports 7. VS Code minimum `^1.100.0`,
   with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
-- Publisher id `session-inbox`; no `repository` field in package.json until release.
+- Distribution: a `.vsix` on a GitHub release, tagged `v<version>`; `repository` is set. The
+  Marketplace (publisher id `session-inbox`, not created) is under Later.
 - Tests never read the real status folder: they set `SESSION_INBOX_STATUS_DIR` to a temp folder
   (and `SESSION_INBOX_SESSIONS_DIR` for `~/.claude/sessions/`).
 - A status file counts only while its chat process runs (`~/.claude/sessions/<pid>.json`);
@@ -100,10 +101,11 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 - README pictures (`docs/images/`) are unedited `npm run screenshots` output: change
-  `screenshots.ts`, never the PNG; `extension/README.md` gets none until `repository` is set.
+  `screenshots.ts`, never the PNG; `extension/README.md` shows them by absolute `…/raw/HEAD/…`
+  URLs (vsce ignores `repository.directory`).
 - CHANGELOG.md (Keep a Changelog) lives at the root only; `vscode:prepublish` copies it into
-  `extension/` (gitignored) for the `.vsix`. First version `0.1.0`; no link references until the
-  repo URL is decided.
+  `extension/` (gitignored) for the `.vsix`. First version `0.1.0`; link references at the bottom
+  point at the GitHub tags.
 
 ## Project docs
 README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).
@@ -111,4 +113,6 @@ README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one f
 ## Never in tracked files
 - Real name, pseudonym-to-keep-separate, and personal paths (always → docs/local.md).
 - The GitHub login used for pushes: write "gh (signed in)" / "a personal account"; it goes in
-  docs/local.md. Current files only — old commits that hold it are fine.
+  docs/local.md. Current files only — old commits that hold it are fine. Exception: the repo URL
+  where a link to the repo is needed (`repository`, README release link, CHANGELOG link
+  references, `extension/README.md`; docs/decisions.md 2026-11-03).
