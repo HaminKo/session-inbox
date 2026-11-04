@@ -3,6 +3,27 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-03 — CHANGELOG.md at the root, first version 0.1.0, copied into the `.vsix` by `npm run package` (to-do #24)
+- Decision: one CHANGELOG.md for the whole repo (extension, hook, tray) at the root, in the Keep a
+  Changelog 1.1.0 shape: an empty `## [Unreleased]`, then `## [0.1.0] - 2026-11-03` with one
+  `### Added` list of what the user sees (no to-do numbers). `extension/package.json` goes from
+  `0.0.1` to `0.1.0` to match. The `vscode:prepublish` script (run by `npm run package`) copies
+  it to `extension/CHANGELOG.md` (gitignored; `.vscodeignore` has `!CHANGELOG.md`), so the `.vsix`
+  has VS Code's "Changelog" tab (measured: vsce packs it as `extension/changelog.md` and lists it
+  in the manifest as `Microsoft.VisualStudio.Services.Content.Changelog`). No link references at
+  the bottom yet.
+- Reason: `0.0.1` reads as a placeholder, and the user asked for the first version now rather than
+  everything under Unreleased until a release. finish-step adds lines to the root file only, so a
+  copy made by the build can't fall behind. Link references need the repo URL, which holds the
+  GitHub login and is undecided (same as the `repository` field).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: everything under Unreleased until the public release (Keep a Changelog dates a version
+  by its release, but the user wanted a first version now); a hand-kept copy in `extension/` like
+  `extension/LICENSE` (falls behind at every step); a changelog for the extension only (the hook
+  and tray ship inside the `.vsix`); the copy in the `bundle` script next to the `.ps1` files
+  (rewrites the file on every compile, GUI test and screenshot run, though only packaging needs
+  it; found by the code review).
+
 ## 2026-11-03 — README pictures come from `npm run screenshots` (to-do #23)
 - Decision: README.md shows two pictures, `docs/images/statusbar.png` and
   `docs/images/sidebar.png`, one above the other after the feature list, copied unedited from

@@ -7,5 +7,6 @@ node_modules/
 out/
 dist/
 *.vsix
+extension/CHANGELOG.md
 .vscode-test/
 *.log

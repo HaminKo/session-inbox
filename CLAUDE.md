@@ -44,7 +44,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
     sidebar ~390, window ~2,900.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
 - **Docs to update when behaviour changes:** README.md (headline features, install/run steps,
-  Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md once it exists.
+  Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md (a line under Unreleased
+  for a change users see).
 - **Must keep working:** the existing `notify.ps1` popups must still fire (taller since
   2026-11-01, see docs/decisions.md); the
   status-writer must stay fast (it runs on every PostToolUse).
@@ -100,6 +101,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   by `@vscode/test-electron`.
 - README pictures (`docs/images/`) are unedited `npm run screenshots` output: change
   `screenshots.ts`, never the PNG; `extension/README.md` gets none until `repository` is set.
+- CHANGELOG.md (Keep a Changelog) lives at the root only; `vscode:prepublish` copies it into
+  `extension/` (gitignored) for the `.vsix`. First version `0.1.0`; no link references until the
+  repo URL is decided.
 
 ## Project docs
 README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).

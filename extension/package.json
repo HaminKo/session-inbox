@@ -2,7 +2,7 @@
   "name": "session-inbox",
   "displayName": "Session Inbox",
   "description": "A persistent \"waiting on you\" inbox for Claude Code sessions across VS Code windows.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "session-inbox",
   "license": "MIT",
   "engines": {
@@ -183,7 +183,7 @@
     "test:gui": "npm run compile && node --test --test-concurrency=1 \"test/gui/*.gui.ts\"",
     "screenshots": "npm run compile && node test/gui/screenshots.ts",
     "package": "vsce package --allow-missing-repository",
-    "vscode:prepublish": "npm run bundle -- --minify",
+    "vscode:prepublish": "node -e \"require('node:fs').copyFileSync('../CHANGELOG.md','CHANGELOG.md')\" && npm run bundle -- --minify",
     "test": "node --test \"test/unit/*.test.ts\""
   },
   "devDependencies": {
