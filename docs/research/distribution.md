@@ -28,6 +28,18 @@ Source: https://code.visualstudio.com/api/working-with-extensions/publishing-ext
   re-downloads each version.
 - A plain `.vsix` (no `--target`) installs on any platform; README.md already says Windows only.
 
+## Release steps (each version)
+First done for 0.1.0 on 2026-11-03 (release published 2026-11-04 03:12 UTC, the evening of the 3rd
+local time; tag `v0.1.0`, one asset `session-inbox-0.1.0.vsix`; measured with `gh release view`).
+1. CHANGELOG.md: the lines under `## [Unreleased]` become `## [x.y.z] - YYYY-MM-DD` (release day);
+   add `[x.y.z]: …/releases/tag/vx.y.z` at the bottom and change `[Unreleased]` to compare from
+   `vx.y.z`.
+2. `"version"` in `extension/package.json` (and `package-lock.json`, via
+   `npm version x.y.z --no-git-tag-version` in `extension/`) to the same number.
+3. Commit and push; then `npm run package`, tag `vx.y.z`, push the tag, `gh release create` with
+   the `.vsix` (copy-ready commands in docs/local.md, written for 0.1.0).
+4. Check: download the asset from the release page and install it.
+
 ## Open VSX (note only)
 Registry used by VSCodium, Cursor and similar editors; needs an Eclipse account and its publisher
 agreement, published with `ovsx`. Not looked into further.

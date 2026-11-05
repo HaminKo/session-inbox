@@ -1,31 +1,16 @@
 ## Where we are
-- Now: Before a public release (the release: tag v0.1.0, `.vsix` on GitHub)
-- Next: none (the Later list only when asked)
-- Updated: 2026-11-03
+- Now: none (the Later list only when asked)
+- Next: none
+- Updated: 2026-11-04
 
 Next number: 26
 
 ## To do
 
-## Before a public release
-- License: **MIT** — done (LICENSE file written, README points to it).
-- Search all tracked files for the "Never in tracked files" list — done (to-do #20, nothing to
-  fix; docs/research/private-info-check.md).
-- A fresh subagent that hasn't seen the project checks README.md and the docs it links against the
-  code, and only reports (the user decides fixes) — done (to-do #21, findings 2–13 fixed;
-  docs/research/readme-check.md). Finding 1 was To do 22 — done (popups stay the user's own
-  `notify.ps1`; README "Optional: desktop popups").
-- Add a screenshot of the status bar + sidebar to the README (the extension has a UI) — done
-  (to-do #23; `docs/images/`, taken by `npm run screenshots`).
-- Start CHANGELOG.md (Keep a Changelog: Unreleased first, then versions newest first) with the
-  first version — done (to-do #24; `0.1.0`, packed into the `.vsix` by `npm run package`).
-- Decide how to distribute, then the `repository` link — done (to-do #25: a `.vsix` on a GitHub
-  release; `repository` set, pictures in `extension/README.md`, CHANGELOG.md link references;
-  docs/research/distribution.md).
-- At the release: lines under Unreleased in CHANGELOG.md become the next version with the release
-  date, plus its link reference at the bottom; with Unreleased still empty, the release is 0.1.0
-  (its date set to the release day if later). Tag `v<version>` and attach the `.vsix` with
-  `gh release create` (copy-ready commands in docs/local.md).
+## Before a public release — done
+0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.
+What was done: to-dos #20–#25 (docs/todo/) and docs/decisions.md; the license is MIT. Steps for the
+next release: docs/research/distribution.md, "Release steps".
 
 ## Later, only if the user asks
 - VS Code Marketplace too (from to-do #25): create the `session-inbox` publisher, add a 128×128
