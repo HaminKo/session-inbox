@@ -5,8 +5,9 @@ A persistent **"waiting on you"** inbox for Claude Code sessions across VS Code 
 Claude Code's desktop notifications are one-shot. Session Inbox keeps a status bar item in every
 VS Code window that stays until you act on each session that is waiting for you.
 
-**Early development:** a status bar count, a sidebar of every session across windows (click one
-to bring up its window and chat tab), and an optional Windows tray icon.
+It shows a status bar count, a sidebar of every session across windows (click one to bring up its
+window and chat tab), and an optional Windows tray icon. All features, settings and install steps:
+[main README](https://github.com/HaminKo/session-inbox).
 
 ![Status bar item reading "2 waiting"](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/statusbar.png)
 
