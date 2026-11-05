@@ -1,11 +1,12 @@
 ## Where we are
-- Now: none (the Later list only when asked)
+- Now: To do 26 (README readability pass)
 - Next: none
 - Updated: 2026-11-04
 
-Next number: 26
+Next number: 27
 
 ## To do
+- 26. README readability pass (medium): docs/todo/26-readme-readability.md
 
 ## Before a public release — done
 0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.
