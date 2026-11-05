@@ -1,5 +1,8 @@
 # README check against the code (to-do #21)
 
+Line numbers below refer to the README of 2026-11-03, before #21's fixes; to-do #26 later reorganized
+it into sections (docs/decisions.md 2026-11-04), so they no longer match.
+
 2026-11-03. A fresh general-purpose subagent that had not seen the project read README.md and
 checked its claims against `extension/`, `hooks/` and `tray/` (read only, nothing run). For
 `docs/todo.md` and `docs/research/hooks.md` it checked only that the references exist. Claude then

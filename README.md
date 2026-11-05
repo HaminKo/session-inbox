@@ -6,84 +6,109 @@ Desktop notifications from Claude Code are one-shot: you click one, get distract
 to go back and respond. Session Inbox keeps a visible indicator in every VS Code window that
 stays until you actually act on each session.
 
-It has two parts:
-
-1. **Global hooks** (in `~/.claude/settings.json`) that write a small status file per session to
-   `~/.claude/session-status/<session_id>.json` — project folder, worktree, state, message, and
-   timestamp — and update it as the session moves between waiting, working, and done.
-2. **A VS Code extension** that watches that folder and shows, in every window:
-   - a status bar item: `⚠ N waiting` or `✓ all clear` (N counts waiting sessions and finished
-     replies, both are your turn);
-   - a sidebar listing every session across all windows (waiting first, with how long each has
-     waited, and a badge for worktrees);
-   - click a session to bring up its VS Code window and its own Claude tab;
-   - a re-notification if a session has waited longer than a configurable threshold (this one
-     needs a desktop-popup hook of your own, see [Optional: desktop popups](#optional-desktop-popups)).
-
-Desktop popups are not part of Session Inbox: the status hook works on its own, next to any popup
-hook you already have, and never changes it.
-
 ![Status bar item reading "2 waiting"](docs/images/statusbar.png)
 
 ![Session Inbox sidebar: groups Waiting, Done and Working, with a session waiting 12 min in a worktree](docs/images/sidebar.png)
 
-## Status
+## Features
 
-The status-writer hook works. The extension's status bar item shows the live count from the status
-folder (`⚠ N waiting`, highlighted, or `✓ all clear`; hover for waiting / done / working). A chat
-whose process has ended (window closed or VS Code quit without the hook's cleanup) is not counted.
-The Session Inbox icon in the Activity Bar (badge: waiting + done) opens a sidebar listing every
-running session in groups Waiting / Done / Working, each with its folder, a `worktree` tag, how long
-it has waited, and its message. A button in the sidebar's title bar switches to grouping by project:
-one header per project folder A-Z (a folder icon in the colour of its most urgent state: yellow
-waiting, green done, blue working, grey open), with a summary such as `1 waiting · 1 done`, and its sessions underneath, each named by
-its state. The choice is saved for all windows (others pick it up when they reload).
-Right-click a project header for "Set Icon…" (a pick of ~25 icons, e.g. a map or a globe) or
-"Reset Icon"; the icon keeps the state colour and changes in every open window at once. It's stored
-in the user setting `sessionInbox.projects` (`{ "sc-map-library": { "icon": "map" } }`), where any
-other [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name can
-be typed by hand.
-A project also shows where it stands, with no setting: grouped by project, the `Now:` line of the
-`## Where we are` section in the project's `docs/todo.md` is the first row under the header (a
-target icon); hovering it shows the whole section, with a note when its `Updated:` date is more than
-14 days old. The file is re-read with every session event and every 30 s, and never written. A
-project without that file or section simply shows no row. For a project that keeps it elsewhere,
-add `"focus": "notes/status.md"` to its entry (a markdown file, path relative to the project
-folder); a problem with a path set this way gets one line in the "Session Inbox" output channel.
-`"focus": false` turns the row off.
+### Status bar
+
+- Shows `⚠ N waiting` (highlighted) or `✓ all clear` in every VS Code window, live.
+- N counts sessions waiting on you (a permission prompt or a question) and finished replies: both
+  are your turn.
+- Hover for how many are waiting / done / working; click it to open the sidebar.
+- A chat whose process has ended (window closed, or VS Code quit without the hook's cleanup) is
+  not counted.
+
+### Sidebar
+
+- The Session Inbox icon in the Activity Bar (badge: waiting + done) opens a list of every running
+  session across all windows. With none, it says "No Claude Code sessions running."
+- **By state** (default): groups Waiting, Done and Working, in that order. Each session shows its
+  folder, a `worktree` tag, how long it has waited, and its message.
+- **By project:** a button in the sidebar's title bar switches to one header per project folder,
+  A-Z, with a summary such as `1 waiting · 1 done` and its sessions underneath, each named by its
+  state. The header's folder icon has the colour of its most urgent state: yellow waiting, green
+  done, blue working, grey open. The choice is saved for all windows (others pick it up when they
+  reload).
+- **Project icons:** right-click a project header for **Set Icon…** (a pick of ~25 icons, such as a
+  map or a globe) or **Reset Icon**. The icon keeps the state colour and changes in every open
+  window at once. It's stored in the setting `sessionInbox.projects`
+  (`{ "sc-map-library": { "icon": "map" } }`), where any other
+  [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name can
+  be typed by hand.
+- **"Open" chats:** a chat that is open but hasn't written a status yet (after a VS Code restart,
+  or a new tab before its first prompt) is shown in grey as "Open", last (grouped by state: an
+  "Open" group that starts collapsed). It isn't counted in the badge or the status bar, and moves
+  to its real state with its next prompt or tool call.
+
+### Where a project stands
+
+Grouped by project, the first row under a project's header (a target icon) shows where that
+project stands, with no setting: the `Now:` line of the `## Where we are` section in the project's
+`docs/todo.md`.
+
 ```markdown
 ## Where we are
 - Now: To do 31, step F3b4b (Run translated)
 - Next: To do 37, 11, 59
 - Updated: 2026-11-03
 ```
-A chat that is open but hasn't written a status yet (after a VS Code restart, or a new tab before
-its first prompt) is shown as grey "Open", last (grouped by state: an "Open" group that starts
-collapsed), not counted in the badge or the status bar; it moves to its real state with its next
-prompt or tool call.
-Clicking a session brings up the VS Code window that has its project folder open, or opens the
-folder in a new window if none has, and shows that chat's own Claude tab (not whichever Claude tab
-was last active); clicking a popup from your own `notify.ps1` can do the same (see
-[Optional: desktop popups](#optional-desktop-popups)). Clicking the status bar item opens
-the sidebar. A session still waiting on a permission prompt or a question after 10 minutes gets its
-`notify.ps1` popup once more ("Still waiting (12 min): …"); the setting
-`sessionInbox.renotifyMinutes` changes the minutes, `0` turns it off. The reminder is sent only by
-a window that has the chat's folder open and isn't in front, and can come up to ~30 s late. Without
-a `notify.ps1`, the first reminder that can't be sent says so once per window, with a **Turn Off
-Reminders** button.
-An empty sidebar says "No Claude Code sessions running."; clicking a session whose folder no longer
-exists (a removed worktree) shows "Folder not found" instead of opening it.
-With the setting `sessionInbox.trayIcon` on (default off), a Windows tray icon next to the clock
-shows the same count, also when no VS Code window is in front, in the sidebar's colours: yellow if
-any session is waiting, green if only finished replies are, grey when all clear; hover for a
-summary. Click it for the list of sessions that need you (dark when Windows apps are set to dark),
-each with the sidebar's state icon and its project's icon; one opens its window and tab like a
-sidebar click (this needs VS Code's `code` command on PATH). It closes when the VS Code that
-started it quits, when the setting is turned off (turn it off before uninstalling; otherwise the
-icon stays until VS Code quits), or with **Exit** in its menu (it comes back when a VS Code window
-starts or the setting is turned off and on).
-Each part is built as a numbered to-do (listed in `docs/todo.md`, details in `docs/todo/`).
-What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+
+- Hover the row for the whole section, with a note when its `Updated:` date is more than 14 days
+  old.
+- The file is re-read with every session event and every 30 s, and never written. A project
+  without that file or section simply shows no row.
+- Kept elsewhere? Add `"focus": "notes/status.md"` to the project's entry in
+  `sessionInbox.projects` (a markdown file, path relative to the project folder). A problem with a
+  path set this way gets one line in the "Session Inbox" output channel.
+- `"focus": false` turns the row off.
+
+### Clicking a session
+
+- Brings up the VS Code window that has the session's project folder open, or opens the folder in
+  a new window if none has.
+- Shows that chat's own Claude tab, not whichever Claude tab was last active.
+- A session whose folder no longer exists (a removed worktree) shows "Folder not found" instead of
+  opening it.
+- Clicking a popup from your own `notify.ps1` can do the same (see
+  [Optional: desktop popups](#optional-desktop-popups)).
+
+### Reminders
+
+- A session still waiting on a permission prompt or a question after 10 minutes gets its
+  `notify.ps1` popup once more ("Still waiting (12 min): …").
+- The setting `sessionInbox.renotifyMinutes` changes the minutes; `0` turns reminders off.
+- The reminder is sent only by a window that has the chat's folder open and isn't in front, and can
+  come up to ~30 s late.
+- Needs a desktop-popup hook of your own (see
+  [Optional: desktop popups](#optional-desktop-popups)). Without one, the first reminder that can't
+  be sent says so once per window, with a **Turn Off Reminders** button.
+
+### Tray icon (optional)
+
+Off by default: turn on the setting `sessionInbox.trayIcon`.
+
+- A Windows tray icon next to the clock shows the same count, also when no VS Code window is in
+  front, in the sidebar's colours: yellow if any session is waiting, green if only finished
+  replies are, grey when all clear. Hover for a summary.
+- Click it for the list of sessions that need you (dark when Windows apps are set to dark), each
+  with the sidebar's state icon and its project's icon. One opens its window and tab like a sidebar
+  click (this needs VS Code's `code` command on PATH).
+- It closes when the VS Code that started it quits, when the setting is turned off, or with
+  **Exit** in its menu. After Exit it comes back when a VS Code window starts or the setting is
+  turned off and on.
+- Turn the setting off before uninstalling; otherwise the icon stays until VS Code quits.
+
+## How it works
+
+- **A global hook** (in `~/.claude/settings.json`) writes a small status file per session to
+  `~/.claude/session-status/<session_id>.json` (project folder, worktree, state, message and
+  timestamp) and updates it as the session moves between waiting, working and done.
+- **The VS Code extension** watches that folder and shows what's in it in every window.
+- Desktop popups are not part of Session Inbox: the status hook works on its own, next to any
+  popup hook you already have, and never changes it.
 
 ## Requirements
 
@@ -91,73 +116,76 @@ What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) with the VS Code extension.
 - VS Code 1.100 or newer.
 - Optional, for desktop popups and reminders: your own `~/.claude/hooks/notify.ps1` (not included).
-- For building: Node.js 22.18 or newer (the unit tests run `.ts` files directly with
-  `node --test`).
 
 ## Install and run
 
-- **Extension:** download the `.vsix` file (such as `session-inbox-0.1.0.vsix`) from the
-  [latest release](https://github.com/HaminKo/session-inbox/releases/latest) and install it with
-  `code --install-extension session-inbox-0.1.0.vsix` (or Extensions view → `…` → Install from
-  VSIX…). To build it yourself instead: run `npm install` once in `extension/`, then
-  `npm run package` (from `extension/`).
-- **Hooks:** with the extension installed, run **Session Inbox: Install Hooks** from the Command
-  Palette. It copies the
-  status-writer (bundled in the extension from `hooks/session-status.ps1`) into `~/.claude/hooks/`
-  and adds it to `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse` and `SessionEnd`
-  in `~/.claude/settings.json`, next to any hooks already there. It never changes other hooks or
-  settings, refuses a `settings.json` that isn't valid JSON, saves the original once as
-  `settings.json.before-session-inbox`, and backs up a replaced hook to `~/.claude/hooks/backups/`.
-  At startup the extension warns when the hook is missing, differs from its own copy, or isn't in
+1. **Extension:** download the `.vsix` file (such as `session-inbox-0.1.0.vsix`) from the
+   [latest release](https://github.com/HaminKo/session-inbox/releases/latest) and install it with
+   `code --install-extension session-inbox-0.1.0.vsix` (or Extensions view → `…` → Install from
+   VSIX…).
+2. **Hooks:** run **Session Inbox: Install Hooks** from the Command Palette (`Ctrl+Shift+P`).
+3. New chats pick up the hook; restart chats already running. Each session then keeps a status file
+   in `~/.claude/session-status/`.
+
+What Install Hooks does:
+
+- Copies the status-writer (bundled in the extension from `hooks/session-status.ps1`) into
+  `~/.claude/hooks/` and adds it to `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse`
+  and `SessionEnd` in `~/.claude/settings.json`, next to any hooks already there.
+- Never changes other hooks or settings, and refuses a `settings.json` that isn't valid JSON.
+- Saves the original once as `settings.json.before-session-inbox`, and backs up a replaced hook to
+  `~/.claude/hooks/backups/`.
+- At startup the extension warns when the hook is missing, differs from its own copy, or isn't in
   `settings.json` ("Install Hooks" / "Don't ask again", the latter until the bundled hook changes).
-  New chats pick up the `settings.json` entries; restart chats already running.
 
-  By hand instead (in PowerShell, from this folder):
+<details>
+<summary>Setting up the hook by hand instead</summary>
 
-  ```powershell
-  New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\hooks" | Out-Null
-  Copy-Item hooks\session-status.ps1 "$env:USERPROFILE\.claude\hooks\"
-  ```
+In PowerShell, from a copy of this repo:
 
-  Then, in `~/.claude/settings.json`, add a group with this entry to each of those 5 events, next to
-  any groups already there (shown for `Stop`; the same for `PermissionRequest`, `UserPromptSubmit`,
-  `PostToolUse` and `SessionEnd`). Leave out `"async": true`: the hook has to run in order, so that
-  a late `working` can't overwrite `done`.
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\hooks" | Out-Null
+Copy-Item hooks\session-status.ps1 "$env:USERPROFILE\.claude\hooks\"
+```
 
-  ```json
-  {
-    "hooks": {
-      "Stop": [
-        {
-          "hooks": [
-            {
-              "type": "command",
-              "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/session-status.ps1\"",
-              "timeout": 10
-            }
-          ]
-        }
-      ]
-    }
+Then, in `~/.claude/settings.json`, add a group with this entry to each of the 5 events above, next
+to any groups already there (shown for `Stop`; the same for `PermissionRequest`,
+`UserPromptSubmit`, `PostToolUse` and `SessionEnd`). Leave out `"async": true`: the hook has to run
+in order, so that a late `working` can't overwrite `done`.
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$USERPROFILE/.claude/hooks/session-status.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
-  ```
+}
+```
 
-  Each session then keeps a status file in `~/.claude/session-status/`. Verify with the payload
-  test in `docs/research/hooks.md`.
-- **Development:** open the repo folder in VS Code and press `F5`: it type-checks and builds the
-  extension (`npm run compile`) and starts an Extension Development Host with it loaded. That
-  window has all other extensions turned off, Claude Code included, so showing a chat's own tab
-  only works from the installed `.vsix`.
-- **Checks** (from `extension/`): `npm run lint` (ESLint), `npm run check-types` (TypeScript),
-  `npm test` (unit tests, plain Node, about a second).
-- **GUI test and screenshots** (from `extension/`): `npm run test:gui` starts a separate VS Code
-  window with this extension (some tests add a stand-in for Claude Code) and checks the status bar,
-  sidebar, Install Hooks, opening a session, its tab, reminders and the tray icon, using sample
-  status files in temp
-  folders (`SESSION_INBOX_STATUS_DIR`, `SESSION_INBOX_SESSIONS_DIR`), never your real
-  `~/.claude/session-status/` or `~/.claude/sessions/`; `npm run screenshots` (or `-- statusbar`, `-- sidebar`,
-  `-- window` for one) saves PNGs to the temp folder (`session-inbox-shots`). The first run downloads VS Code (~350 MB) into
-  `extension/.vscode-test/`.
+Verify with the payload test in [docs/research/hooks.md](docs/research/hooks.md) ("Verifying
+without a live session").
+
+</details>
+
+## Settings
+
+All three are user settings (the same in every window): change them in Settings (`Ctrl+,`, search
+"Session Inbox") or in VS Code's user `settings.json`.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `sessionInbox.renotifyMinutes` | `10` | Minutes a session may wait on a permission prompt or a question before its popup is shown once more; `0` turns reminders off. See [Reminders](#reminders). |
+| `sessionInbox.trayIcon` | `false` | The Windows tray icon next to the clock. See [Tray icon](#tray-icon-optional). |
+| `sessionInbox.projects` | `{}` | Per project, keyed by the name its header shows (case ignored): `icon`, a codicon name (see [Sidebar](#sidebar)), and `focus`, another file for the focus row or `false` (see [Where a project stands](#where-a-project-stands)). Example: `{ "sc-map-library": { "icon": "map", "focus": "notes/status.md" } }`. |
 
 ## Optional: desktop popups
 
@@ -175,6 +203,32 @@ uses a personal one that isn't in this repo). What it needs to handle:
   `{"session_id":"…","project_dir":"<project folder>","at":<milliseconds since 1970>}`. The window
   that has that folder open shows the chat's own Claude tab if `at` is at most 15 s old. Details:
   [docs/research/hooks.md](docs/research/hooks.md), "Popup click shows the chat's own tab".
+
+## Development
+
+- **Build from source:** run `npm install` once in `extension/`, then `npm run package` (from
+  `extension/`) for a `.vsix`. Needs Node.js 22.18 or newer (the unit tests run `.ts` files
+  directly with `node --test`).
+- **Run:** open the repo folder in VS Code and press `F5`: it type-checks and builds the extension
+  (`npm run compile`) and starts an Extension Development Host with it loaded. That window has all
+  other extensions turned off, Claude Code included, so showing a chat's own tab only works from
+  the installed `.vsix`.
+- **Checks** (from `extension/`): `npm run lint` (ESLint), `npm run check-types` (TypeScript),
+  `npm test` (unit tests, plain Node, about a second).
+- **GUI test** (from `extension/`): `npm run test:gui` starts a separate VS Code window with this
+  extension (some tests add a stand-in for Claude Code) and checks the status bar, sidebar, Install
+  Hooks, opening a session, its tab, reminders and the tray icon. It uses sample status files in
+  temp folders (`SESSION_INBOX_STATUS_DIR`, `SESSION_INBOX_SESSIONS_DIR`), never your real
+  `~/.claude/session-status/` or `~/.claude/sessions/`.
+- **Screenshots** (from `extension/`): `npm run screenshots` (or `-- statusbar`, `-- sidebar`,
+  `-- window` for one) saves PNGs to the temp folder (`session-inbox-shots`). The first run of this
+  or the GUI test downloads VS Code (~350 MB) into `extension/.vscode-test/`.
+- **How it's built:** each part is a numbered to-do, listed in [docs/todo.md](docs/todo.md), with
+  details in [docs/todo/](docs/todo/).
+
+## Changelog
+
+What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits
 

@@ -48,3 +48,18 @@ New order, docs only:
   (a line-by-line check list); all links and anchors resolve (relative files exist; headings match
   `#optional-desktop-popups`, `#install-and-run`); the README pictures still show.
 - User: read it in the Markdown preview (`Ctrl+Shift+V`) or on GitHub after pushing.
+
+## Done (2026-11-05)
+- README.md reorganized in the suggested order (all four questions: the suggested answers):
+  Features in six `###` subsections, How it works (the old "two parts" list without its feature
+  bullets), Requirements and Install and run for users only (by-hand hook steps in `<details>`),
+  a Settings table, Optional: desktop popups unchanged, Development, Changelog. 200 → 253 lines.
+  One wording change on purpose: the by-hand steps run "from a copy of this repo".
+- Also decided (Claude's suggestions, accepted): no commands table, no CHANGELOG line, the `.vsix`
+  file name in the install example is a release step (docs/research/distribution.md), CLAUDE.md
+  "Docs to update" names the Settings table. docs/decisions.md 2026-11-04.
+- Checks: 130 facts from the old intro, Status, Requirements and Install and run, each found as a
+  phrase in the new text (line breaks joined), 0 missing; the five in-page anchors,
+  `#install-and-run`, `#optional-desktop-popups` and all seven relative links resolve. Lint, tsc,
+  80 unit tests, 22 GUI tests pass (no code changed). The user read it in the Markdown preview.
+- Not checked yet: the anchor links on GitHub itself (after the user pushes).

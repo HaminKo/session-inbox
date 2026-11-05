@@ -35,7 +35,8 @@ local time; tag `v0.1.0`, one asset `session-inbox-0.1.0.vsix`; measured with `g
    add `[x.y.z]: …/releases/tag/vx.y.z` at the bottom and change `[Unreleased]` to compare from
    `vx.y.z`.
 2. `"version"` in `extension/package.json` (and `package-lock.json`, via
-   `npm version x.y.z --no-git-tag-version` in `extension/`) to the same number.
+   `npm version x.y.z --no-git-tag-version` in `extension/`) to the same number, and the `.vsix`
+   file name in README.md "Install and run" (it appears twice: `session-inbox-x.y.z.vsix`).
 3. Commit and push; then `npm run package`, tag `vx.y.z`, push the tag, `gh release create` with
    the `.vsix` (copy-ready commands in docs/local.md, written for 0.1.0).
 4. Check: download the asset from the release page and install it.

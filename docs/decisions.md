@@ -3,6 +3,29 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-04 — README order: Features, How it works, Install and run, Settings, popups, Development (to-do #26)
+- Decision: README.md goes pitch, pictures, **Features** (`###` subsections: status bar, sidebar,
+  where a project stands, clicking a session, reminders, tray icon), **How it works** (the old
+  "It has two parts" list without its feature bullets), Requirements (user only), **Install and
+  run** (user only; the by-hand hook steps in a collapsed `<details>` block), **Settings** (a table
+  of every setting with its default), Optional: desktop popups, **Development** (build from source,
+  F5, checks, GUI test, screenshots, Node version), Changelog, Credits, License. The headings
+  "Install and run" and "Optional: desktop popups" keep their names: the `extension/README.md`
+  inside the released 0.1.0 `.vsix` links to `#install-and-run` and `#optional-desktop-popups`.
+  The `.vsix` file name in the install example is updated at each release (a release step in
+  docs/research/distribution.md). No CHANGELOG line: the extension doesn't change, and README.md
+  isn't in the `.vsix`.
+- Reason: the old "Status" section was one 55-line block that read like a build log, and
+  "Install and run" mixed what a user needs with contributor steps, so a visitor couldn't find
+  what it does, how to install it and which settings exist at a glance. Every user-relevant fact
+  was kept (checked one by one against the old text).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: a commands table (only Install Hooks is in the Command Palette; the other commands are
+  a title-bar button, a click or a right-click, named where they're used); renaming "Install and
+  run" to "Install" with a hand-made `<a id>` anchor (works on GitHub only through its
+  `user-content-` id rewriting, so less safe than keeping the heading); a version-free install
+  example (`code --install-extension` needs the real file name).
+
 ## 2026-11-03 — A `.vsix` on a GitHub release; the repo URL is allowed in tracked files (to-do #25)
 - Decision: releases are a `.vsix` attached to a GitHub release, tagged `v<version>` (`v0.1.0`
   first). `extension/package.json` gets `repository` (the GitHub URL, `directory: extension`) and

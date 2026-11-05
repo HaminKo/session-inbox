@@ -43,8 +43,8 @@ Don't build what's under "Later" in docs/todo.md until asked.
     `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens,
     sidebar ~390, window ~2,900.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
-- **Docs to update when behaviour changes:** README.md (headline features, install/run steps,
-  Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md (a line under Unreleased
+- **Docs to update when behaviour changes:** README.md (Features, Install and run, the Settings
+  table: one row per setting, Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md (a line under Unreleased
   for a change users see).
 - **Must keep working:** the existing `notify.ps1` popups must still fire (taller since
   2026-11-01, see docs/decisions.md); the
@@ -103,6 +103,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - README pictures (`docs/images/`) are unedited `npm run screenshots` output: change
   `screenshots.ts`, never the PNG; `extension/README.md` shows them by absolute `…/raw/HEAD/…`
   URLs (vsce ignores `repository.directory`).
+- README.md keeps the headings "Install and run" and "Optional: desktop popups" (the released
+  `extension/README.md` links to their anchors); user install and Development are separate sections.
 - CHANGELOG.md (Keep a Changelog) lives at the root only; `vscode:prepublish` copies it into
   `extension/` (gitignored) for the `.vsix`. First version `0.1.0`; link references at the bottom
   point at the GitHub tags.
