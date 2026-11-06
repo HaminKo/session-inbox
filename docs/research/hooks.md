@@ -16,6 +16,31 @@ deleting them.
   the first question is at `tool_input.questions[0].question`; otherwise `tool_name` is the tool
   needing permission.
 - **`Stop`** fires when a reply finishes. Payload has `last_assistant_message`.
+  - It also fires when the reply ends with a background command (`run_in_background`) still
+    running, so `done` can mean "reply over, Claude waits for its own command". Measured
+    2026-11-05 on a real chat: `Stop` at 21:57:28 wrote `done` ("…still running in the
+    background. I'll report it when it finishes.") while the background Bash task was running.
+  - A background command dies with its Claude process. Same chat: at 22:02 it got a new process
+    (all three open chats were restarted within 13 s; cause not confirmed, likely a VS Code
+    restart or reload), and the transcript got a `<task-notification>` with status `stopped`
+    ("didn't finish before the previous session ended"). No hook fired for that notification and
+    no reply followed it: the status file stayed at the 21:57 `done`.
+  - Not measured: whether a background command that finishes normally starts a turn that fires
+    `UserPromptSubmit`. A tool call in that turn fires `PostToolUse` (`working`), and its end
+    fires `Stop` (`done`) as usual.
+  - How often (measured 2026-11-05, all transcripts in `~/.claude/projects/*/` changed in the last
+    7 days: 254 transcripts, 7 projects): 122 of 1,077 replies (11%) ended with a background
+    task still running. Background tasks: 238 (Bash 158, Agent 51, PowerShell 24, Monitor 3,
+    SendMessage 2). For 85 of those 122 replies a task's end notice came later: median 4.7 min
+    after the reply, 90% within 13.6 min, longest 38.4 min. The other 37 replies had only tasks
+    that never got an end notice (15 tasks in all; killed with their process, still running, or
+    their chat was closed, not checked which).
+  - How it was counted: a background task is a `tool_use` with `input.run_in_background: true`, or
+    one whose id later shows up in a `<task-notification>` (`<tool-use-id>…</tool-use-id>`, then
+    `<output-file>`, then `<status>completed|failed|stopped</status>`; the same notice can appear
+    on several lines, e.g. a `queued_command` as well as the `user` line). A reply is a
+    `system` line with `subtype: "stop_hook_summary"`; it ended with a task running when a task
+    started before it and its first end notice comes after it, or never.
 - **`UserPromptSubmit`**, **`PostToolUse`**, **`SessionEnd`** — wired by to-do #1 (2026-11-01).
   `UserPromptSubmit` and `PostToolUse` are the `working` signal; `SessionEnd` deletes the status
   file. `PostToolUse` carries `tool_name`; `UserPromptSubmit` and `SessionEnd` do not. Observed live
