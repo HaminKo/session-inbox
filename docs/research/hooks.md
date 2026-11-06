@@ -41,6 +41,13 @@ deleting them.
     on several lines, e.g. a `queued_command` as well as the `user` line). A reply is a
     `system` line with `subtype: "stop_hook_summary"`; it ended with a task running when a task
     started before it and its first end notice comes after it, or never.
+  - Telling a background task at `Stop` time, from the transcript alone (measured 2026-11-05, same
+    7 days of transcripts): its `tool_result` text starts with "Command running in background with
+    ID: …" (Bash 20, PowerShell 7 with `run_in_background`), "Async agent launched successfully."
+    (Agent 52, of which 37 had no `run_in_background`: agents run in the background anyway) or
+    "Monitor started (task …, expires in 10m …" (Monitor 1). So `run_in_background` alone misses
+    most agents. How: every `tool_use` of those tools, its matching `tool_result` by
+    `tool_use_id`, the first 70 characters of its text grouped.
 - **`UserPromptSubmit`**, **`PostToolUse`**, **`SessionEnd`** — wired by to-do #1 (2026-11-01).
   `UserPromptSubmit` and `PostToolUse` are the `working` signal; `SessionEnd` deletes the status
   file. `PostToolUse` carries `tool_name`; `UserPromptSubmit` and `SessionEnd` do not. Observed live
