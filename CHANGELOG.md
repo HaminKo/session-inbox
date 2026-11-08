@@ -7,6 +7,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- A reply that ends while Claude still runs a background task (a command, an agent or a monitor)
+  is shown as working, marked "background task", and not counted until Claude's next reply with
+  no task running, a restart of the chat, or 45 minutes. Needs the updated hook: run **Session
+  Inbox: Install Hooks** again.
+
 ## [0.1.0] - 2026-11-03
 
 First version.

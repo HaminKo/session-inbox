@@ -1,12 +1,12 @@
 ## Where we are
-- Now: To do 27 (a reply that ends with a background task running is not "your turn")
+- Now: none (the Later list only when asked)
 - Next: none
-- Updated: 2026-11-05
+- Updated: 2026-11-08
 
 Next number: 28
 
 ## To do
-- 27. Background task running after a reply: not "your turn" (medium): docs/todo/27-background-tasks.md
+(none)
 
 ## Before a public release — done
 0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.

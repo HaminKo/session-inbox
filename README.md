@@ -17,6 +17,10 @@ stays until you actually act on each session.
 - Shows `⚠ N waiting` (highlighted) or `✓ all clear` in every VS Code window, live.
 - N counts sessions waiting on you (a permission prompt or a question) and finished replies: both
   are your turn.
+- A reply that ends while Claude still runs a background task (a command, an agent or a monitor
+  it will report on) counts as working, with "background task" in its sidebar row. It counts as
+  done again when Claude's next reply has no task running, when the chat restarts (the task dies
+  with it), or 45 minutes after the reply.
 - Hover for how many are waiting / done / working; click it to open the sidebar.
 - A chat whose process has ended (window closed, or VS Code quit without the hook's cleanup) is
   not counted.

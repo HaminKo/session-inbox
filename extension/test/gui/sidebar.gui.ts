@@ -133,6 +133,28 @@ void test("a running chat with no status file is listed under Open, collapsed an
   await waitFor(rows, before, "rows");
 });
 
+void test("a reply that ended with a background task running is listed under Working and not counted", async () => {
+  writeSampleSession(sessionsDir, "g");
+  writeSampleStatus(statusDir, "g", "done", { background: 1 });
+  const done = [
+    "Waiting (1)",
+    "demo-a | worktree · 12 min · Needs permission to use Bash",
+    "Done (2)",
+    "demo-d | 1 h 20 min · Finished",
+    "demo-b | <1 min · Finished",
+  ];
+  await waitFor(rows, [...done, "Working (2)", "demo-c", "demo-g | background task · Finished"], "rows");
+  assert.equal(await badge(), "3");
+  // The task ended and Claude's next reply had none running: an ordinary done, counted.
+  writeSampleStatus(statusDir, "g", "done");
+  await waitFor(rows, [...done.slice(0, 2), "Done (3)", ...done.slice(3), "demo-g | <1 min · Finished", "Working (1)", "demo-c"], "rows");
+  await waitFor(badge, "4", "badge");
+  // Gone again, so the grouping test below sees the same rows as before.
+  unlinkSync(join(statusDir, "g.json"));
+  unlinkSync(join(sessionsDir, "g.json"));
+  await waitFor(rows, [...done, "Working (1)", "demo-c"], "rows");
+});
+
 const projectHeader = `${treeRow}:has(.monaco-tl-twistie.collapsible)`;
 
 // Each project header's icon as "name rgb(...)", top to bottom.

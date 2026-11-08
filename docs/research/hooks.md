@@ -25,9 +25,11 @@ deleting them.
     restart or reload), and the transcript got a `<task-notification>` with status `stopped`
     ("didn't finish before the previous session ended"). No hook fired for that notification and
     no reply followed it: the status file stayed at the 21:57 `done`.
-  - Not measured: whether a background command that finishes normally starts a turn that fires
-    `UserPromptSubmit`. A tool call in that turn fires `PostToolUse` (`working`), and its end
-    fires `Stop` (`done`) as usual.
+  - A background command that finishes normally starts a turn by itself, but that turn fires no
+    `UserPromptSubmit` (measured 2026-11-05: the task ended at 03:16:27Z, the turn's first tool
+    call still read the 03:15:03Z `done`; that call's `PostToolUse` then wrote `working` at
+    03:16:31Z). So the first hook of such a turn is `PostToolUse`, or `Stop` if it calls no tool.
+    (Before this was measured, this line said "not measured".)
   - How often (measured 2026-11-05, all transcripts in `~/.claude/projects/*/` changed in the last
     7 days: 254 transcripts, 7 projects): 122 of 1,077 replies (11%) ended with a background
     task still running. Background tasks: 238 (Bash 158, Agent 51, PowerShell 24, Monitor 3,
@@ -48,6 +50,38 @@ deleting them.
     "Monitor started (task …, expires in 10m …" (Monitor 1). So `run_in_background` alone misses
     most agents. How: every `tool_use` of those tools, its matching `tool_result` by
     `tool_use_id`, the first 70 characters of its text grouped.
+  - The same in raw transcript text, without parsing JSON (tried 2026-11-05 in PowerShell 5.1): a
+    start is `"tool_use_id":"toolu_…","type":"tool_result","content":"` (or
+    `…"content":[{"type":"text","text":"`) followed by one of the three texts; an end is
+    `<task-notification>\n<task-id>…</task-id>\n<tool-use-id>toolu_…</tool-use-id>`, where `\n` is
+    a backslash and an `n` in the file (the regex needs `\\n`; a plain `\n` matched nothing). The
+    same words quoted inside a message (a grep's output, these notes) have escaped quotes (`\"`)
+    and don't match the start pattern. Time with `ReadAllText` plus two `[regex]::Matches`
+    (measured): 111 ms for the largest transcript (20.8 MB), 31 ms for a 1 MB one; PowerShell
+    startup is ~0.3 s (measured once), so a `Stop` gets about a third slower at worst.
+    (Superseded by the next point: the hook matches by task id, and whole hook runs were timed.)
+  - What the hook does since to-do #27 (measured 2026-11-05, same 7 days of transcripts):
+    - It matches tasks by task id, not tool-use id: the launch texts name it ("…with ID: b1x",
+      "Monitor started (task b3x", and for agents "agentId: a7f…" after a sentence), and the end
+      notice's `<task-id>` is the same (agents: 302 of 302 notices).
+    - `TaskStop` (`"name":"TaskStop","input":{"task_id":"…"}`) ends a task too: 21 of 22 TaskStop
+      calls were never followed by a notice for that task. No `TaskOutput`, `KillShell` or
+      `BashOutput` calls were seen.
+    - Matched by tool-use id with notices only, 17 of 236 tasks stayed open; by task id with
+      TaskStop, 0.
+    - Simulated at every reply (1,087): 92 replies would show as working; for 89 of them a task
+      later got a `completed`/`failed` notice (Claude came back), 3 were wrong (the task was stopped
+      or never ended, e.g. a dev server, in the reply that started it). Counting only tasks started
+      since the user's last typed prompt was tried: still 3 wrong, and 5 right ones lost, so the
+      whole transcript is scanned.
+    - Timing of the whole hook process (3 runs each): `PostToolUse` 0.73–0.79 s; `Stop` 0.79–0.85 s
+      on a 2.5 MB transcript and 0.86–0.89 s on the largest (20.8 MB). One end regex with a
+      top-level `|` (notice or TaskStop) took 312 ms on its own on that file; two separate regexes
+      took 19 ms.
+  - Claude's own `status` in `~/.claude/sessions/<pid>.json` does not help: it turns `idle` at the
+    same moment as `Stop`, with a background task still running (measured 2026-11-05: a reply
+    ended with a background logger running, which read that file every 5 s; `idle` at 03:14:11Z,
+    `Stop` wrote `done` at the same second).
 - **`UserPromptSubmit`**, **`PostToolUse`**, **`SessionEnd`** — wired by to-do #1 (2026-11-01).
   `UserPromptSubmit` and `PostToolUse` are the `working` signal; `SessionEnd` deletes the status
   file. `PostToolUse` carries `tool_name`; `UserPromptSubmit` and `SessionEnd` do not. Observed live
@@ -94,7 +128,10 @@ This avoids launching `git` on every `PostToolUse`. The worktree's name can be t
 Path: `~/.claude/session-status/<session_id>.json`. Suggested fields: `session_id`, `cwd`,
 `project_dir` (the chat's start folder from `Project-Dir`, maybe with forward slashes; since to-do
 #6, the folder a sidebar click opens; older files lack it), `folder`, `worktree`, `worktree_name`, `state` (`waiting`/`working`/`done`), `message`,
-`tool_name`, `timestamp` (ISO-8601: when this state began for `waiting` and `done`, which fire once;
+`tool_name`, `background` (since to-do #27: on `Stop`, how many background tasks the transcript
+shows started and not ended, see `Stop` above; 0 for every other event; older files lack it; the
+readers show a `done` with `background` > 0 as `working` until the chat's process restarts or
+45 min after the reply), `timestamp` (ISO-8601: when this state began for `waiting` and `done`, which fire once;
 for `working` it is refreshed on every tool call, so it means "last activity" there; the sidebar
 shows an age only for `waiting` and `done`, and "last activity" in the `working` tooltip). `message`
 for `done` is the reply's first line only (at most 140 characters, Markdown removed by `Plain-Line`,

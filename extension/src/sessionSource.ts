@@ -1,7 +1,10 @@
 // The live sessions, shared by the status bar and the sidebar: reads the status folder, drops chats
-// that are gone, adds running chats that have no status file yet as `open`, and re-reads on every
-// change and every `intervalMs`. No `vscode` import, so the unit tests run in plain Node.
+// that are gone, shows a reply still waiting on its background task as `working`, adds running
+// chats that have no status file yet as `open`, and re-reads on every change and every `intervalMs`
+// (which also ends the background wait's time limit). No `vscode` import, so the unit tests run in
+// plain Node.
 import {
+  backgroundAsWorking,
   onlyLive,
   openSessions,
   readLiveSessions,
@@ -49,7 +52,10 @@ export class SessionSource {
     const run = ++this.latest;
     const [statuses, live] = await Promise.all([readStatuses(this.statusDir), readLiveSessions(this.sessionsDir)]);
     if (run !== this.latest || this.disposed) return;
-    const current = [...onlyLive(statuses, live), ...openSessions(statuses, live)];
+    const current = [
+      ...backgroundAsWorking(onlyLive(statuses, live), live, Date.now()),
+      ...openSessions(statuses, live),
+    ];
     this.current = current;
     // A copy, so a listener added during the loop isn't called twice. One that throws must not
     // keep the others from updating.

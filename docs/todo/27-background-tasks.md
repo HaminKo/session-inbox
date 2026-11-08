@@ -40,11 +40,12 @@ restarted since that reply, or 45 minutes after it.
 - A background task's result text starts with "Command running in background with ID:" (Bash,
   PowerShell), "Async agent launched successfully." (Agent, also without `run_in_background`) or
   "Monitor started (task …" (measured 2026-11-05, hooks.md); its end is a `<task-notification>`
-  with its `<tool-use-id>`.
-- To check first: whether a task that ends normally starts a turn that fires a hook (if not, the
-  chat stays working until the 45 min); whether Claude's own `status` in the sessions file stays
-  `busy` while a task runs (would be a simpler signal); hook time on `Stop` with the largest
-  transcript.
+  with its `<tool-use-id>`. (Built differently after the review: matched by task id, and a
+  `TaskStop` call also ends a task; hooks.md.)
+- A task that ends normally starts a turn by itself (no `UserPromptSubmit`; its tool calls and its
+  `Stop` fire as usual), so that `Stop` recounts (measured 2026-11-05, hooks.md). Ruled out:
+  Claude's own `status` in the sessions file (turns `idle` at `Stop`). A text scan with two
+  regexes takes 111 ms on the largest transcript (20.8 MB); patterns in hooks.md.
 
 ## Ask the user
 1. How does it look? Suggested: as Working (same group, icon and colour), the row text saying
@@ -65,3 +66,23 @@ restarted since that reply, or 45 minutes after it.
 - By hand: ask a chat to run a 90-second sleep in the background and end its reply → the row shows
   Working, not counted; when the task ends and Claude replies → done, counted. Start another,
   then restart VS Code → done.
+
+## Done (2026-11-05)
+- Built as suggested (all four questions: the suggested answers): looks like Working with
+  "background task · <reply line>" and a "Working on a background task since HH:MM" tooltip;
+  commands, agents and monitors count; the popup is untouched; 45 min fixed.
+- Hook (`hooks/session-status.ps1`, `Background-Count`): on `Stop`, scans `transcript_path` as text
+  and writes `background: N` (0 for other events); `state` stays `done`. Installed into
+  `~/.claude/hooks/` (the old copy differed from the repo only in line endings).
+- Readers: `backgroundAsWorking` in `statusFolder.ts` (applied in `SessionSource.refresh`) and
+  `On-BackgroundTask` in the tray; `done` + `background` > 0 → `working`, unless the chat's live
+  process started after the reply or 45 min passed; no timestamp → `done`.
+- Changed after the review: tasks are matched by task id and `TaskStop` ends one (21 of 22
+  TaskStops leave no notice, measured); two end regexes instead of one with `|` (312 ms → 19 ms on
+  20.8 MB). Left: dev servers (3 wrong of 92 in a 1,087-reply simulation; "since the last prompt"
+  was no better), the extension switching up to 30 s late at 45 min, timestamp parsing that could
+  differ between JS and .NET for formats the hook never writes. docs/research/hooks.md,
+  docs/decisions.md 2026-11-05.
+- Checks: lint, compile, tsc, 84 unit tests (new: the rule, row text, tray equal, the real hook on
+  a sample transcript), 23 GUI tests (new: a background row under Working, badge not counting
+  it). The user tested it by hand from the installed `.vsix`: "Tests look good".

@@ -1,6 +1,6 @@
 // What the sidebar shows, worked out from the statuses: groups, their order, and the text of each
 // row. No `vscode` import, so the unit tests run in plain Node.
-import { countStates, type SessionState, type SessionStatus } from "./statusFolder.ts";
+import { countStates, hasBackground, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
 // One header row and the sessions under it; the same shape in both groupings. `id` is
 // `state:<state>` or `project:<label>`, so the two groupings never share a tree item id.
@@ -101,31 +101,42 @@ export function sessionFolder(status: SessionStatus): string | undefined {
 
 // `worktree · 12 min · <message>`, leaving out what doesn't apply. `working` shows no time: its
 // timestamp means last activity, not waiting since (docs/research/hooks.md). Nor does `open`: its
-// timestamp is when the chat process started, after a VS Code restart just the restart.
+// timestamp is when the chat process started, after a VS Code restart just the restart. A reply
+// waiting on its background task (`working` with `background`) says so, then the reply's line.
 export function sessionDescription(status: SessionStatus, now: number): string {
   const start = since(status);
   const parts = [
     status.worktree === true ? "worktree" : "",
+    onTask(status) ? "background task" : "",
     (status.state === "waiting" || status.state === "done") && start !== undefined ? formatAge(now - start) : "",
     oneLine(status.message),
   ];
   return parts.filter(Boolean).join(" · ");
 }
 
-// Full path, state with the clock time it began (last activity for `working`, process start for
-// `open`), full message.
+// Full path, state with the clock time it began (last activity for `working`, the reply for one on a
+// background task, process start for `open`), full message.
 // The date is added when that wasn't today.
 export function sessionTooltip(status: SessionStatus, now: number): string {
   const start = since(status);
   const time = start === undefined ? "" : clockTime(new Date(start), new Date(now));
-  const state = !time
-    ? stateNames[status.state]
-    : status.state === "working"
-      ? `Working, last activity ${time}`
-      : status.state === "open"
-        ? `${stateNames.open}, chat started ${time}`
-        : `${stateNames[status.state]} since ${time}`;
-  return [text(status.cwd) || sessionLabel(status), state, text(status.message)].filter(Boolean).join("\n");
+  return [text(status.cwd) || sessionLabel(status), stateLine(status, time), text(status.message)]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function stateLine(status: SessionStatus, time: string): string {
+  if (!time) return stateNames[status.state];
+  if (onTask(status)) return `Working on a background task since ${time}`;
+  if (status.state === "working") return `Working, last activity ${time}`;
+  if (status.state === "open") return `${stateNames.open}, chat started ${time}`;
+  return `${stateNames[status.state]} since ${time}`;
+}
+
+// A reply that ended with a background task running, shown as working (statusFolder.ts,
+// backgroundAsWorking). Once it falls back to `done` it looks like any other `done`.
+function onTask(status: SessionStatus): boolean {
+  return status.state === "working" && hasBackground(status);
 }
 
 // `<1 min`, `12 min`, `1 h 20 min`, `2 d`. A negative age (clock drift) counts as `<1 min`.

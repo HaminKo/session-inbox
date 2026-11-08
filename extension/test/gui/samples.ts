@@ -5,12 +5,12 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 // `waitedMs` back-dates the timestamp (how long the state has lasted); `worktree` marks a linked worktree;
-// `projectDir` sets the folder a row click opens.
+// `projectDir` sets the folder a row click opens; `background` the tasks still running at a `done`.
 export function writeSampleStatus(
   dir: string,
   id: string,
   state: "waiting" | "done" | "working",
-  { waitedMs = 0, worktree = false, project = id, projectDir = "" } = {},
+  { waitedMs = 0, worktree = false, project = id, projectDir = "", background = 0 } = {},
 ): void {
   const status = {
     session_id: id,
@@ -22,6 +22,7 @@ export function writeSampleStatus(
     state,
     message: state === "waiting" ? "Needs permission to use Bash" : state === "done" ? "Finished" : "",
     tool_name: state === "waiting" ? "Bash" : null,
+    background,
     timestamp: new Date(Date.now() - waitedMs).toISOString(),
   };
   writeFileSync(join(dir, `${id}.json`), JSON.stringify(status));

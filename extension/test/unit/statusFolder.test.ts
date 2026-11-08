@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, test } from "node:test";
 import {
+  backgroundAsWorking,
+  backgroundLimitMs,
   countStates,
   onlyLive,
   openSessions,
@@ -15,6 +17,7 @@ import {
   statusDir,
   summarize,
   watchFolder,
+  type SessionStatus,
 } from "../../src/statusFolder.ts";
 
 let root: string;
@@ -114,6 +117,62 @@ void test("onlyLive drops status files whose chat is gone", () => {
     onlyLive(statuses, [{ pid: 1, sessionId: "alive" }]).map((status) => status.session_id),
     ["alive"],
   );
+});
+
+void test("a reply that ended with a background task counts as working until restart or 45 min", () => {
+  const now = Date.parse("2026-11-05T22:30:00-05:00");
+  const reply = "2026-11-05T22:15:03.0403531-05:00"; // the hook's format: seven decimals, local offset
+  const replyMs = Date.parse(reply);
+  const done = (id: string, more: Partial<SessionStatus> = {}): SessionStatus => ({
+    session_id: id,
+    state: "done",
+    background: 1,
+    timestamp: reply,
+    ...more,
+  });
+  const statuses = [
+    done("running"),
+    done("restarted"),
+    done("two-processes"),
+    done("unknown-start"),
+    done("old", { timestamp: new Date(now - backgroundLimitMs).toISOString() }),
+    done("almost-old", { timestamp: new Date(now - backgroundLimitMs + 1000).toISOString() }),
+    done("none", { background: 0 }),
+    done("no-field", { background: undefined }),
+    done("text", { background: "2" as unknown as number }),
+    done("no-time", { timestamp: undefined }),
+    done("bad-time", { timestamp: "soon" }),
+    done("waiting", { state: "waiting" }),
+  ];
+  // Each chat's running processes by start time; one started before the reply unless listed here.
+  const before = replyMs - 60 * 60_000; // before every status's own reply, "almost-old" too
+  const after = replyMs + 60_000;
+  const starts: Record<string, unknown[]> = {
+    restarted: [after],
+    "two-processes": [after, before], // the reply's own process still runs
+    "unknown-start": ["soon"],
+  };
+  const live = statuses.flatMap((status) =>
+    (starts[status.session_id] ?? [before]).map((startedAt) => ({ pid: 1, sessionId: status.session_id, startedAt })),
+  );
+  const states = (result: SessionStatus[]) => Object.fromEntries(result.map((status) => [status.session_id, status.state]));
+  assert.deepEqual(states(backgroundAsWorking(statuses, live, now)), {
+    running: "working",
+    restarted: "done",
+    "two-processes": "working",
+    "unknown-start": "working",
+    old: "done",
+    "almost-old": "working",
+    none: "done",
+    "no-field": "done",
+    text: "done",
+    "no-time": "done",
+    "bad-time": "done",
+    waiting: "waiting",
+  });
+  assert.equal(states(backgroundAsWorking(statuses, undefined, now)).restarted, "working", "no sessions folder: time only");
+  const [kept] = backgroundAsWorking([done("running", { message: "Tests run in the background." })], live, now);
+  assert.deepEqual(kept, { ...done("running", { message: "Tests run in the background." }), state: "working" });
 });
 
 void test("a running VS Code chat with no status file is open", () => {

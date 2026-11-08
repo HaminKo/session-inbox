@@ -61,7 +61,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   the VS Code extension).
 - Three session states: `waiting` (blocked on permission/question), `done` (reply finished, your
   turn), `working`. The inbox counts `waiting` + `done`. A fourth, `open` (running VS Code chat
-  with no status file yet), is made by the extension only and never counted.
+  with no status file yet), is made by the extension only and never counted. A `done` whose
+  `background` > 0 (tasks running at `Stop`) is read as `working` until the chat restarts or
+  45 min pass.
 - The status hook runs synchronously so events stay in order; `notify.ps1` stays async.
 - `hooks/session-status.ps1` in the repo is the source: edit it there, then copy it to
   `~/.claude/hooks/`.

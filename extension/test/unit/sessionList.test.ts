@@ -125,6 +125,16 @@ void test("description: worktree, age, message; working shows no age", () => {
   assert.equal(sessionDescription(status("a", "working", { timestamp, message: "" }), now), "");
   assert.equal(sessionDescription(status("a", "open", { timestamp }), now), "", "open shows no age");
   assert.equal(sessionDescription(status("a", "done", { message: "Finished" }), now), "Finished");
+  const reply = { timestamp, message: "Tests run in the background." };
+  assert.equal(
+    sessionDescription(status("a", "working", { ...reply, background: 1, worktree: true }), now),
+    "worktree · background task · Tests run in the background.",
+  );
+  assert.equal(
+    sessionDescription(status("a", "done", { ...reply, background: 1 }), now),
+    "12 min · Tests run in the background.",
+    "fallen back to done: a plain done",
+  );
 });
 
 void test("tooltip: path, state with clock time, message", () => {
@@ -136,6 +146,10 @@ void test("tooltip: path, state with clock time, message", () => {
   assert.equal(
     sessionTooltip(status("a", "working", { cwd: "C:/projects/demo-a", timestamp }), now),
     "C:/projects/demo-a\nWorking, last activity 09:05",
+  );
+  assert.equal(
+    sessionTooltip(status("a", "working", { cwd: "C:/projects/demo-a", timestamp, background: 2, message: "Started it." }), now),
+    "C:/projects/demo-a\nWorking on a background task since 09:05\nStarted it.",
   );
   assert.equal(
     sessionTooltip(status("a", "open", { cwd: "C:/projects/demo-a", timestamp }), now),

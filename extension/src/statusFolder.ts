@@ -19,6 +19,8 @@ export interface SessionStatus {
   state: SessionState;
   message?: string;
   tool_name?: string | null;
+  // Background tasks still running when the reply ended (written on `Stop`, 0 otherwise).
+  background?: number;
   timestamp?: string;
 }
 
@@ -106,6 +108,37 @@ export function onlyLive(statuses: readonly SessionStatus[], live: readonly Live
   if (!live) return [...statuses];
   const ids = new Set(live.map((session) => session.sessionId));
   return statuses.filter((status) => ids.has(status.session_id));
+}
+
+// A reply that ended with a background task still running isn't your turn yet: Claude reports on the
+// task by itself when it ends, and that reply's own `Stop` rewrites the file. Until then such a `done`
+// counts as `working`. It is `done` again once the chat's process restarted after the reply (the task
+// died with the old one, and no hook fires for that), or `backgroundLimitMs` after the reply (the
+// longest wait measured was 38.4 min, docs/research/hooks.md). With no timestamp it stays `done`.
+export const backgroundLimitMs = 45 * 60_000;
+
+export function backgroundAsWorking(
+  statuses: readonly SessionStatus[],
+  live: readonly LiveSession[] | undefined,
+  now: number,
+): SessionStatus[] {
+  return statuses.map((status) => (onBackgroundTask(status, live, now) ? { ...status, state: "working" } : status));
+}
+
+function onBackgroundTask(status: SessionStatus, live: readonly LiveSession[] | undefined, now: number): boolean {
+  if (status.state !== "done" || !hasBackground(status)) return false;
+  const reply = typeof status.timestamp === "string" ? Date.parse(status.timestamp) : NaN;
+  if (Number.isNaN(reply) || now - reply >= backgroundLimitMs) return false;
+  // Restarted: every running process of this chat started after the reply. A start time that isn't
+  // a number can't be told, so it counts as before. No sessions folder: only the time limit.
+  const starts = (live ?? [])
+    .filter((session) => session.sessionId === status.session_id)
+    .map((session) => (typeof session.startedAt === "number" ? session.startedAt : -Infinity));
+  return starts.length === 0 || Math.min(...starts) <= reply;
+}
+
+export function hasBackground(status: SessionStatus): boolean {
+  return typeof status.background === "number" && status.background > 0;
 }
 
 // Running VS Code chats with no status file yet (after a VS Code restart, or a new tab before its

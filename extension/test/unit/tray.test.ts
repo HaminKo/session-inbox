@@ -11,7 +11,14 @@ import { promisify } from "node:util";
 import { readCodicons } from "../../src/codicons.ts";
 import { projectIcon } from "../../src/projectLook.ts";
 import { sessionFolder, sessionLabel } from "../../src/sessionList.ts";
-import { countStates, onlyLive, readLiveSessions, readStatuses } from "../../src/statusFolder.ts";
+import {
+  backgroundAsWorking,
+  backgroundLimitMs,
+  countStates,
+  onlyLive,
+  readLiveSessions,
+  readStatuses,
+} from "../../src/statusFolder.ts";
 import { startTray, stopTray, trayLooks, writeTrayLooks } from "../../src/tray.ts";
 import { noFontSkip, pinnedFont } from "./pinnedFont.ts";
 
@@ -44,7 +51,8 @@ async function runOnce(statusDir: string, sessionsDir: string, more: string[] = 
 
 // What the extension shows for the same folders: counts, and the ids that need you.
 async function extensionView(statusDir: string, sessionsDir: string) {
-  const statuses = onlyLive(await readStatuses(statusDir), await readLiveSessions(sessionsDir));
+  const live = await readLiveSessions(sessionsDir);
+  const statuses = backgroundAsWorking(onlyLive(await readStatuses(statusDir), live), live, Date.now());
   const { waiting, done, working } = countStates(statuses);
   const needs = statuses.filter((status) => status.state === "waiting" || status.state === "done");
   return { waiting, done, working, needsYou: waiting + done, ids: needs.map((status) => status.session_id).sort() };
@@ -74,9 +82,9 @@ function writeStatus(dir: string, id: string, state: string, more: object = {}):
   writeFileSync(join(dir, `${id}.json`), JSON.stringify({ session_id: id, folder: `project-${id}`, state, ...more }));
 }
 
-// Named by session, not pid: here several sessions share this test's pid.
-function writeSession(dir: string, pid: number, sessionId: string): void {
-  writeFileSync(join(dir, `${sessionId}.json`), JSON.stringify({ pid, sessionId, kind: "interactive" }));
+// Named by session (or `name`), not pid: here several sessions share this test's pid.
+function writeSession(dir: string, pid: number, sessionId: string, more: object = {}, name = sessionId): void {
+  writeFileSync(join(dir, `${name}.json`), JSON.stringify({ pid, sessionId, kind: "interactive", ...more }));
 }
 
 // A PID that just exited: a child process that ran and finished.
@@ -190,6 +198,52 @@ void suite("tray script", { skip, concurrency: true }, () => {
         ["c:/work/project-w", "c:\\work\\project-c", "", ""],
         "project_dir; else cwd while it is the folder itself",
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  void test("a reply waiting on its background task counts as working, as in the extension", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    try {
+      const now = Date.now();
+      const reply = new Date(now - 5 * 60_000);
+      // The hook's format: local time with an offset and seven decimals.
+      const offset = -reply.getTimezoneOffset();
+      const sign = offset >= 0 ? "+" : "-";
+      const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, "0");
+      const local = new Date(reply.getTime() + offset * 60_000).toISOString().replace("Z", "");
+      const timestamp = `${local}0000${sign}${pad(offset / 60)}:${pad(offset % 60)}`;
+      assert.equal(Date.parse(timestamp), reply.getTime());
+      const before = reply.getTime() - 60_000;
+      const after = reply.getTime() + 60_000;
+      const task = { background: 1, timestamp };
+      writeStatus(statusDir, "running", "done", task);
+      writeStatus(statusDir, "restarted", "done", task);
+      writeStatus(statusDir, "two-processes", "done", task);
+      writeStatus(statusDir, "unknown-start", "done", task);
+      writeStatus(statusDir, "old", "done", { background: 1, timestamp: new Date(now - backgroundLimitMs - 60_000).toISOString() });
+      writeStatus(statusDir, "none", "done", { ...task, background: 0 });
+      writeStatus(statusDir, "text", "done", { ...task, background: "2" });
+      writeStatus(statusDir, "no-time", "done", { background: 1 });
+      writeStatus(statusDir, "bad-time", "done", { background: 1, timestamp: "soon" });
+      writeStatus(statusDir, "waiting", "waiting", task);
+      for (const id of ["running", "old", "none", "text", "no-time", "bad-time", "waiting"]) {
+        writeSession(sessionsDir, process.pid, id, { startedAt: before });
+      }
+      writeSession(sessionsDir, process.pid, "restarted", { startedAt: after });
+      writeSession(sessionsDir, process.pid, "two-processes", { startedAt: after });
+      writeSession(sessionsDir, process.pid, "two-processes", { startedAt: before }, "two-processes-old");
+      writeSession(sessionsDir, process.pid, "unknown-start", { startedAt: "soon" });
+
+      const tray = await assertSameAsExtension(statusDir, sessionsDir);
+      assert.deepEqual(
+        tray.needs.map((need) => need.session_id).sort(),
+        ["bad-time", "no-time", "none", "old", "restarted", "text", "waiting"],
+      );
+      assert.equal(tray.working, 3, "running, two-processes, unknown-start");
+      // No sessions folder: only the time limit applies, so the restarted one counts as working too.
+      assert.equal((await assertSameAsExtension(statusDir, join(root, "missing"))).working, 4);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

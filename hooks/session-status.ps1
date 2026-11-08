@@ -11,7 +11,8 @@
 #   UserPromptSubmit  -> working
 #   PostToolUse       -> working
 #   SessionEnd        -> the status file is deleted
-# The inbox counts waiting + done (see docs/decisions.md).
+# The inbox counts waiting + done (see docs/decisions.md). On Stop it also writes `background`: the
+# number of background tasks still running; the readers show such a `done` as working for a while.
 #
 # Wired synchronously (not async) so the events stay in order: a late 'working' write must never
 # land after 'done' and leave a finished session stuck as working. The body is tiny and does no
@@ -57,7 +58,39 @@ function First-Line([string]$text) {
     return ''
 }
 
+# How many background tasks (commands, agents, monitors) the chat's transcript shows started and not
+# yet ended, so a reply that ends while Claude still waits for one isn't "your turn". A start is a
+# tool result beginning with one of the three launch texts, which name the task id; an end is a
+# <task-notification> for that task id, or a TaskStop call on it (which writes no notification).
+# Read as text with regexes, no JSON parse: a Stop on the largest transcript seen (20.8 MB) took
+# 0.1-0.15 s longer than a PostToolUse (docs/research/hooks.md, Stop). Words quoted inside a message
+# have escaped quotes (\") and don't match. 0 when the transcript can't be read.
+function Background-Count([string]$path) {
+    if (-not $path) { return 0 }
+    try {
+        # Claude may be appending to it: share read, write and delete.
+        $stream = [System.IO.File]::Open($path, 'Open', 'Read', 'ReadWrite, Delete')
+        try { $text = (New-Object System.IO.StreamReader($stream, [System.Text.Encoding]::UTF8)).ReadToEnd() }
+        finally { $stream.Dispose() }
+    }
+    catch { return 0 }
+    $running = New-Object 'System.Collections.Generic.HashSet[string]'
+    # The agent text has a sentence before its id: (?:[^"\\]|\\.)*? stays inside the JSON string.
+    $start = '"tool_use_id":"[^"]+","type":"tool_result","content":(?:"|\[\{"type":"text","text":")(?:Command running in background with ID: (\w+)|Monitor started \(task (\w+)|Async agent launched successfully\.(?:[^"\\]|\\.)*?agentId: (\w+))'
+    foreach ($m in [regex]::Matches($text, $start)) {
+        foreach ($group in 1..3) { if ($m.Groups[$group].Success) { [void]$running.Add($m.Groups[$group].Value) } }
+    }
+    # \\n: the file holds JSON's escape, a backslash and an n, not a line break. Two regexes, not one
+    # with a top-level |: that one took 312 ms instead of 19 on a 20.8 MB transcript (measured).
+    $ends = @('<task-notification>\\n<task-id>([^<]+)</task-id>', '"name":"TaskStop","input":\{"task_id":"([^"]+)"')
+    foreach ($end in $ends) {
+        foreach ($m in [regex]::Matches($text, $end)) { [void]$running.Remove($m.Groups[1].Value) }
+    }
+    return $running.Count
+}
+
 $message = ''
+$background = 0
 switch ($event) {
     'PermissionRequest' {
         $state = 'waiting'
@@ -72,6 +105,7 @@ switch ($event) {
         $state = 'done'
         $line = First-Line $data.last_assistant_message
         $message = if ($line) { $line } else { 'Finished' }
+        $background = Background-Count $data.transcript_path
     }
     default { $state = 'working' }  # UserPromptSubmit, PostToolUse
 }
@@ -113,6 +147,7 @@ $status = [ordered]@{
     state         = $state
     message       = $message
     tool_name     = $data.tool_name
+    background    = $background  # running background tasks; set on Stop only, 0 otherwise
     timestamp     = (Get-Date).ToString('o')
 }
 

@@ -3,6 +3,28 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-05 — A `done` whose reply left a background task running counts as `working` (to-do #27)
+- Decision: on `Stop` the hook counts the background tasks (commands, agents, monitors) that the
+  chat's transcript shows started and not ended (ended: a `<task-notification>` or a `TaskStop` on
+  that task id), and writes it as `background`; `state` stays `done`. The extension and the tray show a `done` with `background` > 0 as `working` (row text
+  "background task · <the reply's line>"), not counted, until the file changes (Claude's next reply
+  ends with its own `Stop`), the chat's process started after the reply (restarted: the task died,
+  and no hook fires for that), or 45 minutes after the reply. With no timestamp it stays `done`.
+  The `notify.ps1` popup still fires at that `Stop`.
+- Reason: 11% of replies (measured over 7 days) ended with a task running, and Claude reports on
+  it by itself, so "your turn" was wrong for them. Keeping `state: "done"` in the file means an
+  older extension or tray counts it as before, and the fallback needs no hook. 45 min covers every
+  measured wait (longest 38.4 min). docs/research/hooks.md, `Stop`.
+- Decided by: the user ("go with your suggestions", to-do #27).
+- Rejected: Claude's own `status` in `~/.claude/sessions/<pid>.json` as the signal (it turns
+  `idle` at `Stop` with a task running, measured); a fourth state or group "Background" (more UI
+  and colours for a short wait); `run_in_background` alone (misses agents, which run in the
+  background without it); 45 min as a setting (a fixed number until someone needs another);
+  skipping the popup (it's the user's own hook); counting only tasks started since the user's last
+  prompt, against dev servers (simulated over 1,087 replies: the same 3 wrong, 5 right ones lost);
+  scanning only the transcript's new part since the last `Stop` (a Stop costs at most 0.15 s more
+  than a PostToolUse today, measured).
+
 ## 2026-11-04 — README order: Features, How it works, Install and run, Settings, popups, Development (to-do #26)
 - Decision: README.md goes pitch, pictures, **Features** (`###` subsections: status bar, sidebar,
   where a project stands, clicking a session, reminders, tray icon), **How it works** (the old

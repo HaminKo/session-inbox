@@ -4,9 +4,10 @@
 # Click the icon for a menu: a session opens its VS Code window (`code <folder>`) and asks that window
 # to show the chat's tab (the `.reveal` hand-off, docs/research/claude-tabs.md); Exit closes the tray.
 #
-# The reading, liveness filter and count are a PowerShell copy of extension/src/statusFolder.ts
-# (readStatuses, readLiveSessions, onlyLive, countStates). Keep the two the same: the unit test
-# test/unit/tray.test.ts runs this script with -Once and compares its result with the TypeScript.
+# The reading, liveness filter, background-task rule and count are a PowerShell copy of
+# extension/src/statusFolder.ts (readStatuses, readLiveSessions, onlyLive, backgroundAsWorking,
+# countStates). Keep the two the same: the unit test test/unit/tray.test.ts runs this script with
+# -Once and compares its result with the TypeScript.
 #
 # One copy runs at a time (a named mutex). The extension starts it (setting sessionInbox.trayIcon,
 # extension/src/tray.ts) and every window tries; the copies after the first exit at once.
@@ -63,15 +64,39 @@ function Is-Session($data) {
     (Is-Object $data) -and ($data.pid -is [int] -or $data.pid -is [long]) -and $data.pid -gt 0 -and $data.sessionId -is [string]
 }
 
-# The session ids whose chat process still runs, or $null when that can't be told, so nothing gets
-# hidden: folder missing or empty, or any file unreadable or not in the expected format.
+# The session ids whose chat process still runs, each with the earliest start time (ms) of its
+# running processes (-Infinity for one whose `startedAt` isn't a number), or $null when that can't be
+# told, so nothing gets hidden: folder missing or empty, or any file unreadable or not in the
+# expected format.
 function Read-LiveIds([string]$dir, $runningPids) {
     $files = Read-JsonFiles $dir
     if ($null -eq $files -or $files.Count -eq 0) { return $null }
     foreach ($file in $files) { if (-not (Is-Session $file)) { return $null } }
-    $ids = New-Object 'System.Collections.Generic.HashSet[string]'
-    foreach ($file in $files) { if ($runningPids.Contains([int]$file.pid)) { [void]$ids.Add($file.sessionId) } }
+    $ids = New-Object 'System.Collections.Generic.Dictionary[string,double]'
+    foreach ($file in $files) {
+        if (-not $runningPids.Contains([int]$file.pid)) { continue }
+        $start = if (Is-Number $file.startedAt) { [double]$file.startedAt } else { [double]::NegativeInfinity }
+        if (-not $ids.ContainsKey($file.sessionId) -or $start -lt $ids[$file.sessionId]) { $ids[$file.sessionId] = $start }
+    }
     return , $ids
+}
+
+function Is-Number($value) {
+    $value -is [int] -or $value -is [long] -or $value -is [double] -or $value -is [decimal]
+}
+
+# A `done` whose reply ended with a background task still running counts as working, unless the
+# chat's process restarted after the reply or the reply is $backgroundLimitMs old. A copy of
+# backgroundAsWorking in extension/src/statusFolder.ts. $live: Read-LiveIds' result.
+$backgroundLimitMs = 45 * 60000
+function On-BackgroundTask($status, $live, [double]$now) {
+    if ($status.state -cne 'done' -or -not (Is-Number $status.background) -or $status.background -le 0) { return $false }
+    $reply = [DateTimeOffset]::MinValue
+    if ($status.timestamp -isnot [string] -or -not [DateTimeOffset]::TryParse($status.timestamp, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$reply)) { return $false }
+    $replyMs = [double]$reply.ToUnixTimeMilliseconds()
+    if ($now - $replyMs -ge $backgroundLimitMs) { return $false }
+    if ($null -eq $live -or -not $live.ContainsKey($status.session_id)) { return $true }
+    return $live[$status.session_id] -le $replyMs
 }
 
 # The last part of a path, either slash; '' for none.
@@ -142,7 +167,9 @@ function Read-Inbox {
     $files = Read-JsonFiles $statusDir  # assigned first: piping the call would pass the list as one item
     $statuses = @($files | Where-Object { Is-Status $_ })
     $live = Read-LiveIds $sessionsDir $runningPids
-    if ($null -ne $live) { $statuses = @($statuses | Where-Object { $live.Contains($_.session_id) }) }
+    if ($null -ne $live) { $statuses = @($statuses | Where-Object { $live.ContainsKey($_.session_id) }) }
+    $now = [double][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    foreach ($status in $statuses) { if (On-BackgroundTask $status $live $now) { $status.state = 'working' } }
 
     $looks = Read-Looks
     $counts = [ordered]@{ waiting = 0; done = 0; working = 0 }
