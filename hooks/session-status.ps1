@@ -158,10 +158,20 @@ if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Ou
 # The .tmp name doesn't end in .json, so a reader watching *.json ignores it.
 $tmp = "$file.$PID.tmp"
 [System.IO.File]::WriteAllText($tmp, ($status | ConvertTo-Json -Compress), (New-Object System.Text.UTF8Encoding $false))
-try {
-    # [NullString]::Value, not $null: PowerShell passes $null to a .NET string parameter as "", and
-    # File.Replace rejects "" as a backup path ("The path is not of a legal form"), measured 2026-11-01.
-    if (Test-Path $file) { [System.IO.File]::Replace($tmp, $file, [NullString]::Value) }
-    else { [System.IO.File]::Move($tmp, $file) }
+# The swap fails while another program has the file open for a moment ("Unable to remove the file to
+# be replaced": 2-6% of swaps in the real folder, and each one worked on a retry 25 ms later,
+# measured 2026-11-11). Stop and PermissionRequest fire once per reply, so a dropped write would
+# stay lost: retry for about a quarter of a second, then give up and leave the old file.
+for ($try = 1; ; $try++) {
+    try {
+        # [NullString]::Value, not $null: PowerShell passes $null to a .NET string parameter as "", and
+        # File.Replace rejects "" as a backup path ("The path is not of a legal form"), measured 2026-11-01.
+        if (Test-Path $file) { [System.IO.File]::Replace($tmp, $file, [NullString]::Value) }
+        else { [System.IO.File]::Move($tmp, $file) }
+        break
+    }
+    catch {
+        if ($try -ge 10) { Remove-Item $tmp -ErrorAction SilentlyContinue; break }
+        Start-Sleep -Milliseconds 25
+    }
 }
-catch { Remove-Item $tmp -ErrorAction SilentlyContinue }  # e.g. the file is locked: the next event rewrites it

@@ -1,7 +1,7 @@
 ## Where we are
 - Now: none (the Later list only when asked)
 - Next: none
-- Updated: 2026-11-08
+- Updated: 2026-11-11
 
 Next number: 28
 

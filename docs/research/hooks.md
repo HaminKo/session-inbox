@@ -141,13 +141,37 @@ a word-for-word copy of the one in `notify.ps1`); the `notify.ps1` popup shows m
 Written UTF-8 without a BOM, to `<session_id>.json.<pid>.tmp` first and then swapped in with
 `File.Replace` (or `File.Move` for a new file), so a reader never sees a half-written file.
 `Move-Item -Force` was not used: it can delete the target before moving, leaving a moment with no
-file at all.
+file at all. A failed swap is tried again, up to 10 tries 25 ms apart, then the old file is left
+(since 2026-11-11, see "A lost `done`" below).
 
 Dead end (measured 2026-11-01): `[System.IO.File]::Replace($tmp, $file, $null)` fails in Windows
 PowerShell 5.1 with "The path is not of a legal form", because PowerShell passes `$null` to a .NET
 `string` parameter as `""`. Every update to an existing status file failed, so each session stayed
 frozen at its first state, and the `catch` hid it. Fix: pass `[NullString]::Value`. Tests must
 cover updating an existing file, not only creating new ones.
+
+**A lost `done` (2026-11-11, measured; fixed the same day by retrying the swap):** two finished chats (video-downloader
+02:35, falconpaladin 03:12, Claude Code 2.1.319) stayed `working`. Their transcripts show the
+`Stop` hooks ran (`stop_hook_summary`, status hook 730 / 600 ms, no errors) and `notify.ps1` popped
+up with the reply, but the status file still held the last `PostToolUse` write (mtime and
+`timestamp` seconds before the `Stop`). Replaying the same `Stop` payload (rebuilt from the
+transcript) wrote `done` every time (1 scratch run, 15 replace runs, 10 runs in the real folder).
+Cause: in the real `~/.claude/session-status/`, 2-6% of `File.Replace` calls fail with "Unable to
+remove the file to be replaced" (15 of 522, then 14/248, 2/70, 15/621 at write gaps of ~80, 400 and
+15 ms; a `.txt` name fails too, 5 of 200). The `catch` drops the write, which is harmless for
+`PostToolUse` (the next event rewrites it) but final for `Stop` and `PermissionRequest`. Every
+failure succeeded on one retry 25 ms later (31 of 31), so the fix is to retry the swap, as
+`extension/src/tray.ts` already does for `.tray-looks`. Who holds the file is not found: 0 failures
+in other folders (Temp, Documents, `~/.claude/<new folder>`, a new subfolder of session-status),
+none with a second copy of the tray script reading a test folder (0 of 344), six Node or six
+`Code.exe`-as-Node copies of the extension's watch-and-read (0 of 304 each), or the Restart Manager
+(saw no holder, even right after a failure). How often it hits a real `Stop` is not measured: 2 of
+the ~13 `Stop`s logged by `notify.ps1` 02:00-03:40 were seen lost, the others couldn't be checked.
+The fix tries the swap up to 10 times, 25 ms apart (about a quarter of a second at worst), then
+leaves the old file as before. `extension/test/unit/sessionStatusHook.test.ts` holds the file open
+the blocking way (read, no delete sharing) and lets go 50 ms after the hook's temp file appears:
+that test fails on the old hook and passed 8 of 8 runs on the new one; a file held the whole time
+keeps its old state and leaves no `.tmp`.
 
 Keep the writer tiny and WinForms-free — it runs on every `PostToolUse`. The heavy popup work
 stays in `notify.ps1`, which this project changes only when the user asks (see docs/decisions.md).

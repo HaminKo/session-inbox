@@ -13,6 +13,12 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   no task running, a restart of the chat, or 45 minutes. Needs the updated hook: run **Session
   Inbox: Install Hooks** again.
 
+### Fixed
+- A finished reply or a permission prompt could stay shown as working: the hook's write failed
+  when another program had the status file open at that moment, and nothing wrote it again. The
+  hook now tries again for up to about a quarter of a second. Needs the updated hook: run
+  **Session Inbox: Install Hooks** again.
+
 ## [0.1.0] - 2026-11-03
 
 First version.

@@ -1,8 +1,8 @@
 // Runs the status-writer hook (hooks/session-status.ps1) on fake payloads, with USERPROFILE pointed
 // at a temp folder, and checks the status file it writes. Windows only (Windows PowerShell 5.1).
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, suite, test } from "node:test";
@@ -30,6 +30,28 @@ async function runHook(id: string, payload: object): Promise<Record<string, unkn
   run.child.stdin?.end(JSON.stringify({ session_id: id, cwd: "C:\\projects\\demo", ...payload }));
   await run;
   return JSON.parse(readFileSync(join(home, ".claude", "session-status", `${id}.json`), "utf8")) as Record<string, unknown>;
+}
+
+// Opens the existing status file of `id` the way that blocks the hook's swap (reading, without
+// letting it be deleted) and resolves once it is held. With `untilSwap`, it lets go 50 ms after the
+// hook's temp file for `id` appears, so the hook's first swap fails and a later one works; without,
+// it holds on until killed.
+async function holdOpen(id: string, untilSwap: boolean): Promise<ChildProcess> {
+  const dir = join(home, ".claude", "session-status");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${id}.json`), JSON.stringify({ session_id: id, state: "working" }));
+  const wait = untilSwap
+    ? `while (-not [IO.Directory]::GetFiles($d, '${id}.json.*.tmp')) { Start-Sleep -Milliseconds 5 }; Start-Sleep -Milliseconds 50`
+    : "Start-Sleep 30";
+  const command = `$d = '${dir}'; $h = [IO.File]::Open((Join-Path $d '${id}.json'), 'Open', 'Read', 'Read'); [Console]::Out.WriteLine('held'); ${wait}; $h.Dispose()`;
+  const holder = spawn("powershell.exe", ["-NoProfile", "-Command", command]);
+  await new Promise<void>((resolve, reject) => {
+    holder.stdout.on("data", (chunk: Buffer) => {
+      if (chunk.toString().includes("held")) resolve();
+    });
+    holder.on("exit", () => reject(new Error("the holder ended before it held the file")));
+  });
+  return holder;
 }
 
 // One transcript line as Claude Code writes it (JSON Lines, keys in this order).
@@ -84,5 +106,25 @@ void suite("status-writer hook", { skip, concurrency: true }, () => {
     assert.equal(none.background, 0);
     const working = await runHook("working", { hook_event_name: "PostToolUse", tool_name: "Bash" });
     assert.deepEqual([working.state, working.background], ["working", 0]);
+  });
+
+  void test("a status file held open for a moment still gets the Stop write", async () => {
+    const holder = await holdOpen("held", true);
+    const status = await runHook("held", { hook_event_name: "Stop", last_assistant_message: "Done." });
+    assert.equal(status.state, "done");
+    if (holder.exitCode === null) await new Promise((resolve) => holder.on("exit", resolve));
+  });
+
+  void test("a status file that stays held keeps its old state, and no temp file is left", async () => {
+    const holder = await holdOpen("stuck", false);
+    try {
+      const status = await runHook("stuck", { hook_event_name: "Stop", last_assistant_message: "Done." });
+      assert.equal(status.state, "working");
+      const dir = join(home, ".claude", "session-status");
+      assert.deepEqual(readdirSync(dir).filter((name) => name.startsWith("stuck.json.")), []);
+      assert.ok(existsSync(join(dir, "stuck.json")));
+    } finally {
+      holder.kill();
+    }
   });
 });
