@@ -1,6 +1,7 @@
 // GUI test for the clicks: the status bar item shows the sidebar, and a session row focuses the
 // window that has its folder open, or opens one. The test window has a temp folder open; another
-// temp folder plays a project with no window yet.
+// temp folder plays a project with no window yet, a third a project with a status and no chat
+// (listed as closed).
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -14,6 +15,7 @@ let vscode: VsCode;
 const temps: string[] = [];
 let hereDir: string;
 let otherDir: string;
+let parkedDir: string;
 
 function temp(prefix: string): string {
   const dir = mkdtempSync(join(tmpdir(), prefix));
@@ -29,7 +31,10 @@ before(async () => {
   writeSampleStatus(statusDir, "other", "waiting", { projectDir: otherDir });
   const sessionsDir = temp("session-inbox-sessions-");
   for (const id of ["here", "other"]) writeSampleSession(sessionsDir, id);
-  vscode = await launchVsCode({ SESSION_INBOX_STATUS_DIR: statusDir, SESSION_INBOX_SESSIONS_DIR: sessionsDir }, hereDir);
+  parkedDir = temp("session-inbox-parked-");
+  const parked = { "sessionInbox.projects": { [basename(parkedDir)]: { status: "On hold", folder: parkedDir } } };
+  const env = { SESSION_INBOX_STATUS_DIR: statusDir, SESSION_INBOX_SESSIONS_DIR: sessionsDir };
+  vscode = await launchVsCode(env, hereDir, [], parked);
   await vscode.window.locator(statusItem).waitFor({ state: "visible", timeout: 20_000 });
 });
 
@@ -81,4 +86,35 @@ void test("a session whose folder already has a window brings it up, no new wind
   await vscode.window.waitForTimeout(3_000);
   const now = await titles();
   assert.equal(now.length, 2, `windows: ${JSON.stringify(now)}`);
+});
+
+void test("Set Status of This Project in the palette lists this window's folder, as closed (no chat of it runs)", async () => {
+  await vscode.window.keyboard.press("F1");
+  const input = vscode.window.locator(".quick-input-widget input");
+  await input.fill(">Session Inbox: Set Status of This Project");
+  await vscode.window.locator(".quick-input-list .monaco-list-row").filter({ hasText: "Set Status of This Project" }).first().waitFor();
+  await input.press("Enter");
+  // Picked by typing (the pick's rows can still move when a click lands), once the pick is up.
+  await vscode.window.locator(".quick-input-title").filter({ hasText: `Status for ${basename(hereDir)}` }).waitFor();
+  await input.fill("Come back later");
+  await input.press("Enter");
+  await row(`${basename(hereDir)} · Come back later`).waitFor({ timeout: 5_000 });
+  const labels = (await vscode.window.locator(`${treeRow} .label-name`).allInnerTexts()).map((text) => text.trim());
+  // A-Z: "session-inbox-here-…" before "session-inbox-parked-…".
+  assert.deepEqual(labels.slice(-3), ["Closed (2)", `${basename(hereDir)} · Come back later`, `${basename(parkedDir)} · On hold`]);
+});
+
+void test("a closed project's row has its folder and status in the hover; a click opens its folder", async () => {
+  const parked = row(`${basename(parkedDir)} · On hold`);
+  await parked.hover();
+  const hover = vscode.window.locator(".monaco-hover:visible").first();
+  await hover.waitFor({ state: "visible", timeout: 5_000 });
+  const text = await hover.innerText();
+  for (const part of [parkedDir, "On hold"]) assert.ok(text.includes(part), `${part} in ${JSON.stringify(text)}`);
+  await vscode.window.mouse.move(0, 0);
+  await parked.click();
+  await waitForTitles(
+    (now) => now.length === 3 && now.some((title) => title.includes(basename(parkedDir))),
+    "expected a third window for the closed project's folder",
+  );
 });

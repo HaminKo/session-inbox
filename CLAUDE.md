@@ -107,6 +107,10 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   URLs (vsce ignores `repository.directory`).
 - README.md keeps the headings "Install and run" and "Optional: desktop popups" (the released
   `extension/README.md` links to their anchors); user install and Development are separate sections.
+- A hand-set project status (`sessionInbox.projects` → `status` + the `folder` it was set from)
+  follows the project's name, coloured by its `statusColor` through a file decoration (the icon
+  keeps the state colour); with no chat running the project stays in the Sessions tree as
+  "Closed", not counted; cleared only by hand.
 - CHANGELOG.md (Keep a Changelog) lives at the root only; `vscode:prepublish` copies it into
   `extension/` (gitignored) for the `.vsix`. First version `0.1.0`; link references at the bottom
   point at the GitHub tags.

@@ -7,6 +7,7 @@ import { holdsFolder, readRevealRequest, shouldReveal, writeRevealRequest } from
 import { SessionSource } from "./sessionSource.ts";
 import { sessionFolder } from "./sessionList.ts";
 import { pickProjectIcon, setProjectIcon, Sidebar, type Node } from "./sidebar.ts";
+import { clearProjectStatus, pickProjectStatus, pickProjectStatusColor, pickWindowProjectStatus } from "./projectStatus.ts";
 import { countStates, sessionsDir, statusDir, summarize, type SessionStatus } from "./statusFolder.ts";
 import { codiconFont, readCodicons } from "./codicons.ts";
 import { startTray, stopTray, trayLooks, writeTrayLooks } from "./tray.ts";
@@ -26,6 +27,11 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("sessionInbox.resetProjectIcon", (node?: Node) =>
       node?.kind === "group" ? setProjectIcon(node.group.label, undefined) : undefined,
     ),
+    vscode.commands.registerCommand("sessionInbox.setProjectStatus", pickProjectStatus),
+    vscode.commands.registerCommand("sessionInbox.setProjectStatusColor", pickProjectStatusColor),
+    vscode.commands.registerCommand("sessionInbox.clearProjectStatus", clearProjectStatus),
+    vscode.commands.registerCommand("sessionInbox.setWindowProjectStatus", pickWindowProjectStatus),
+    vscode.commands.registerCommand("sessionInbox.openProject", openProject),
     vscode.commands.registerCommand("sessionInbox.installHooks", () => runInstall(bundledHook(context))),
   );
   warnAboutHooks(context);
@@ -238,11 +244,7 @@ async function openSession(status?: SessionStatus): Promise<void> {
     void vscode.window.showInformationMessage("Folder not known yet; it updates on the session's next step.");
     return;
   }
-  // A deleted folder (a removed worktree) would open an empty window with an error in it.
-  if (!existsSync(folder)) {
-    void vscode.window.showWarningMessage(`Folder not found: ${folder}`);
-    return;
-  }
+  if (folderMissing(folder)) return;
   if (holdsFolder(workspaceFolders(), folder)) {
     // The window is already up, so a failure would look like a click that does nothing.
     if (!(await revealTab(status.session_id))) {
@@ -254,6 +256,30 @@ async function openSession(status?: SessionStatus): Promise<void> {
   await writeRevealRequest(statusDir(), { session_id: status.session_id, project_dir: folder, at: Date.now() }).catch(
     (error: unknown) => console.error("Session Inbox: couldn't write the reveal request", error),
   );
+  await openWindow(folder);
+}
+
+// A closed project's row: its saved folder's window (no chat runs, so no tab to show).
+// `node` is undefined when the command is run some other way (it's hidden from the palette).
+async function openProject(node?: Node): Promise<void> {
+  if (node?.kind !== "closed") return;
+  const { label, folder } = node.project;
+  if (!folder) {
+    void vscode.window.showInformationMessage(`No folder saved for ${label}: set its status again from its window.`);
+    return;
+  }
+  if (!folderMissing(folder)) await openWindow(folder);
+}
+
+// A deleted folder (a removed worktree) would open an empty window with an error in it: said instead.
+function folderMissing(folder: string): boolean {
+  if (existsSync(folder)) return false;
+  void vscode.window.showWarningMessage(`Folder not found: ${folder}`);
+  return true;
+}
+
+// VS Code focuses the window that already has the folder open, or opens a new one.
+async function openWindow(folder: string): Promise<void> {
   try {
     await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(folder), { forceNewWindow: true });
   } catch (error) {

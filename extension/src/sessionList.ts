@@ -1,14 +1,19 @@
 // What the sidebar shows, worked out from the statuses: groups, their order, and the text of each
 // row. No `vscode` import, so the unit tests run in plain Node.
+import type { StatusProject } from "./projectLook.ts";
 import { countStates, hasBackground, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
 // One header row and the sessions under it; the same shape in both groupings. `id` is
-// `state:<state>` or `project:<label>`, so the two groupings never share a tree item id.
+// `state:<state>`, `state:closed` or `project:<label>`, so the two groupings never share a tree
+// item id.
 export interface SessionGroup {
   id: string;
   label: string;
   description: string;
   sessions: SessionStatus[];
+  // Projects with a hand-set status and no chat running (to-do #28): each a "Closed" row that
+  // opens its folder. Never counted.
+  closed: StatusProject[];
 }
 
 // The two ways the sidebar groups sessions; the title-bar button switches between them.
@@ -23,38 +28,53 @@ const stateNames: Record<SessionState, string> = {
   open: "Open (no status yet)",
 };
 
-export function groupSessions(statuses: readonly SessionStatus[], by: GroupBy = "state"): SessionGroup[] {
-  return by === "project" ? groupByProject(statuses) : groupByState(statuses);
+// `parked`: the projects with a status (statusProjects, A-Z); those with no chat running are listed
+// as closed.
+export function groupSessions(
+  statuses: readonly SessionStatus[],
+  by: GroupBy = "state",
+  parked: readonly StatusProject[] = [],
+): SessionGroup[] {
+  const open = new Set(statuses.map((status) => sessionLabel(status).toLowerCase()));
+  const closed = parked.filter((project) => !open.has(project.label.toLowerCase()));
+  return by === "project" ? groupByProject(statuses, closed) : groupByState(statuses, closed);
 }
 
-// Waiting, done, working, open; empty groups left out. Inside a group the oldest timestamp
-// comes first (the session that has waited longest), ones without a readable timestamp last.
-function groupByState(statuses: readonly SessionStatus[]): SessionGroup[] {
-  return groupOrder
+// Waiting, done, working, open, then the closed projects; empty groups left out. Inside a group the
+// oldest timestamp comes first (the session that has waited longest), ones without a readable
+// timestamp last.
+function groupByState(statuses: readonly SessionStatus[], closed: readonly StatusProject[]): SessionGroup[] {
+  const groups: SessionGroup[] = groupOrder
     .map((state) => {
       const sessions = statuses.filter((status) => status.state === state).sort(byTime);
-      return { id: `state:${state}`, label: `${groupNames[state]} (${sessions.length})`, description: "", sessions };
+      return { id: `state:${state}`, label: `${groupNames[state]} (${sessions.length})`, description: "", sessions, closed: [] };
     })
     .filter((group) => group.sessions.length > 0);
+  if (closed.length > 0) {
+    groups.push({ id: "state:closed", label: `Closed (${closed.length})`, description: "", sessions: [], closed: [...closed] });
+  }
+  return groups;
 }
 
 // One group per row label ignoring case (Windows folders; a worktree is its own project), shown
 // with the lowest of its spellings. A-Z with numbers by value (`todo9` before `todo12`), ties by
 // the key itself, so neither the order nor the header text depends on the order files are read.
-// The header says `1 waiting · 1 done`; inside, waiting, done, working, open, each oldest first.
-function groupByProject(statuses: readonly SessionStatus[]): SessionGroup[] {
-  const projects = new Map<string, { label: string; sessions: SessionStatus[] }>();
+// The header says `1 waiting · 1 done`; inside, waiting, done, working, open, each oldest first. A
+// closed project has a header of its own in its A-Z place, with no sessions.
+function groupByProject(statuses: readonly SessionStatus[], closed: readonly StatusProject[]): SessionGroup[] {
+  const projects = new Map<string, { label: string; sessions: SessionStatus[]; closed: StatusProject[] }>();
   for (const status of statuses) {
     const label = sessionLabel(status);
     const key = label.toLowerCase();
-    const project = projects.get(key) ?? { label, sessions: [] };
+    const project = projects.get(key) ?? { label, sessions: [], closed: [] };
     if (label < project.label) project.label = label;
     project.sessions.push(status);
     projects.set(key, project);
   }
+  for (const project of closed) projects.set(project.label.toLowerCase(), { label: project.label, sessions: [], closed: [project] });
   return [...projects]
-    .sort(([a], [b]) => a.localeCompare(b, "en", { numeric: true }) || (a < b ? -1 : a > b ? 1 : 0))
-    .map(([key, { label, sessions }]) => {
+    .sort(([a], [b]) => compareProjects(a, b))
+    .map(([key, { label, sessions, closed }]) => {
       const counts = countStates(sessions);
       return {
         id: `project:${key}`,
@@ -64,8 +84,21 @@ function groupByProject(statuses: readonly SessionStatus[]): SessionGroup[] {
           .map((state) => `${counts[state]} ${state}`)
           .join(" · "),
         sessions: sessions.sort((a, b) => groupOrder.indexOf(a.state) - groupOrder.indexOf(b.state) || byTime(a, b)),
+        closed,
       };
     });
+}
+
+// Project names (lowercase keys) A-Z with numbers by value (`todo9` before `todo12`), ties by the
+// key itself, so the order never depends on the order things were read.
+export function compareProjects(a: string, b: string): number {
+  return a.localeCompare(b, "en", { numeric: true }) || (a < b ? -1 : a > b ? 1 : 0);
+}
+
+// The folder of a group's first session that has one (sessionFolder), else the one saved with a
+// closed project's status.
+export function groupFolder(group: SessionGroup): string | undefined {
+  return group.sessions.map(sessionFolder).find((dir) => dir !== undefined) ?? group.closed.find((project) => project.folder)?.folder;
 }
 
 function byTime(a: SessionStatus, b: SessionStatus): number {

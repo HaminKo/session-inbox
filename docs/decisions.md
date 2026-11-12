@@ -3,6 +3,46 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-11 — A project status set by hand, in its own colour, listed as "Closed" when no chat runs (to-do #28 A)
+- Decision: **Set Project Status…** (right-click a project header; grouped by state, a session row
+  or a closed row) or the palette's **Set Status of This Project…** (the window's folder; several:
+  VS Code's folder pick) sets free text: "On hold", "Come back later", or "Type your own…" (an
+  input box). Stored in the user setting `sessionInbox.projects` → `status`, with `folder` from
+  the session's start folder (`sessionFolder`) or the window's folder; an unknown folder keeps the
+  one saved before. The status follows the project's name in the label (`PeacefreeWeb · On hold`).
+  **Set Status Color…** picks one of 9 theme colours by name (`statusColor`, a theme colour id;
+  any other id by hand) for the label: a `FileDecorationProvider` colours rows given a made-up
+  `session-inbox-project:/<name>` URI, the only way to colour a tree row's text. The icon keeps the
+  state colour. A project with a status and no running chat stays in the Sessions tree: grouped by
+  project its header (with its focus row) and a grey **Closed** row; grouped by state a **Closed**
+  group at the end; a click opens the saved folder (`vscode.openFolder`, no tab reveal); never
+  counted. **Clear Project Status** removes status, folder and colour. Only cleared by hand. Every
+  status means the same: parked (what that does to the count is step B).
+- Reason: the user wants to park projects and still see them when their windows are closed, and
+  to tell them apart by a colour of their own, in the Sessions tree they already look at. A user
+  setting like the icon: every window redraws at once, it outlives the windows, it can be edited by
+  hand.
+- Decided by: the user. First round ("Go with your suggestions"): free text, a separate view.
+  After testing it the user asked for a colour of their own, then for the colour on the Sessions
+  text and no separate view ("I don't think having a projects tab is giving me much value"), and
+  took Claude's suggestions for how (status in the label, closed projects as "Closed" rows).
+- Rejected: a separate "Projects" view (built first, then dropped by the user: little value, and
+  with two views VS Code hides the "Group by" button until the mouse is over the view); the status
+  in the grey description (VS Code can't colour it); only the status text in colour (VS Code gives a
+  row's label one colour; a status row of its own under the header was offered, the user kept the
+  coloured name and status); a colour on the icon (it stays the state's,
+  2026-11-02); hex codes (VS Code colours only by theme colour id); coloured dots in the colour pick
+  (the pick draws them grey, measured in 1.144); colours fixed per preset (the user wants to pick);
+  one colour per status text for all projects (statuses are free text, often with a note); a fixed
+  list of statuses; clearing by itself when you work in the project again; a folder picker for a
+  project never opened (open its window, use the palette); one pick that also takes typed text (VS
+  Code sorts the typed entry above a preset it partly matches, and `QuickPick.sortByLabel` is
+  proposed API, so "on h" + Enter would save "on h").
+- Found while building: on a row with a URI, VS Code draws the file icon theme's folder in place of
+  the `folder` (and `file`) codicon, without the state colour; such rows use `symbol-folder` /
+  `symbol-file`, the same glyphs (seen in a probe screenshot, VS Code 1.144). With a URI and no
+  tooltip the hover would show the made-up URI, so project headers get one (folder and status).
+
 ## 2026-11-05 — A `done` whose reply left a background task running counts as `working` (to-do #27)
 - Decision: on `Stop` the hook counts the background tasks (commands, agents, monitors) that the
   chat's transcript shows started and not ended (ended: a `<task-notification>` or a `TaskStop` on

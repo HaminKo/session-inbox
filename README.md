@@ -8,7 +8,7 @@ stays until you actually act on each session.
 
 ![Status bar item reading "2 waiting"](docs/images/statusbar.png)
 
-![Session Inbox sidebar: groups Waiting, Done and Working, with a session waiting 12 min in a worktree](docs/images/sidebar.png)
+![Session Inbox sidebar: Sessions grouped Waiting, Done and Working, with a session waiting 12 min in a worktree; a closed project on hold, named in purple](docs/images/sidebar.png)
 
 ## Features
 
@@ -33,9 +33,11 @@ stays until you actually act on each session.
   folder, a `worktree` tag, how long it has waited, and its message.
 - **By project:** a button in the sidebar's title bar switches to one header per project folder,
   A-Z, with a summary such as `1 waiting · 1 done` and its sessions underneath, each named by its
-  state. The header's folder icon has the colour of its most urgent state: yellow waiting, green
-  done, blue working, grey open. The choice is saved for all windows (others pick it up when they
-  reload).
+  state. The header's folder icon has the colour of its
+  most urgent state: yellow waiting, green done, blue working, grey open. The choice is saved for
+  all windows (others pick it up when they reload).
+- **Project status:** see [Project status](#project-status) below; it follows the project's name,
+  e.g. `PeacefreeWeb · On hold`, in a colour you pick.
 - **Project icons:** right-click a project header for **Set Icon…** (a pick of ~25 icons, such as a
   map or a globe) or **Reset Icon**. The icon keeps the state colour and changes in every open
   window at once. It's stored in the setting `sessionInbox.projects`
@@ -68,6 +70,30 @@ project stands, with no setting: the `Now:` line of the `## Where we are` sectio
   `sessionInbox.projects` (a markdown file, path relative to the project folder). A problem with a
   path set this way gets one line in the "Session Inbox" output channel.
 - `"focus": false` turns the row off.
+
+### Project status
+
+Note that a project is parked, e.g. "On hold" or "Come back later", and keep it listed after its
+window closes.
+
+- Right-click a project header (or, grouped by state, a session) and pick **Set Project Status…**:
+  **On hold**, **Come back later**, or **Type your own…** (any text, e.g. "Come back later: the
+  login bug"). It shows after the project's name: `PeacefreeWeb · On hold`. For a project with no
+  chat open, run **Session Inbox: Set Status of This Project…** from the Command Palette in its
+  window.
+- **Set Status Color…** (right-click) colours the name and status: red, orange, yellow, green,
+  blue, purple, magenta, cyan or grey. These follow your colour theme; another
+  [theme colour](https://code.visualstudio.com/api/references/theme-color) id can be typed as
+  `"statusColor"` in settings.json. VS Code can't use a hex code here. The icon keeps the colour
+  of its state; the text colour is VS Code's file decoration colour, so it's off if you turned off
+  `explorer.decorations.colors`.
+- When no chat of the project runs, it stays listed as **Closed**: grouped by project, its header
+  (with its focus row) and a **Closed** row; grouped by state, a **Closed** group at the end. Not
+  counted in the badge. Click **Closed** to open the project's folder.
+- **Clear Project Status** (right-click) removes the status and its colour; a closed project then
+  leaves the list. A status stays until you clear it.
+- Stored in `sessionInbox.projects` with the folder it was set from (`"status"`, `"folder"`,
+  `"statusColor"`), so every window shows it at once.
 
 ### Clicking a session
 
@@ -189,7 +215,7 @@ All three are user settings (the same in every window): change them in Settings 
 |---|---|---|
 | `sessionInbox.renotifyMinutes` | `10` | Minutes a session may wait on a permission prompt or a question before its popup is shown once more; `0` turns reminders off. See [Reminders](#reminders). |
 | `sessionInbox.trayIcon` | `false` | The Windows tray icon next to the clock. See [Tray icon](#tray-icon-optional). |
-| `sessionInbox.projects` | `{}` | Per project, keyed by the name its header shows (case ignored): `icon`, a codicon name (see [Sidebar](#sidebar)), and `focus`, another file for the focus row or `false` (see [Where a project stands](#where-a-project-stands)). Example: `{ "sc-map-library": { "icon": "map", "focus": "notes/status.md" } }`. |
+| `sessionInbox.projects` | `{}` | Per project, keyed by the name its header shows (case ignored): `icon`, a codicon name (see [Sidebar](#sidebar)); `focus`, another file for the focus row or `false` (see [Where a project stands](#where-a-project-stands)); `status`, `folder` and `statusColor`, set by **Set Project Status…** and **Set Status Color…** (see [Project status](#project-status)). Example: `{ "sc-map-library": { "icon": "map", "focus": "notes/status.md" } }`. |
 
 ## Optional: desktop popups
 

@@ -7,6 +7,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- Set a project's status by hand: right-click a project (or run **Session Inbox: Set Status of
+  This Project…**) for **Set Project Status…**: "On hold", "Come back later" or your own text. It
+  shows after the project's name, in a colour you pick with **Set Status Color…**. A project with
+  a status stays listed as **Closed** after its last chat ends; click it to open its folder.
+  **Clear Project Status** removes it.
+
 ### Changed
 - A reply that ends while Claude still runs a background task (a command, an agent or a monitor)
   is shown as working, marked "background task", and not counted until Claude's next reply with

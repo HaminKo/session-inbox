@@ -176,6 +176,11 @@ function groupButton(title: string) {
   return vscode.window.locator(`${sideBar} .action-label[aria-label="${title}"]`).filter({ visible: true });
 }
 
+// An entry of VS Code's own (HTML) context menu, as on Windows by default.
+function menuItem(title: string) {
+  return vscode.window.locator(`.context-view .action-label[aria-label="${title}"]`);
+}
+
 void test("the title-bar button switches between grouping by project and by state", async () => {
   // A second session in demo-a's folder, so one project holds two states.
   writeSampleStatus(statusDir, "e", "working", { project: "a" });
@@ -225,8 +230,6 @@ void test("right-click on a project header sets its icon, which keeps the state 
   const [, before, , other] = await headerIcons();
   assert.equal(before, other);
   const header = vscode.window.locator(projectHeader).filter({ hasText: "demo-b" });
-  // VS Code's own (HTML) context menu, as on Windows by default.
-  const menuItem = (title: string) => vscode.window.locator(`.context-view .action-label[aria-label="${title}"]`);
   await header.click({ button: "right" });
   await menuItem("Set Icon…").click();
   const input = vscode.window.locator(".quick-input-widget input");
@@ -239,6 +242,78 @@ void test("right-click on a project header sets its icon, which keeps the state 
   await menuItem("Reset Icon").click();
   await waitFor(async () => (await headerIcons())[1], before, "demo-b's icon after reset");
   await groupButton("Group by state").click();
+});
+
+void test("Set Project Status… shows the status after the name, in its colour, and keeps a closed project listed", async () => {
+  const settings = JSON.parse(readFileSync(vscode.settingsFile, "utf8")) as Record<string, unknown>;
+  const savedProjects = () => (JSON.parse(readFileSync(vscode.settingsFile, "utf8")) as Record<string, unknown>)["sessionInbox.projects"];
+  const input = vscode.window.locator(".quick-input-widget input");
+  // Picks by typing, as the icon test does: the pick's rows can still move when a click lands.
+  const choose = async (label: string, title = "Status for demo-b") => {
+    await vscode.window.locator(".quick-input-title").filter({ hasText: title }).waitFor();
+    await input.fill(label);
+    await input.press("Enter");
+  };
+  const demoB = () => vscode.window.locator(treeRow).filter({ hasText: "demo-b" }).first();
+  // The label's colour as drawn: the status colour (a decoration), or the theme's text colour.
+  const labelColor = () =>
+    demoB()
+      .locator(".label-name")
+      .evaluate((element) => {
+        // The tests have no DOM types; the page has the function.
+        const page = globalThis as unknown as { getComputedStyle(element: unknown): { color: string } };
+        return page.getComputedStyle(element).color;
+      });
+  // A row and the one below it.
+  const pairFrom = async (label: string) => {
+    const all = await rows();
+    const at = all.indexOf(label);
+    return at < 0 ? [] : all.slice(at, at + 2);
+  };
+  try {
+    await groupButton("Group by project").click();
+    await demoB().click({ button: "right" });
+    await menuItem("Set Project Status…").click();
+    await choose("On hold");
+    await waitFor(() => pairFrom("demo-b · On hold | 1 done"), ["demo-b · On hold | 1 done", "Done | <1 min · Finished"], "demo-b's header");
+    // Saved with the folder a closed project's row opens (the session's start folder).
+    assert.deepEqual(savedProjects(), { "demo-b": { status: "On hold", folder: "C:/projects/demo-b" } });
+    // A colour of your own on the name and status; the icon keeps the state colour (demo-d is done too).
+    const plain = await labelColor();
+    const other = (await headerIcons())[3];
+    await demoB().click({ button: "right" });
+    await menuItem("Set Status Color…").click();
+    await choose("Purple", "Status color for demo-b");
+    await waitFor(async () => (await labelColor()) !== plain, true, "demo-b's label colour");
+    assert.deepEqual(savedProjects(), { "demo-b": { status: "On hold", folder: "C:/projects/demo-b", statusColor: "charts.purple" } });
+    // On a coloured row VS Code would swap `folder` for the icon theme's folder; `symbol-folder` looks the same.
+    assert.equal((await headerIcons())[1], other.replace(/^folder/, "symbol-folder"));
+    // The chat's process ends: the header stays, with a "Closed" row; not counted.
+    unlinkSync(join(sessionsDir, "b.json"));
+    await waitFor(() => pairFrom("demo-b · On hold"), ["demo-b · On hold", "Closed"], "demo-b when closed");
+    await waitFor(badge, "2", "badge");
+    // Grouped by state: a "Closed" group at the end, the row in the status colour too.
+    await groupButton("Group by state").click();
+    await waitFor(async () => (await rows()).slice(-2), ["Closed (1)", "demo-b · On hold"], "the Closed group");
+    assert.notEqual(await labelColor(), plain, "the closed row's colour");
+    // Your own text, from the closed row; the input box starts with the current status.
+    await demoB().click({ button: "right" });
+    await menuItem("Set Project Status…").click();
+    await choose("Type your own");
+    await waitFor(() => input.inputValue(), "On hold", "the input box");
+    await input.fill("Come back later: the login bug");
+    await input.press("Enter");
+    await waitFor(async () => (await rows()).slice(-2), ["Closed (1)", "demo-b · Come back later: the login bug"], "the new status");
+    // Clearing removes the status with its folder and colour: the closed project leaves the list.
+    await demoB().click({ button: "right" });
+    await menuItem("Clear Project Status").click();
+    await waitFor(async () => (await rows()).some((row) => row.startsWith("Closed")), false, "the Closed group");
+    assert.deepEqual(savedProjects(), {});
+  } finally {
+    writeFileSync(vscode.settingsFile, JSON.stringify(settings));
+    writeSampleSession(sessionsDir, "b");
+  }
+  await waitFor(async () => (await rows()).some((row) => row.startsWith("demo-b |")), true, "demo-b back in Done");
 });
 
 void test("grouped by project, a project's docs/todo.md gives a Now row that follows the file", async () => {

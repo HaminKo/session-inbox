@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   formatAge,
+  groupFolder,
   groupSessions,
   rowLabel,
   sessionDescription,
@@ -174,4 +175,38 @@ void test("a click opens project_dir; an older file uses cwd only while it is th
   assert.equal(sessionFolder(status("a", "done", { cwd: "C:\\p\\Demo-A" })), "C:\\p\\Demo-A");
   assert.equal(sessionFolder(status("a", "done", { cwd: "C:\\p\\demo-a\\sub" })), undefined);
   assert.equal(sessionFolder(status("a", "done", { folder: undefined })), undefined);
+});
+
+void test("a project with a status and no chat running is listed as closed, in both groupings", () => {
+  const parked = [
+    { label: "Beta", status: "On hold", folder: "C:/p/Beta", color: undefined },
+    { label: "PeacefreeWeb", status: "Come back later", folder: "C:/p/PeacefreeWeb", color: "charts.purple" },
+    { label: "zeta", status: "Later", folder: undefined, color: undefined },
+  ];
+  // beta has a chat (any spelling), so it is open: its sessions, no closed row.
+  const statuses = [status("b", "done", { folder: "beta" }), status("m", "working", { folder: "my-app" })];
+  const byState = groupSessions(statuses, "state", parked);
+  assert.deepEqual(
+    byState.map((group) => [group.id, group.label, group.sessions.length, group.closed.map((p) => p.label)]),
+    [
+      ["state:done", "Done (1)", 1, []],
+      ["state:working", "Working (1)", 1, []],
+      ["state:closed", "Closed (2)", 0, ["PeacefreeWeb", "zeta"]],
+    ],
+  );
+  const byProject = groupSessions(statuses, "project", parked);
+  assert.deepEqual(
+    byProject.map((group) => [group.id, group.label, group.description, group.sessions.length, group.closed.map((p) => p.label)]),
+    [
+      ["project:beta", "beta", "1 done", 1, []],
+      ["project:my-app", "my-app", "1 working", 1, []],
+      ["project:peacefreeweb", "PeacefreeWeb", "", 0, ["PeacefreeWeb"]],
+      ["project:zeta", "zeta", "", 0, ["zeta"]],
+    ],
+  );
+  // A closed project's folder is the one saved with its status.
+  assert.equal(groupFolder(byProject[2]), "C:/p/PeacefreeWeb");
+  assert.equal(groupFolder(byProject[3]), undefined);
+  // Nothing parked: no closed group, as before.
+  assert.equal(groupSessions([], "state", []).length, 0);
 });

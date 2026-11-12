@@ -73,6 +73,31 @@
         "category": "Session Inbox"
       },
       {
+        "command": "sessionInbox.setProjectStatus",
+        "title": "Set Project Status…",
+        "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.setProjectStatusColor",
+        "title": "Set Status Color…",
+        "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.clearProjectStatus",
+        "title": "Clear Project Status",
+        "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.setWindowProjectStatus",
+        "title": "Set Status of This Project…",
+        "category": "Session Inbox"
+      },
+      {
+        "command": "sessionInbox.openProject",
+        "title": "Open project's window",
+        "category": "Session Inbox"
+      },
+      {
         "command": "sessionInbox.installHooks",
         "title": "Install Hooks",
         "category": "Session Inbox"
@@ -111,17 +136,52 @@
         {
           "command": "sessionInbox.resetProjectIcon",
           "when": "false"
+        },
+        {
+          "command": "sessionInbox.setProjectStatus",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.setProjectStatusColor",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.clearProjectStatus",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.openProject",
+          "when": "false"
+        },
+        {
+          "command": "sessionInbox.setWindowProjectStatus",
+          "when": "workspaceFolderCount > 0"
         }
       ],
       "view/item/context": [
         {
+          "command": "sessionInbox.setProjectStatus",
+          "when": "view == sessionInbox.sessions && viewItem =~ /^(project|session|closed)/",
+          "group": "0_status@1"
+        },
+        {
+          "command": "sessionInbox.setProjectStatusColor",
+          "when": "view == sessionInbox.sessions && viewItem =~ /[.]status$/",
+          "group": "0_status@2"
+        },
+        {
+          "command": "sessionInbox.clearProjectStatus",
+          "when": "view == sessionInbox.sessions && viewItem =~ /[.]status$/",
+          "group": "0_status@3"
+        },
+        {
           "command": "sessionInbox.setProjectIcon",
-          "when": "view == sessionInbox.sessions && viewItem == project",
+          "when": "view == sessionInbox.sessions && viewItem =~ /^project/",
           "group": "1_look@1"
         },
         {
           "command": "sessionInbox.resetProjectIcon",
-          "when": "view == sessionInbox.sessions && viewItem == project",
+          "when": "view == sessionInbox.sessions && viewItem =~ /^project/",
           "group": "1_look@2"
         }
       ]
@@ -165,10 +225,25 @@
                   }
                 ],
                 "markdownDescription": "The markdown file in the project folder whose `## Where we are` section gives the `Now:` row under the project's header when grouped by project. Default `docs/todo.md`, so only a project that keeps it elsewhere needs this; `false` shows no row."
+              },
+              "status": {
+                "type": "string",
+                "minLength": 1,
+                "markdownDescription": "A status set by hand, e.g. `On hold`, shown after the project's name. The project stays listed (as **Closed**) when no chat of it runs. Set or clear it by right-clicking the project."
+              },
+              "statusColor": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9]*([.][A-Za-z][A-Za-z0-9]*)*$",
+                "markdownDescription": "The color of the project's name and status in the sidebar: a [theme color](https://code.visualstudio.com/api/references/theme-color) id, e.g. `charts.purple` (not a hex code). Set it by right-clicking the project: **Set Status Color…**."
+              },
+              "folder": {
+                "type": "string",
+                "minLength": 1,
+                "markdownDescription": "The project's folder, saved with its status, so its **Closed** row can open it."
               }
             }
           },
-          "markdownDescription": "A project's own icon and focus file in the sidebar when grouped by project, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\" } }`. The focus row comes from each project's `docs/todo.md` without a setting. The icon keeps its state colour; set it by right-clicking a project header."
+          "markdownDescription": "A project's own icon, focus file and status in the sidebar, keyed by the project's name (case ignored), e.g. `{ \"sc-map-library\": { \"icon\": \"map\" } }`. The focus row comes from each project's `docs/todo.md` without a setting. The icon keeps its state colour; set it, and the status, by right-clicking a project header."
         }
       }
     },

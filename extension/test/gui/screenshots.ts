@@ -1,7 +1,8 @@
 // Screenshots of the extension's UI in a real VS Code window, for Claude to read.
 // `npm run screenshots` takes all; `npm run screenshots -- statusbar` takes one by name.
 // Files go to the OS temp folder (never the repo); their paths are printed. The extension reads
-// sample status files (1 waiting, 1 done, 1 working), never the real ~/.claude/session-status/.
+// sample status files (1 waiting, 1 done, 1 working), never the real ~/.claude/session-status/,
+// and one closed project with a status and colour, from its own settings.
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,12 +23,12 @@ const shots: Record<string, (window: Page, path: string) => Promise<void>> = {
     const width = Math.min(bar.width, item.x + item.width + 150 - bar.x);
     await window.screenshot({ path, clip: { x: bar.x, y: bar.y, width, height: bar.height } });
   },
-  // The Activity Bar icon with its badge and the open Session Inbox view, top part only.
+  // The Activity Bar icon with its badge and the open Session Inbox view, down to its last row.
   // VS Code's default sidebar width cuts off the waiting row's message, so its right edge is
   // dragged wider first (each launch has a fresh profile, so the width doesn't stick).
   sidebar: async (window, path) => {
     await window.locator(activityItem).click();
-    await window.locator(treeRow).nth(5).waitFor({ state: "visible", timeout: 5_000 });
+    await window.locator(treeRow).nth(7).waitFor({ state: "visible", timeout: 5_000 });
     const narrow = await window.locator(sideBar).boundingBox();
     if (!narrow) throw new Error("sidebar not found");
     const edge = { x: narrow.x + narrow.width, y: narrow.y + narrow.height / 2 };
@@ -39,7 +40,9 @@ const shots: Record<string, (window: Page, path: string) => Promise<void>> = {
     const side = await window.locator(sideBar).boundingBox();
     if (!bar || !side) throw new Error("activity bar item or sidebar not found");
     if (side.width < narrow.width + 100) throw new Error(`sidebar did not widen (${narrow.width} → ${side.width} px)`);
-    const height = Math.max(bar.y + bar.height, side.y + 200) - side.y;
+    const last = await window.locator(treeRow).last().boundingBox();
+    if (!last) throw new Error("no tree row");
+    const height = Math.max(bar.y + bar.height, last.y + last.height + 8) - side.y;
     // "disabled" stops the working row's spinner at its first frame, so re-takes match.
     await window.screenshot({ path, animations: "disabled", clip: { x: 0, y: side.y, width: side.x + side.width, height } });
   },
@@ -64,7 +67,9 @@ writeSampleStatus(statusDir, "c", "working");
 const sessionsDir = mkdtempSync(join(tmpdir(), "session-inbox-sessions-"));
 for (const id of ["a", "b", "c"]) writeSampleSession(sessionsDir, id);
 try {
-  const vscode = await launchVsCode({ SESSION_INBOX_STATUS_DIR: statusDir, SESSION_INBOX_SESSIONS_DIR: sessionsDir });
+  const env = { SESSION_INBOX_STATUS_DIR: statusDir, SESSION_INBOX_SESSIONS_DIR: sessionsDir };
+  const parked = { "demo-d": { status: "On hold", statusColor: "charts.purple" } };
+  const vscode = await launchVsCode(env, undefined, [], { "sessionInbox.projects": parked });
   try {
     await vscode.window.locator(statusItem).waitFor({ state: "visible", timeout: 20_000 });
     for (const name of wanted.length > 0 ? wanted : Object.keys(shots)) {

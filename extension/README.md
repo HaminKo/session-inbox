@@ -11,7 +11,7 @@ window and chat tab), and an optional Windows tray icon. All features, settings 
 
 ![Status bar item reading "2 waiting"](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/statusbar.png)
 
-![Session Inbox sidebar: groups Waiting, Done and Working, with a session waiting 12 min in a worktree](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/sidebar.png)
+![Session Inbox sidebar: Sessions grouped Waiting, Done and Working, with a session waiting 12 min in a worktree; a closed project on hold, named in purple](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/sidebar.png)
 
 ## Requirements
 

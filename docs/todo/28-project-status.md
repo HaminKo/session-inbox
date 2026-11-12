@@ -89,6 +89,30 @@ Both steps: README (Sidebar feature, `sessionInbox.projects` row in the Settings
 5. A closed project that never had a status: set it from where? Suggested: open its window and use
    the palette command; a folder picker only if that turns out to be a bother.
 
+Answers (user, 2026-11-11): "Go with your suggestions": 1 free text with two presets, all
+meaning parked; 2 a separate "Projects" view (Claude found one cost first: the "Group by" button
+moves to the Sessions header, shown on hover); 3 a parked project's `done` doesn't count, `waiting`
+does; 4 cleared by hand only; 5 the palette command, no folder picker. Also: Clear removes the saved
+folder too; the menu says "Set Project Status…" (it's on session rows too).
+Changed after testing (2026-11-12): the user wants to pick the colour, on the text in Sessions,
+and no Projects view. So: status in the label, coloured by a file decoration; closed projects as
+"Closed" rows in the Sessions tree (answer 2 replaced).
+
+## Progress
+- [x] Step A: set / clear a status (right-click, palette command), shown after the project's name
+  in a colour the user picks (**Set Status Color…**, `statusColor`, a file decoration on the
+  label), closed projects kept as "Closed" rows (click opens the saved folder). Built 2026-11-11/12:
+  `projectStatus.ts`, `projectSetting.ts` (the setting's read/write, shared with the icon),
+  closed rows in `sessionList.ts` / `sidebar.ts`; typed text goes through an input box ("Type your
+  own…"). A "Projects" view was built first and dropped after the user's test (docs/decisions.md
+  2026-11-11). Colouring only the status text was offered as a status row of its own; the user
+  kept the coloured name and status. Tested by the user from the installed `.vsix`; 93 unit and
+  26 GUI tests pass. Committed 2026-11-12.
+- [ ] Step B: a parked project's `done` chats don't count (badge, status bar, tray, reminders);
+  `waiting` still does. Closed projects are never counted already (they have no chats). Parked =
+  `projectStatus` set (projectLook.ts); the tray needs the parked labels in `.tray-looks` and the
+  same rule in `Read-Inbox` (tray.test.ts keeps the counts equal).
+
 ## Test
 - Unit: `withStatus` (set, clear, folder saved, other fields kept, spellings), the Projects view's
   list (open and closed, A-Z, no folder saved), the count with a parked `done` and `waiting` (step

@@ -1,19 +1,19 @@
 ## Where we are
-- Now: none (the Later list only when asked)
+- Now: To do 28, step B (a parked project's done chats not counted)
 - Next: none
-- Updated: 2026-11-11
+- Updated: 2026-11-12
 
 ## To do
 Next number: 29. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
 
 ### Now
-(none)
+- To do 28: Set a project's status by hand, kept while it's closed (large; user 2026-11-11): docs/todo/28-project-status.md
 
 ### Bugs me
 (none)
 
 ### Someday
-- To do 28: Set a project's status by hand, kept while it's closed (large; user 2026-11-11): docs/todo/28-project-status.md
+(none)
 
 ## Before a public release — done
 0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.
