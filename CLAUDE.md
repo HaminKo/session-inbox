@@ -112,7 +112,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   point at the GitHub tags.
 
 ## Project docs
-README.md, docs/local.md, docs/todo.md, docs/decisions.md, docs/research/ (one file per topic).
+README.md, docs/local.md, docs/todo.md (the list), docs/todo/ (one file per to-do), docs/archive/
+(finished to-dos' files, read only when a to-do names one), docs/decisions.md, docs/research/ (one
+file per topic).
 
 ## Never in tracked files
 - Real name, pseudonym-to-keep-separate, and personal paths (always → docs/local.md).

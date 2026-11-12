@@ -111,7 +111,7 @@ user-visible thing the README doesn't say).
 ## Decision
 
 Report first, then the user picked (2026-11-03, accepting Claude's suggestion):
-- Finding 1 → its own to-do, #22 (docs/todo/22-popups-not-shipped.md): ship a popup hook or
+- Finding 1 → its own to-do, #22 (docs/archive/22-popups-not-shipped.md): ship a popup hook or
   document it as the user's own. README lines on `notify.ps1` (incl. line 21 and the Credits entry)
   are left for it.
   Done 2026-11-03: documented as the user's own hook (README "Optional: desktop popups"), plus a

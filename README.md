@@ -227,8 +227,8 @@ uses a personal one that isn't in this repo). What it needs to handle:
 - **Screenshots** (from `extension/`): `npm run screenshots` (or `-- statusbar`, `-- sidebar`,
   `-- window` for one) saves PNGs to the temp folder (`session-inbox-shots`). The first run of this
   or the GUI test downloads VS Code (~350 MB) into `extension/.vscode-test/`.
-- **How it's built:** each part is a numbered to-do, listed in [docs/todo.md](docs/todo.md), with
-  details in [docs/todo/](docs/todo/).
+- **How it's built:** each part is a numbered to-do, listed in [docs/todo.md](docs/todo.md); each
+  has its own file in docs/todo/ while open and [docs/archive/](docs/archive/) once finished.
 
 ## Changelog
 

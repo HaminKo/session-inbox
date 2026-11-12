@@ -1,6 +1,6 @@
 # Distribution: VS Code Marketplace or a `.vsix` on a GitHub release
 
-For to-do #25 (docs/todo/25-distribution.md). Started 2026-11-03.
+For to-do #25 (docs/archive/25-distribution.md). Started 2026-11-03.
 Decision: a `.vsix` on a GitHub release, `repository` set (docs/decisions.md 2026-11-03).
 
 ## VS Code Marketplace (read in the docs, 2026-11-03)
