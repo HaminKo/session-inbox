@@ -4,7 +4,7 @@
 - Updated: 2026-11-11
 
 ## To do
-Next number: 28. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
+Next number: 29. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
 
 ### Now
 (none)
@@ -13,7 +13,7 @@ Next number: 28. Numbers are permanent: never renumber or reuse one; to move a t
 (none)
 
 ### Someday
-(none)
+- To do 28: Set a project's status by hand, kept while it's closed (large; user 2026-11-11): docs/todo/28-project-status.md
 
 ## Before a public release — done
 0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.
@@ -43,6 +43,7 @@ the next release: docs/research/distribution.md, "Release steps".
 - Projects overview (from to-do #18): a webview panel in the extension with Now/Next for every
   project that has a `focus` file, running or not. Try it after #18 has been used for a while.
   A standalone app was rejected for this (docs/decisions.md 2026-11-03).
+  To-do #28 adds a smaller piece: a "Projects" view of projects with a hand-set status.
 
 ## Writing a to-do
 Template:

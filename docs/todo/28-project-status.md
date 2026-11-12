@@ -1,0 +1,101 @@
+# To do 28: Set a project's status by hand, kept while it's closed (large)
+
+User, 2026-11-11: "I want to make it so you can right click a project and put a status manually -
+for now, I have 2 projects I want to put on hold - PeacefreeWeb and slide-out - so I want to be able
+to right click them and put an on hold status." Then: "I want to be able to manually set a status of
+a project, even when it is closed and open. I might [have] a task already completed but might want
+to return to it later for example."
+
+## Problem / Goal
+The sidebar only knows projects that have a running chat, and only the states the hooks write.
+There is no way to note "this project is parked": a paused project with an open chat keeps counting
+as "your turn", and once its window is closed it disappears, so nothing reminds you to come back.
+
+Wanted: set a status on a project by hand ("On hold", "Come back later", ...), kept when the project
+is closed, and seen in the sidebar whether it is open or closed. Clear it by hand when you're back.
+
+Example: PeacefreeWeb's task is finished, but there's more to do later. Right-click its header →
+"Set Status…" → "Come back later". Close the window. The sidebar still lists PeacefreeWeb with
+"Come back later"; a click opens its folder. slide-out gets "On hold" the same way.
+
+Limits today:
+- A project shows only while one of its chats runs (docs/decisions.md, "A status file counts only
+  while its chat process runs"; 2026-11-03: "only projects that already have a session appear").
+- A project is the folder leaf, matched ignoring case; a worktree is its own project
+  (sessionList.ts, `groupByProject`). The setting `sessionInbox.projects` is keyed by that label
+  and holds no folder path, so a closed project can't be opened from it yet.
+
+## Read first
+- `extension/src/sidebar.ts`: `getTreeItem` (project header, `contextValue = "project"`),
+  `pickProjectIcon` / `setProjectIcon`: the right-click "Set Icon…" this copies; `focusPath` (a
+  project's `docs/todo.md`, found from a session's folder).
+- `extension/src/projectLook.ts`: `projectEntry`, `projectIcon`, `withIcon` (one entry per project
+  in `sessionInbox.projects`, other fields kept).
+- `extension/src/sessionList.ts`: `sessionLabel`, `sessionFolder`, `groupByState`, `groupByProject`.
+- `extension/package.json`: `views`, `commands`, `menus` → `view/item/context`, `commandPalette`.
+- `extension/src/extension.ts`: command registration, `openSession` (`vscode.openFolder` with
+  `forceNewWindow: true`, which focuses a window that already has the folder).
+- `extension/src/statusFolder.ts`: `countStates`, `summarize`; `extension/src/tray.ts`
+  (`trayLooks`, `.tray-looks`) and `tray/session-tray.ps1` (`Read-Inbox`), kept equal by
+  `test/unit/tray.test.ts`. Only needed for step B.
+- docs/decisions.md: 2026-11-02 project icon (right-click, stored in the setting); 2026-11-03 focus
+  row and "Project focus goes in the extension's sidebar"; "The inbox counts waiting + done".
+- docs/todo.md, Later: "Projects overview (from to-do #18)", a webview with Now/Next for every
+  project. This to-do is a smaller piece of that idea; keep it a tree view.
+- `extension/test/gui/sidebar.gui.ts`: "right-click on a project header sets its icon" (the GUI
+  test to copy).
+
+## Approach
+Store it like the icon, in the user setting, so every window sees it and it survives restarts:
+`sessionInbox.projects` → `{ "PeacefreeWeb": { "status": "Come back later", "folder": "<path>" } }`.
+`folder` is saved when the status is set (the session's `project_dir`, or the window's folder), so a
+closed project can be opened and its `docs/todo.md` found. A `withStatus` next to `withIcon`.
+
+Step A: the status and where it shows.
+- "Set Status…" (QuickPick: presets "On hold", "Come back later", or type your own) and "Clear
+  Status" on a project header's right-click; on a session row too when grouped by state. A
+  Command Palette command "Session Inbox: Set Status of This Project" for the current window's
+  folder, so a project with no chat open can get one.
+- A second view under "Sessions" in the same sidebar: "Projects", listing every project with a
+  status, open or closed, A-Z, the status as its description, the project's icon. Click opens the
+  folder (like `openSession`); the hover has the folder and the focus "Now:" line if there is one.
+  Clearing the status removes it from the view. The Sessions tree keeps its rules; a project header
+  there only gets the status in its description.
+- New decision in docs/decisions.md (projects with a status are listed even when closed; where the
+  folder comes from).
+
+Step B: what a status changes in the count.
+- A project with a status is "parked": its `done` chats no longer count in the badge, status bar and
+  tray; `waiting` still counts (see "Ask the user"). Reminders follow the same rule.
+- The tray copies the counting rules, so add `parked` (lowercase labels) to `.tray-looks` and the same
+  rule in `Read-Inbox`. `.tray-looks` is written only while the tray is on, which is fine: it only
+  matters then.
+- Decision entry (changes "The inbox counts waiting + done").
+
+Both steps: README (Sidebar feature, `sessionInbox.projects` row in the Settings table), CHANGELOG.
+
+## Ask the user
+1. Statuses: fixed list or free text? Suggested: free text with two presets ("On hold", "Come back
+   later"), and every status means the same thing: the project is parked. One rule instead of one
+   per status; the text doubles as a note ("Come back later: the login bug").
+2. Where closed projects show: a separate "Projects" view under "Sessions", or at the bottom of the
+   Sessions tree? Suggested: a separate view. The Sessions tree's two groupings both list chats, and
+   a closed project has none; mixing them needs new row types in both groupings.
+3. Does a parked project still count (step B)? Suggested: `done` no, `waiting` yes: a permission
+   prompt means something you started is stuck. (Alternatives: nothing counts; or status is only a
+   label.)
+4. Should a status clear itself when you work in that project again? Suggested: no, manual only;
+   the header shows it, so it's hard to forget.
+5. A closed project that never had a status: set it from where? Suggested: open its window and use
+   the palette command; a folder picker only if that turns out to be a bother.
+
+## Test
+- Unit: `withStatus` (set, clear, folder saved, other fields kept, spellings), the Projects view's
+  list (open and closed, A-Z, no folder saved), the count with a parked `done` and `waiting` (step
+  B), the tray script reading `parked` (tray.test.ts keeps the two counts equal).
+- GUI (`sidebar.gui.ts`): right-click a header → "Set Status…" → "On hold" → the header's
+  description and a row in the Projects view; the chat's process ends → the row stays; click → the
+  folder opens; "Clear Status" → gone. Step B: the badge drops for a parked `done`. Screenshot of
+  the sidebar.
+- By hand (installed `.vsix`): set PeacefreeWeb and slide-out to "On hold", close their windows,
+  check they stay listed in another window, open one by clicking, clear its status.
