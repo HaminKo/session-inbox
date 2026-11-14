@@ -4,8 +4,8 @@ import type { StatusProject } from "./projectLook.ts";
 import { countStates, hasBackground, type SessionState, type SessionStatus } from "./statusFolder.ts";
 
 // One header row and the sessions under it; the same shape in both groupings. `id` is
-// `state:<state>`, `state:closed` or `project:<label>`, so the two groupings never share a tree
-// item id.
+// `state:<state>`, `state:parked`, `state:closed` or `project:<label>`, so the two groupings never
+// share a tree item id.
 export interface SessionGroup {
   id: string;
   label: string;
@@ -37,19 +37,36 @@ export function groupSessions(
 ): SessionGroup[] {
   const open = new Set(statuses.map((status) => sessionLabel(status).toLowerCase()));
   const closed = parked.filter((project) => !open.has(project.label.toLowerCase()));
-  return by === "project" ? groupByProject(statuses, closed) : groupByState(statuses, closed);
+  return by === "project" ? groupByProject(statuses, closed) : groupByState(statuses, closed, parkedTest(parked));
 }
 
-// Waiting, done, working, open, then the closed projects; empty groups left out. Inside a group the
-// oldest timestamp comes first (the session that has waited longest), ones without a readable
-// timestamp last.
-function groupByState(statuses: readonly SessionStatus[], closed: readonly StatusProject[]): SessionGroup[] {
+// Whether a chat belongs to one of `parked` (statusProjects), matched ignoring case like the project
+// grouping. Its `done` isn't your turn (to-do #28): countStates counts it apart, and grouped by state
+// it has a group of its own.
+export function parkedTest(parked: readonly StatusProject[]): (status: SessionStatus) => boolean {
+  const labels = new Set(parked.map((project) => project.label.toLowerCase()));
+  return (status) => labels.has(sessionLabel(status).toLowerCase());
+}
+
+// Waiting, done, working, open, a parked project's done, then the closed projects; empty groups left
+// out, so the Waiting and Done headers add up to the badge. Inside a group the oldest timestamp comes
+// first (the session that has waited longest), ones without a readable timestamp last.
+function groupByState(
+  statuses: readonly SessionStatus[],
+  closed: readonly StatusProject[],
+  isParked: (status: SessionStatus) => boolean,
+): SessionGroup[] {
+  const parkedDone = (status: SessionStatus) => status.state === "done" && isParked(status);
   const groups: SessionGroup[] = groupOrder
     .map((state) => {
-      const sessions = statuses.filter((status) => status.state === state).sort(byTime);
+      const sessions = statuses.filter((status) => status.state === state && !parkedDone(status)).sort(byTime);
       return { id: `state:${state}`, label: `${groupNames[state]} (${sessions.length})`, description: "", sessions, closed: [] };
     })
     .filter((group) => group.sessions.length > 0);
+  const parked = statuses.filter(parkedDone).sort(byTime);
+  if (parked.length > 0) {
+    groups.push({ id: "state:parked", label: `Parked (${parked.length})`, description: "", sessions: parked, closed: [] });
+  }
   if (closed.length > 0) {
     groups.push({ id: "state:closed", label: `Closed (${closed.length})`, description: "", sessions: [], closed: [...closed] });
   }

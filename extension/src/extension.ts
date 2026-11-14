@@ -5,7 +5,9 @@ import { checkHooks, describeProblem, hookVersion, installHooks } from "./instal
 import { dueReminders, notifyScript, reminderPayload, sendReminder, waitKey } from "./renotify.ts";
 import { holdsFolder, readRevealRequest, shouldReveal, writeRevealRequest } from "./reveal.ts";
 import { SessionSource } from "./sessionSource.ts";
-import { sessionFolder } from "./sessionList.ts";
+import { statusProjects } from "./projectLook.ts";
+import { projectLooks, projectsSetting } from "./projectSetting.ts";
+import { parkedTest, sessionFolder } from "./sessionList.ts";
 import { pickProjectIcon, setProjectIcon, Sidebar, type Node } from "./sidebar.ts";
 import { clearProjectStatus, pickProjectStatus, pickProjectStatusColor, pickWindowProjectStatus } from "./projectStatus.ts";
 import { countStates, sessionsDir, statusDir, summarize, type SessionStatus } from "./statusFolder.ts";
@@ -13,11 +15,6 @@ import { codiconFont, readCodicons } from "./codicons.ts";
 import { startTray, stopTray, trayLooks, writeTrayLooks } from "./tray.ts";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-  item.name = "Session Inbox";
-  item.command = "workbench.view.extension.sessionInbox";
-  context.subscriptions.push(item);
-
   const sidebar = new Sidebar("sessionInbox.sessions", context.globalState);
   context.subscriptions.push(
     vscode.commands.registerCommand("sessionInbox.groupByProject", () => sidebar.setGroupBy("project")),
@@ -39,19 +36,44 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const source = new SessionSource(statusDir(), sessionsDir());
   context.subscriptions.push(
-    source.onChange((statuses) => {
-      const { needsYou, text, tooltip } = summarize(countStates(statuses));
-      item.text = text;
-      item.tooltip = tooltip;
-      item.backgroundColor = needsYou > 0 ? new vscode.ThemeColor("statusBarItem.warningBackground") : undefined;
-      item.show();
-    }),
+    source.onChange(statusBar(context)),
     source.onChange((statuses) => sidebar.update(statuses)),
     source.onChange(revealRequests(statusDir())),
     source.onChange(reminders()),
     source,
     sidebar,
   );
+}
+
+// The status bar item with the "needs you" count: redrawn on every read, and from the last read when
+// a project's status is set or cleared, which parks or unparks its done chats (to-do #28).
+function statusBar(context: vscode.ExtensionContext): (statuses: readonly SessionStatus[]) => void {
+  const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  item.name = "Session Inbox";
+  item.command = "workbench.view.extension.sessionInbox";
+  let last: readonly SessionStatus[] | undefined;
+  // Read from the setting only when it changes: the reads come with every tool call of every chat.
+  let isParked = parkedTest(statusProjects(projectLooks()));
+  const show = () => {
+    if (!last) return;
+    const { needsYou, text, tooltip } = summarize(countStates(last, isParked));
+    item.text = text;
+    item.tooltip = tooltip;
+    item.backgroundColor = needsYou > 0 ? new vscode.ThemeColor("statusBarItem.warningBackground") : undefined;
+    item.show();
+  };
+  context.subscriptions.push(
+    item,
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (!event.affectsConfiguration(projectsSetting)) return;
+      isParked = parkedTest(statusProjects(projectLooks()));
+      show();
+    }),
+  );
+  return (statuses) => {
+    last = statuses;
+    show();
+  };
 }
 
 // Copied into dist/ by the build (package.json "bundle") from the repo's hooks/session-status.ps1.

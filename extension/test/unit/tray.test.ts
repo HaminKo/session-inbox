@@ -9,8 +9,8 @@ import { join } from "node:path";
 import { suite, test } from "node:test";
 import { promisify } from "node:util";
 import { readCodicons } from "../../src/codicons.ts";
-import { projectIcon } from "../../src/projectLook.ts";
-import { sessionFolder, sessionLabel } from "../../src/sessionList.ts";
+import { projectIcon, statusProjects } from "../../src/projectLook.ts";
+import { parkedTest, sessionFolder, sessionLabel } from "../../src/sessionList.ts";
 import {
   backgroundAsWorking,
   backgroundLimitMs,
@@ -19,7 +19,7 @@ import {
   readLiveSessions,
   readStatuses,
 } from "../../src/statusFolder.ts";
-import { startTray, stopTray, trayLooks, writeTrayLooks } from "../../src/tray.ts";
+import { startTray, stopTray, trayLooks, writeTrayLooks, type TrayLooks } from "../../src/tray.ts";
 import { noFontSkip, pinnedFont } from "./pinnedFont.ts";
 
 const script = join(import.meta.dirname, "..", "..", "..", "tray", "session-tray.ps1");
@@ -29,6 +29,7 @@ interface TrayResult {
   waiting: number;
   done: number;
   working: number;
+  parked: number;
   needsYou: number;
   needs: { session_id: string; state: string; label: string; project_dir: string; icon: string }[];
 }
@@ -49,21 +50,24 @@ async function runOnce(statusDir: string, sessionsDir: string, more: string[] = 
   return JSON.parse(stdout) as TrayResult;
 }
 
-// What the extension shows for the same folders: counts, and the ids that need you.
-async function extensionView(statusDir: string, sessionsDir: string) {
+// What the extension shows for the same folders and the setting `sessionInbox.projects` (`looks`):
+// counts, and the ids that need you.
+async function extensionView(statusDir: string, sessionsDir: string, looks: unknown) {
   const live = await readLiveSessions(sessionsDir);
   const statuses = backgroundAsWorking(onlyLive(await readStatuses(statusDir), live), live, Date.now());
-  const { waiting, done, working } = countStates(statuses);
-  const needs = statuses.filter((status) => status.state === "waiting" || status.state === "done");
-  return { waiting, done, working, needsYou: waiting + done, ids: needs.map((status) => status.session_id).sort() };
+  const isParked = parkedTest(statusProjects(looks));
+  const { waiting, done, working, parked } = countStates(statuses, isParked);
+  const needs = statuses.filter((status) => status.state === "waiting" || (status.state === "done" && !isParked(status)));
+  return { waiting, done, working, parked, needsYou: waiting + done, ids: needs.map((status) => status.session_id).sort() };
 }
 
-async function assertSameAsExtension(statusDir: string, sessionsDir: string) {
+// `looks`: the setting the looks file in `statusDir` was written from, if there is one.
+async function assertSameAsExtension(statusDir: string, sessionsDir: string, looks?: unknown) {
   const tray = await runOnce(statusDir, sessionsDir);
-  const expected = await extensionView(statusDir, sessionsDir);
-  const { waiting, done, working, needsYou } = tray;
+  const expected = await extensionView(statusDir, sessionsDir, looks);
+  const { waiting, done, working, parked, needsYou } = tray;
   assert.deepEqual(
-    { waiting, done, working, needsYou, ids: tray.needs.map((session) => session.session_id).sort() },
+    { waiting, done, working, parked, needsYou, ids: tray.needs.map((session) => session.session_id).sort() },
     expected,
   );
   return tray;
@@ -138,6 +142,9 @@ void test("the tray's looks: each project's icon as projectIcon() has it, and on
   assert.deepEqual(looks.chars, { folder: "F", warning: "W", check: "C", library: "L" });
   assert.deepEqual(looks.states, { waiting: "warning", done: "check" });
   assert.equal(looks.default, "folder");
+  assert.deepEqual(looks.parked, [], "no project has a status");
+  const statuses = { PeacefreeWeb: { status: "On hold" }, "slide-out": { status: "  " }, Beta: { status: "Later" }, beta: { icon: "map" } };
+  assert.deepEqual(trayLooks("c:/font.ttf", chars, statuses).parked, ["beta", "peacefreeweb"], "lowercase, A-Z, only with a status");
   assert.deepEqual(trayLooks("c:/font.ttf", undefined, setting).chars, {}, "no font: no characters");
   assert.deepEqual(trayLooks("c:/font.ttf", chars, ["library"]).projects, {}, "a malformed setting");
   for (const first of ["folder", "Bad Name"]) {
@@ -244,6 +251,33 @@ void suite("tray script", { skip, concurrency: true }, () => {
       assert.equal(tray.working, 3, "running, two-processes, unknown-start");
       // No sessions folder: only the time limit applies, so the restarted one counts as working too.
       assert.equal((await assertSameAsExtension(statusDir, join(root, "missing"))).working, 4);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  void test("a parked project's done is left out of the count and the menu, as in the extension", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    try {
+      writeStatus(statusDir, "held-done", "done", { folder: "PeacefreeWeb" });
+      writeStatus(statusDir, "held-cwd", "done", { folder: undefined, cwd: "c:\\work\\peacefreeweb" });
+      writeStatus(statusDir, "held-waiting", "waiting", { folder: "PeacefreeWeb" });
+      writeStatus(statusDir, "held-working", "working", { folder: "PeacefreeWeb" });
+      writeStatus(statusDir, "free", "done");
+      const setting = { PEACEFREEWEB: { status: "On hold" }, "project-free": { icon: "map" } };
+      // A looks file from before parking (no `parked`): nothing is parked.
+      const old: Partial<TrayLooks> = trayLooks("c:/missing.ttf", new Map(), setting);
+      delete old.parked;
+      writeFileSync(join(statusDir, ".tray-looks"), JSON.stringify(old));
+      assert.equal((await assertSameAsExtension(statusDir, sessionsDir)).needsYou, 4);
+      await writeTrayLooks(statusDir, trayLooks("c:/missing.ttf", new Map(), setting));
+      const tray = await assertSameAsExtension(statusDir, sessionsDir, setting);
+      assert.deepEqual(
+        { done: tray.done, parked: tray.parked, needsYou: tray.needsYou },
+        { done: 1, parked: 2, needsYou: 2 },
+        "two parked done (one named by cwd); the waiting still counts",
+      );
+      assert.deepEqual(tray.needs.map((need) => need.session_id), ["held-waiting", "free"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

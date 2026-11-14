@@ -60,7 +60,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - "Waiting" is driven by the `PermissionRequest` event, not `Notification` (which never fires in
   the VS Code extension).
 - Three session states: `waiting` (blocked on permission/question), `done` (reply finished, your
-  turn), `working`. The inbox counts `waiting` + `done`. A fourth, `open` (running VS Code chat
+  turn), `working`. The inbox counts `waiting` + `done`, except the `done` of a project with a
+  hand-set status (parked: listed under "Parked", not counted). A fourth, `open` (running VS Code chat
   with no status file yet), is made by the extension only and never counted. A `done` whose
   `background` > 0 (tasks running at `Stop`) is read as `working` until the chat restarts or
   45 min pass.

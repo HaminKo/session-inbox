@@ -1,14 +1,15 @@
 // The sidebar: every running session in one tree, grouped by state or by project (sessionList.ts),
 // and a badge on the Activity Bar icon with the waiting + done count. A title-bar button switches
 // the grouping; the choice is kept in `globalState`, so other windows pick it up when they reload.
-// A project with a hand-set status shows it after its name, in its colour, and stays listed as
-// "Closed" when no chat of it runs (to-do #28).
+// A project with a hand-set status (to-do #28) shows it after its name, in its colour, and stays
+// listed as "Closed" when no chat of it runs; it is parked, so its done chats aren't counted.
 import { readFile } from "node:fs/promises";
 import * as vscode from "vscode";
 import { parseFocus, staleDays, type Focus } from "./focus.ts";
 import {
   groupFolder,
   groupSessions,
+  parkedTest,
   rowLabel,
   sessionDescription,
   sessionLabel,
@@ -122,8 +123,12 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.FileDecora
     await vscode.commands.executeCommand("setContext", groupByKey, this.groupBy);
   }
 
+  // Also the badge: a status set or cleared parks or unparks a project's done chats (to-do #28).
   private regroup(): void {
-    this.groups = groupSessions(this.statuses, this.groupBy, statusProjects(this.looks));
+    const parked = statusProjects(this.looks);
+    this.groups = groupSessions(this.statuses, this.groupBy, parked);
+    const { needsYou, headline } = summarize(countStates(this.statuses, parkedTest(parked)));
+    this.view.badge = needsYou > 0 ? { value: needsYou, tooltip: headline } : undefined;
     this.changed.fire(undefined);
     if (this.groupBy === "project") void this.readFocus();
   }
@@ -199,8 +204,6 @@ export class Sidebar implements vscode.TreeDataProvider<Node>, vscode.FileDecora
     if (this.disposed) return;
     this.statuses = statuses;
     this.now = Date.now();
-    const { needsYou, headline } = summarize(countStates(statuses));
-    this.view.badge = needsYou > 0 ? { value: needsYou, tooltip: headline } : undefined;
     this.regroup();
   }
 

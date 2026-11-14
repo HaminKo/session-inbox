@@ -87,6 +87,9 @@ window closes.
   `"statusColor"` in settings.json. VS Code can't use a hex code here. The icon keeps the colour
   of its state; the text colour is VS Code's file decoration colour, so it's off if you turned off
   `explorer.decorations.colors`.
+- A project with a status is parked: its finished chats aren't counted in the badge, the status
+  bar or the tray, and grouped by state they move to a **Parked** group. A chat that waits on a
+  permission or a question still counts.
 - When no chat of the project runs, it stays listed as **Closed**: grouped by project, its header
   (with its focus row) and a **Closed** row; grouped by state, a **Closed** group at the end. Not
   counted in the badge. Click **Closed** to open the project's folder.

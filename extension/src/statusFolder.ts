@@ -24,7 +24,8 @@ export interface SessionStatus {
   timestamp?: string;
 }
 
-export type Counts = Record<SessionState, number>;
+// `parked`: `done` chats of a project with a hand-set status (to-do #28), counted apart from `done`.
+export type Counts = Record<SessionState | "parked", number>;
 
 // The states a status file may hold; `open` never comes from a file.
 const fileStates: readonly string[] = ["waiting", "done", "working"];
@@ -172,13 +173,16 @@ function isStatus(data: unknown): data is SessionStatus {
   return typeof session_id === "string" && typeof state === "string" && fileStates.includes(state);
 }
 
-export function countStates(statuses: readonly SessionStatus[]): Counts {
-  const counts: Counts = { waiting: 0, done: 0, working: 0, open: 0 };
-  for (const status of statuses) counts[status.state]++;
+// `isParked` tells a chat whose project is parked (sessionList.ts, parkedTest); its `done` counts as
+// `parked`. Without it nothing is parked.
+export function countStates(statuses: readonly SessionStatus[], isParked?: (status: SessionStatus) => boolean): Counts {
+  const counts: Counts = { waiting: 0, done: 0, working: 0, open: 0, parked: 0 };
+  for (const status of statuses) counts[status.state === "done" && isParked?.(status) ? "parked" : status.state]++;
   return counts;
 }
 
-// The inbox counts waiting + done (docs/decisions.md): both are sessions where it's your turn.
+// The inbox counts waiting + done (docs/decisions.md): both are sessions where it's your turn. A
+// parked project's `done` isn't (to-do #28); its `waiting` still is: something you started is stuck.
 export function summarize(counts: Counts): { needsYou: number; headline: string; text: string; tooltip: string } {
   const needsYou = counts.waiting + counts.done;
   const text = needsYou > 0 ? `$(warning) ${needsYou} waiting` : "$(check) all clear";
@@ -188,6 +192,7 @@ export function summarize(counts: Counts): { needsYou: number; headline: string;
     `Session Inbox: ${headline}`,
     `Waiting (permission or question): ${counts.waiting}`,
     `Done (your turn): ${counts.done}`,
+    counts.parked > 0 ? `Parked (done, not counted): ${counts.parked}` : "",
     `Working: ${counts.working}`,
     counts.open > 0 ? `Open (no status yet): ${counts.open}` : "",
   ]

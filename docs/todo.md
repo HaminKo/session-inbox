@@ -1,16 +1,16 @@
 ## Where we are
-- Now: To do 28, step B (a parked project's done chats not counted)
-- Next: To do 29
-- Updated: 2026-11-13
+- Now: To do 29 (shorter README, details in docs/guide.md)
+- Next: (none)
+- Updated: 2026-11-14
 
 ## To do
 Next number: 30. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
 
 ### Now
-- To do 28: Set a project's status by hand, kept while it's closed (large; user 2026-11-11): docs/todo/28-project-status.md
+- To do 29: Shorter README, feature details moved to docs/guide.md (medium; user 2026-11-13): docs/todo/29-shorter-readme.md
 
 ### Bugs me
-- To do 29: Shorter README, feature details moved to docs/guide.md (medium; user 2026-11-13): docs/todo/29-shorter-readme.md
+(none)
 
 ### Someday
 (none)
@@ -43,7 +43,7 @@ the next release: docs/research/distribution.md, "Release steps".
 - Projects overview (from to-do #18): a webview panel in the extension with Now/Next for every
   project that has a `focus` file, running or not. Try it after #18 has been used for a while.
   A standalone app was rejected for this (docs/decisions.md 2026-11-03).
-  To-do #28 adds a smaller piece: a "Projects" view of projects with a hand-set status.
+  To-do #28 added a smaller piece: a hand-set status, closed projects kept as "Closed" rows.
 
 ## Writing a to-do
 Template:

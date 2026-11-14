@@ -3,6 +3,24 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-14 — A project with a status is parked: its done chats aren't counted (to-do #28 B)
+- Decision: a project with a hand-set status (any text) is parked. Its `done` chats don't count
+  in the badge, the status bar or the tray (`countStates` counts them as `parked`). Its `waiting`
+  chats still count, and reminders (which are only for `waiting`) are unchanged. Grouped by state,
+  its done chats get a **Parked (N)** group after Open, before Closed, so the Waiting and Done
+  headers add up to the badge; grouped by project nothing moves (the header names the status). The
+  status bar hover adds "Parked (done, not counted): N". The tray reads the parked projects from
+  `.tray-looks` (`parked`, lowercase labels); a file without it parks nothing. A status set or
+  cleared re-counts at once from the last read (no new read, so the tree isn't drawn twice).
+- Reason: a paused project's finished chat kept counting as "your turn". A permission prompt
+  means something you started is stuck, so it still counts.
+- Decided by: the user ("Go with your suggestions", 2026-11-11 for the count, 2026-11-14 for the
+  group, the hover line and the tray).
+- Rejected: nothing of a parked project counts (a stuck prompt would go unseen); the status only
+  a label; leaving a parked done in the Done group (its header would disagree with the badge);
+  re-reading the folder on a setting change (a second tree redraw right after the first cancelled
+  a hover in the GUI test, docs/research/gui-testing.md).
+
 ## 2026-11-11 — A project status set by hand, in its own colour, listed as "Closed" when no chat runs (to-do #28 A)
 - Decision: **Set Project Status…** (right-click a project header; grouped by state, a session row
   or a closed row) or the palette's **Set Status of This Project…** (the window's folder; several:

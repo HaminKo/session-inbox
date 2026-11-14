@@ -244,7 +244,7 @@ void test("right-click on a project header sets its icon, which keeps the state 
   await groupButton("Group by state").click();
 });
 
-void test("Set Project Status… shows the status after the name, in its colour, and keeps a closed project listed", async () => {
+void test("Set Project Status… shows the status after the name, in its colour, parks its done chat and keeps a closed project listed", async () => {
   const settings = JSON.parse(readFileSync(vscode.settingsFile, "utf8")) as Record<string, unknown>;
   const savedProjects = () => (JSON.parse(readFileSync(vscode.settingsFile, "utf8")) as Record<string, unknown>)["sessionInbox.projects"];
   const input = vscode.window.locator(".quick-input-widget input");
@@ -278,6 +278,9 @@ void test("Set Project Status… shows the status after the name, in its colour,
     await waitFor(() => pairFrom("demo-b · On hold | 1 done"), ["demo-b · On hold | 1 done", "Done | <1 min · Finished"], "demo-b's header");
     // Saved with the folder a closed project's row opens (the session's start folder).
     assert.deepEqual(savedProjects(), { "demo-b": { status: "On hold", folder: "C:/projects/demo-b" } });
+    // Parked: its done chat no longer counts (badge and status bar), at once, not at the next read.
+    await waitFor(badge, "2", "badge with demo-b parked");
+    await waitFor(async () => (await vscode.window.locator(statusItem).innerText()).trim(), "2 waiting", "status bar");
     // A colour of your own on the name and status; the icon keeps the state colour (demo-d is done too).
     const plain = await labelColor();
     const other = (await headerIcons())[3];
@@ -288,6 +291,10 @@ void test("Set Project Status… shows the status after the name, in its colour,
     assert.deepEqual(savedProjects(), { "demo-b": { status: "On hold", folder: "C:/projects/demo-b", statusColor: "charts.purple" } });
     // On a coloured row VS Code would swap `folder` for the icon theme's folder; `symbol-folder` looks the same.
     assert.equal((await headerIcons())[1], other.replace(/^folder/, "symbol-folder"));
+    // Grouped by state the parked done chat has a group of its own, at the end (no Open or Closed here).
+    await groupButton("Group by state").click();
+    await waitFor(async () => (await rows()).slice(-2), ["Parked (1)", "demo-b · On hold | <1 min · Finished"], "the Parked group");
+    await groupButton("Group by project").click();
     // The chat's process ends: the header stays, with a "Closed" row; not counted.
     unlinkSync(join(sessionsDir, "b.json"));
     await waitFor(() => pairFrom("demo-b · On hold"), ["demo-b · On hold", "Closed"], "demo-b when closed");

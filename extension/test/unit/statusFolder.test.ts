@@ -210,23 +210,38 @@ void test("counts by state", () => {
     { session_id: "c", state: "done" },
     { session_id: "d", state: "working" },
   ]);
-  assert.deepEqual(counts, { waiting: 1, done: 2, working: 1, open: 0 });
+  assert.deepEqual(counts, { waiting: 1, done: 2, working: 1, open: 0, parked: 0 });
+});
+
+void test("a parked project's done counts as parked; its waiting and working don't change", () => {
+  const statuses: SessionStatus[] = [
+    { session_id: "a", state: "waiting", folder: "held" },
+    { session_id: "b", state: "done", folder: "held" },
+    { session_id: "c", state: "done", folder: "free" },
+    { session_id: "d", state: "working", folder: "held" },
+    { session_id: "e", state: "open", folder: "held" },
+  ];
+  const counts = countStates(statuses, (status) => status.folder === "held");
+  assert.deepEqual(counts, { waiting: 1, done: 1, working: 1, open: 1, parked: 1 });
+  const summary = summarize(counts);
+  assert.equal(summary.needsYou, 2, "waiting + done, not the parked done");
+  assert.match(summary.tooltip, /\nDone \(your turn\): 1\nParked \(done, not counted\): 1\nWorking: 1\n/);
 });
 
 void test("summary counts waiting + done", () => {
-  const busy = summarize({ waiting: 1, done: 2, working: 3, open: 0 });
+  const busy = summarize({ waiting: 1, done: 2, working: 3, open: 0, parked: 0 });
   assert.equal(busy.needsYou, 3);
   assert.equal(busy.text, "$(warning) 3 waiting");
   assert.equal(
     busy.tooltip,
     "Session Inbox: 3 sessions need you\nWaiting (permission or question): 1\nDone (your turn): 2\nWorking: 3",
   );
-  assert.match(summarize({ waiting: 0, done: 1, working: 0, open: 0 }).tooltip, /^Session Inbox: 1 session needs you\n/);
-  const clear = summarize({ waiting: 0, done: 0, working: 2, open: 0 });
+  assert.match(summarize({ waiting: 0, done: 1, working: 0, open: 0, parked: 0 }).tooltip, /^Session Inbox: 1 session needs you\n/);
+  const clear = summarize({ waiting: 0, done: 0, working: 2, open: 0, parked: 0 });
   assert.equal(clear.needsYou, 0);
   assert.equal(clear.text, "$(check) all clear");
   assert.match(clear.tooltip, /^Session Inbox: No session needs you\n/);
-  const open = summarize({ waiting: 0, done: 0, working: 0, open: 8 });
+  const open = summarize({ waiting: 0, done: 0, working: 0, open: 8, parked: 0 });
   assert.equal(open.needsYou, 0, "open chats aren't counted");
   assert.equal(open.text, "$(check) all clear");
   assert.match(open.tooltip, /\nOpen \(no status yet\): 8$/);

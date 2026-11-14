@@ -4,7 +4,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { defaultIcon, projectIcon, stateIcons } from "./projectLook.ts";
+import { defaultIcon, projectIcon, stateIcons, statusProjects } from "./projectLook.ts";
 
 // Not `detached`: PowerShell then never runs the script (docs/research/hooks.md). The tray still
 // outlives the window that started it: it ends with the VS Code process, which it watches itself.
@@ -35,6 +35,8 @@ export function stopTray(script: string): ChildProcess {
 // so neither the extension nor the tray reads it as a status file. The extension works out every
 // name and character, so the script only looks them up: `projects` maps a project label (lowercase)
 // to its icon name, like projectIcon(); `chars` maps each icon name used to its character in `font`.
+// `parked`: the labels (lowercase) of the projects with a hand-set status, whose done chats the tray
+// doesn't count (parkedTest, to-do #28); a file written before had none, so nothing is parked.
 export const trayLooksFile = ".tray-looks";
 
 export interface TrayLooks {
@@ -43,6 +45,7 @@ export interface TrayLooks {
   states: Record<string, string>;
   projects: Record<string, string>;
   chars: Record<string, string>;
+  parked: string[];
 }
 
 // `looks` is the setting sessionInbox.projects; `chars` the font's codicons (codicons.ts), or
@@ -63,7 +66,8 @@ export function trayLooks(font: string, chars: ReadonlyMap<string, string> | und
     const char = chars?.get(name);
     if (char !== undefined) found[name] = char;
   }
-  return { font, default: defaultIcon, states: { ...stateIcons }, projects, chars: found };
+  const parked = statusProjects(looks).map((project) => project.label.toLowerCase());
+  return { font, default: defaultIcon, states: { ...stateIcons }, projects, chars: found, parked };
 }
 
 // Written to a temp name and renamed, so the tray never reads half a file. The status folder is made

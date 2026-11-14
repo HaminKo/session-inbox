@@ -1,13 +1,14 @@
 # Session Inbox tray indicator (to-do #16, docs/decisions.md 2026-11-03).
-# A system-tray icon with the number of sessions that need you (waiting + done), for when no VS Code
-# window is in front. Reads the same ~/.claude/session-status/ folder as the extension, every 2 s.
+# A system-tray icon with the number of sessions that need you (waiting + done, a parked project's
+# done left out), for when no VS Code window is in front. Reads the same ~/.claude/session-status/
+# folder as the extension, every 2 s.
 # Click the icon for a menu: a session opens its VS Code window (`code <folder>`) and asks that window
 # to show the chat's tab (the `.reveal` hand-off, docs/research/claude-tabs.md); Exit closes the tray.
 #
 # The reading, liveness filter, background-task rule and count are a PowerShell copy of
 # extension/src/statusFolder.ts (readStatuses, readLiveSessions, onlyLive, backgroundAsWorking,
-# countStates). Keep the two the same: the unit test test/unit/tray.test.ts runs this script with
-# -Once and compares its result with the TypeScript.
+# countStates; parkedTest in sessionList.ts). Keep the two the same: the unit test
+# test/unit/tray.test.ts runs this script with -Once and compares its result with the TypeScript.
 #
 # One copy runs at a time (a named mutex). The extension starts it (setting sessionInbox.trayIcon,
 # extension/src/tray.ts) and every window tries; the copies after the first exit at once.
@@ -155,6 +156,14 @@ function Icon-Char($looks, $name) {
     if ($entry -and $entry.Value -is [string]) { $entry.Value } else { $null }
 }
 
+# A `done` of a project with a hand-set status (to-do #28) is parked: not your turn, so not counted
+# as done or listed. Like parkedTest in sessionList.ts: the extension writes those projects' labels,
+# lowercase; a looks file without them parks nothing.
+function Is-Parked($looks, $status) {
+    if ($status.state -cne 'done' -or -not $looks -or $null -eq $looks.parked) { return $false }
+    @($looks.parked) -ccontains (Session-Label $status).ToLowerInvariant()
+}
+
 # One reading of the folder: counts of the live sessions, and the ones that need you (waiting first,
 # then done, each A-Z by label).
 function Read-Inbox {
@@ -172,9 +181,9 @@ function Read-Inbox {
     foreach ($status in $statuses) { if (On-BackgroundTask $status $live $now) { $status.state = 'working' } }
 
     $looks = Read-Looks
-    $counts = [ordered]@{ waiting = 0; done = 0; working = 0 }
-    foreach ($status in $statuses) { $counts[$status.state]++ }
-    $needs = @($statuses | Where-Object { $_.state -ne 'working' } | ForEach-Object {
+    $counts = [ordered]@{ waiting = 0; done = 0; working = 0; parked = 0 }
+    foreach ($status in $statuses) { if (Is-Parked $looks $status) { $counts.parked++ } else { $counts[$status.state]++ } }
+    $needs = @($statuses | Where-Object { $_.state -ne 'working' -and -not (Is-Parked $looks $_) } | ForEach-Object {
             [pscustomobject]@{
                 session_id  = $_.session_id
                 state       = $_.state
@@ -256,6 +265,7 @@ if ($Once) {
         waiting  = $inbox.counts.waiting
         done     = $inbox.counts.done
         working  = $inbox.counts.working
+        parked   = $inbox.counts.parked
         needsYou = $inbox.counts.waiting + $inbox.counts.done
         needs    = @($inbox.needs)
     } | ConvertTo-Json -Compress -Depth 4

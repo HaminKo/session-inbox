@@ -5,6 +5,7 @@ import {
   formatAge,
   groupFolder,
   groupSessions,
+  parkedTest,
   rowLabel,
   sessionDescription,
   sessionFolder,
@@ -183,14 +184,14 @@ void test("a project with a status and no chat running is listed as closed, in b
     { label: "PeacefreeWeb", status: "Come back later", folder: "C:/p/PeacefreeWeb", color: "charts.purple" },
     { label: "zeta", status: "Later", folder: undefined, color: undefined },
   ];
-  // beta has a chat (any spelling), so it is open: its sessions, no closed row.
+  // beta has a chat (any spelling), so it is open: its sessions, no closed row; its done is parked.
   const statuses = [status("b", "done", { folder: "beta" }), status("m", "working", { folder: "my-app" })];
   const byState = groupSessions(statuses, "state", parked);
   assert.deepEqual(
     byState.map((group) => [group.id, group.label, group.sessions.length, group.closed.map((p) => p.label)]),
     [
-      ["state:done", "Done (1)", 1, []],
       ["state:working", "Working (1)", 1, []],
+      ["state:parked", "Parked (1)", 1, []],
       ["state:closed", "Closed (2)", 0, ["PeacefreeWeb", "zeta"]],
     ],
   );
@@ -209,4 +210,39 @@ void test("a project with a status and no chat running is listed as closed, in b
   assert.equal(groupFolder(byProject[3]), undefined);
   // Nothing parked: no closed group, as before.
   assert.equal(groupSessions([], "state", []).length, 0);
+});
+
+void test("grouped by state, a parked project's done chats get a group of their own; its other chats stay", () => {
+  const parked = [
+    { label: "PeacefreeWeb", status: "On hold", folder: undefined, color: undefined },
+    { label: "Gone", status: "On hold", folder: undefined, color: undefined },
+  ];
+  const statuses = [
+    status("late", "done", { folder: "peacefreeweb", timestamp: ago(2 * minute) }),
+    status("early", "done", { folder: "PeacefreeWeb", timestamp: ago(9 * minute) }),
+    status("asks", "waiting", { folder: "PeacefreeWeb" }),
+    status("busy", "working", { folder: "PeacefreeWeb" }),
+    status("new", "open", { folder: "PeacefreeWeb" }),
+    status("other", "done", { folder: "other" }),
+  ];
+  const byState = groupSessions(statuses, "state", parked);
+  assert.deepEqual(
+    byState.map((group) => [group.id, group.label, group.sessions.map((s) => s.session_id), group.closed.map((p) => p.label)]),
+    [
+      ["state:waiting", "Waiting (1)", ["asks"], []],
+      ["state:done", "Done (1)", ["other"], []],
+      ["state:working", "Working (1)", ["busy"], []],
+      ["state:open", "Open (1)", ["new"], []],
+      ["state:parked", "Parked (2)", ["early", "late"], []],
+      ["state:closed", "Closed (1)", [], ["Gone"]],
+    ],
+  );
+  // Grouped by project nothing moves: the header names the status, the done still says done.
+  const project = groupSessions(statuses, "project", parked).find((group) => group.id === "project:peacefreeweb");
+  assert.equal(project?.description, "1 waiting · 2 done · 1 working · 1 open");
+  // The test behind it, ignoring case like the grouping; nothing parked without a status.
+  const isParked = parkedTest(parked);
+  assert.equal(isParked(status("x", "done", { folder: "PEACEFREEWEB" })), true);
+  assert.equal(isParked(status("x", "done", { folder: "other" })), false);
+  assert.equal(parkedTest([])(status("x", "done", { folder: "PeacefreeWeb" })), false);
 });

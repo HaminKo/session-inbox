@@ -18,6 +18,11 @@ docs/decisions.md (2026-11-01, "GUI test: Playwright drives a pinned VS Code").
   item's tooltip. ~~Fails every run~~ (wrong): the full suite passed 17/17 later the same day,
   after a VS Code restart. Cause not looked into. Same day `open.gui.ts` timed out once (3 tests, 30 s each) and
   passed the 2 runs after it: flaky, cause unknown.
+- A tree redraw just after a hover starts cancels the hover (2026-11-14, to-do #28 B, measured):
+  with an extra `source.refresh()` on every change of `sessionInbox.projects` (a second redraw a
+  few ms after the sidebar's own), `open.gui.ts` "a closed project's row has its folder and status
+  in the hover" failed 2 of 3 runs (its hover starts right after the previous test sets a status).
+  Without that refresh: 3 of 3 alone and the full suite passed. So: one redraw per setting change.
 - Test files are TypeScript run directly by Node 26 (type stripping; no build).
   `extension/test/package.json` sets `"type": "module"` for that folder only. The root
   package.json stays CommonJS because `dist/extension.js` is a CJS bundle. tsconfig gets

@@ -13,6 +13,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   shows after the project's name, in a colour you pick with **Set Status Color…**. A project with
   a status stays listed as **Closed** after its last chat ends; click it to open its folder.
   **Clear Project Status** removes it.
+- A project with a status is parked: its finished chats aren't counted in the badge, the status
+  bar or the tray, and are listed under **Parked** when grouped by state. One waiting on a
+  permission or a question still counts.
 
 ### Changed
 - A reply that ends while Claude still runs a background task (a command, an agent or a monitor)

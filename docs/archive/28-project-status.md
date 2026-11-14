@@ -108,10 +108,19 @@ and no Projects view. So: status in the label, coloured by a file decoration; cl
   2026-11-11). Colouring only the status text was offered as a status row of its own; the user
   kept the coloured name and status. Tested by the user from the installed `.vsix`; 93 unit and
   26 GUI tests pass. Committed 2026-11-12.
-- [ ] Step B: a parked project's `done` chats don't count (badge, status bar, tray, reminders);
-  `waiting` still does. Closed projects are never counted already (they have no chats). Parked =
-  `projectStatus` set (projectLook.ts); the tray needs the parked labels in `.tray-looks` and the
-  same rule in `Read-Inbox` (tray.test.ts keeps the counts equal).
+- [x] Step B: a parked project's `done` chats don't count (badge, status bar, tray); `waiting`
+  still does, and reminders (only for `waiting`) needed no change. Built 2026-11-14:
+  `countStates(statuses, isParked)` counts them as `parked`; `parkedTest` (sessionList.ts) matches
+  the project name ignoring case; grouped by state they get a **Parked (N)** group after Open,
+  before Closed (grouped by project nothing moves); the status bar hover says "Parked (done, not
+  counted): N"; `.tray-looks` gets `parked` (lowercase names) and `Read-Inbox` the same rule. User
+  answers ("go with your suggestions"): the Parked group, the hover line, the tray leaving them
+  out. A status set or cleared re-counts from the last read (badge in `regroup()`, the status bar
+  keeps its last read): an extra folder read made a second tree redraw that cancelled a hover in
+  `open.gui.ts` (docs/research/gui-testing.md). Review: 2 fixes (the status bar reads the setting
+  only when it changes; a test comment); left as notes: the by-project header still says "done",
+  JS vs .NET lowercasing of non-ASCII names, parked rows keep the done icon. Tested by the user
+  from the installed `.vsix`; 96 unit and 26 GUI tests pass.
 
 ## Test
 - Unit: `withStatus` (set, clear, folder saved, other fields kept, spellings), the Projects view's
