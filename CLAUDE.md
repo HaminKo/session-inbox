@@ -43,9 +43,10 @@ Don't build what's under "Later" in docs/todo.md until asked.
     `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens,
     sidebar ~390, window ~2,900.
 - **Dev port:** N/A — a VS Code extension runs in the Extension Development Host, no web server.
-- **Docs to update when behaviour changes:** README.md (Features, Install and run, the Settings
-  table: one row per setting, Credits), docs/research/hooks.md (hook/event behaviour), CHANGELOG.md (a line under Unreleased
-  for a change users see).
+- **Docs to update when behaviour changes:** docs/guide.md (each feature in detail, Install
+  Hooks, the popup-hook format), README.md (the one-line Features list, Install and run, the
+  Settings table: one row per setting, Credits), docs/research/hooks.md (hook/event behaviour),
+  CHANGELOG.md (a line under Unreleased for a change users see).
 - **Must keep working:** the existing `notify.ps1` popups must still fire (taller since
   2026-11-01, see docs/decisions.md); the
   status-writer must stay fast (it runs on every PostToolUse).
@@ -100,7 +101,7 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   `focus` only overrides: another path, or `false`); re-read on every sidebar update, never
   watched or written by the extension; only a hand-set path logs problems.
 - No popup hook is shipped: reminders and popup clicks need the user's own `notify.ps1` (README
-  "Optional: desktop popups"); a missing one is said once per window, on the first failed reminder.
+  "Optional: desktop popups", format in docs/guide.md); a missing one is said once per window, on the first failed reminder.
 - GUI test: Playwright drives a VS Code pinned in `test/gui/launch.ts` (bump by hand), downloaded
   by `@vscode/test-electron`.
 - README pictures (`docs/images/`) are unedited `npm run screenshots` output: change
@@ -108,6 +109,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   URLs (vsce ignores `repository.directory`).
 - README.md keeps the headings "Install and run" and "Optional: desktop popups" (the released
   `extension/README.md` links to their anchors); user install and Development are separate sections.
+- README.md lists each feature in one or two lines with no edge cases or numbers that change often
+  (a default such as 10 minutes is fine), linking to its
+  section in docs/guide.md, which holds the details; a guide heading is renamed only with its links.
 - A hand-set project status (`sessionInbox.projects` → `status` + the `folder` it was set from)
   follows the project's name, coloured by its `statusColor` through a file decoration (the icon
   keeps the state colour); with no chat running the project stays in the Sessions tree as
@@ -117,9 +121,9 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   point at the GitHub tags.
 
 ## Project docs
-README.md, docs/local.md, docs/todo.md (the list), docs/todo/ (one file per to-do), docs/archive/
-(finished to-dos' files, read only when a to-do names one), docs/decisions.md, docs/research/ (one
-file per topic).
+README.md, docs/guide.md (the user guide: every feature in detail), docs/local.md, docs/todo.md
+(the list), docs/todo/ (one file per to-do), docs/archive/ (finished to-dos' files, read only when
+a to-do names one), docs/decisions.md, docs/research/ (one file per topic).
 
 ## Never in tracked files
 - Real name, pseudonym-to-keep-separate, and personal paths (always → docs/local.md).

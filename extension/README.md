@@ -6,8 +6,9 @@ Claude Code's desktop notifications are one-shot. Session Inbox keeps a status b
 VS Code window that stays until you act on each session that is waiting for you.
 
 It shows a status bar count, a sidebar of every session across windows (click one to bring up its
-window and chat tab), and an optional Windows tray icon. All features, settings and install steps:
-[main README](https://github.com/HaminKo/session-inbox).
+window and chat tab), and an optional Windows tray icon. Install steps and settings:
+[main README](https://github.com/HaminKo/session-inbox); every feature in detail:
+[user guide](https://github.com/HaminKo/session-inbox/blob/HEAD/docs/guide.md).
 
 ![Status bar item reading "2 waiting"](https://github.com/HaminKo/session-inbox/raw/HEAD/docs/images/statusbar.png)
 
@@ -21,7 +22,8 @@ window and chat tab), and an optional Windows tray icon. All features, settings 
   [main README](https://github.com/HaminKo/session-inbox#install-and-run)).
 - Optional: desktop popups and reminders need your own popup hook at
   `~/.claude/hooks/notify.ps1` (not included; the
-  [main README](https://github.com/HaminKo/session-inbox#optional-desktop-popups) says what it receives).
+  [user guide](https://github.com/HaminKo/session-inbox/blob/HEAD/docs/guide.md#your-own-popup-hook)
+  says what it gets and writes).
 
 ## License
 

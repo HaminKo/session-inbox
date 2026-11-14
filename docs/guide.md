@@ -1,0 +1,154 @@
+# Session Inbox user guide
+
+What each part of Session Inbox does, in detail. How to install it and the settings: the
+[README](../README.md).
+
+## Status bar
+
+- Shows `⚠ N waiting` (highlighted) or `✓ all clear` in every VS Code window, live.
+- N counts sessions waiting on you (a permission prompt or a question) and finished replies: both
+  are your turn.
+- A reply that ends while Claude still runs a background task (a command, an agent or a monitor
+  it will report on) counts as working, with "background task" in its sidebar row. It counts as
+  done again when Claude's next reply has no task running, when the chat restarts (the task dies
+  with it), or 45 minutes after the reply.
+- Hover for how many are waiting / done / working; click it to open the sidebar.
+- A chat whose process has ended (window closed, or VS Code quit without the hook's cleanup) is
+  not counted.
+
+## Sidebar
+
+- The Session Inbox icon in the Activity Bar (badge: waiting + done) opens a list of every running
+  session across all windows. With none, it says "No Claude Code sessions running."
+- **By state** (default): groups Waiting, Done and Working, in that order. Each session shows its
+  folder, a `worktree` tag, how long it has waited, and its message.
+- **By project:** a button in the sidebar's title bar switches to one header per project folder,
+  A-Z, with a summary such as `1 waiting · 1 done` and its sessions underneath, each named by its
+  state. The header's folder icon has the colour of its
+  most urgent state: yellow waiting, green done, blue working, grey open. The choice is saved for
+  all windows (others pick it up when they reload).
+- **Project status:** see [Project status](#project-status) below; it follows the project's name,
+  e.g. `PeacefreeWeb · On hold`, in a colour you pick.
+- **Project icons:** right-click a project header for **Set Icon…** (a pick of ~25 icons, such as a
+  map or a globe) or **Reset Icon**. The icon keeps the state colour and changes in every open
+  window at once. It's stored in the setting `sessionInbox.projects`
+  (`{ "sc-map-library": { "icon": "map" } }`), where any other
+  [codicon](https://code.visualstudio.com/api/references/icons-in-labels#icon-listing) name can
+  be typed by hand.
+- **"Open" chats:** a chat that is open but hasn't written a status yet (after a VS Code restart,
+  or a new tab before its first prompt) is shown in grey as "Open", last (grouped by state: an
+  "Open" group that starts collapsed). It isn't counted in the badge or the status bar, and moves
+  to its real state with its next prompt or tool call.
+
+## Where a project stands
+
+Grouped by project, the first row under a project's header (a target icon) shows where that
+project stands, with no setting: the `Now:` line of the `## Where we are` section in the project's
+`docs/todo.md`.
+
+```markdown
+## Where we are
+- Now: To do 31, step F3b4b (Run translated)
+- Next: To do 37, 11, 59
+- Updated: 2026-11-03
+```
+
+- Hover the row for the whole section, with a note when its `Updated:` date is more than 14 days
+  old.
+- The file is re-read with every session event and every 30 s, and never written. A project
+  without that file or section simply shows no row.
+- Kept elsewhere? Add `"focus": "notes/status.md"` to the project's entry in
+  `sessionInbox.projects` (a markdown file, path relative to the project folder). A problem with a
+  path set this way gets one line in the "Session Inbox" output channel.
+- `"focus": false` turns the row off.
+
+## Project status
+
+Note that a project is parked, e.g. "On hold" or "Come back later", and keep it listed after its
+window closes.
+
+- Right-click a project header (or, grouped by state, a session) and pick **Set Project Status…**:
+  **On hold**, **Come back later**, or **Type your own…** (any text, e.g. "Come back later: the
+  login bug"). It shows after the project's name: `PeacefreeWeb · On hold`. For a project with no
+  chat open, run **Session Inbox: Set Status of This Project…** from the Command Palette in its
+  window.
+- **Set Status Color…** (right-click) colours the name and status: red, orange, yellow, green,
+  blue, purple, magenta, cyan or grey. These follow your colour theme; another
+  [theme colour](https://code.visualstudio.com/api/references/theme-color) id can be typed as
+  `"statusColor"` in settings.json. VS Code can't use a hex code here. The icon keeps the colour
+  of its state; the text colour is VS Code's file decoration colour, so it's off if you turned off
+  `explorer.decorations.colors`.
+- A project with a status is parked: its finished chats aren't counted in the badge, the status
+  bar or the tray, and grouped by state they move to a **Parked** group. A chat that waits on a
+  permission or a question still counts.
+- When no chat of the project runs, it stays listed as **Closed**: grouped by project, its header
+  (with its focus row) and a **Closed** row; grouped by state, a **Closed** group at the end. Not
+  counted in the badge. Click **Closed** to open the project's folder.
+- **Clear Project Status** (right-click) removes the status and its colour; a closed project then
+  leaves the list. A status stays until you clear it.
+- Stored in `sessionInbox.projects` with the folder it was set from (`"status"`, `"folder"`,
+  `"statusColor"`), so every window shows it at once.
+
+## Clicking a session
+
+- Brings up the VS Code window that has the session's project folder open, or opens the folder in
+  a new window if none has.
+- Shows that chat's own Claude tab, not whichever Claude tab was last active.
+- A session whose folder no longer exists (a removed worktree) shows "Folder not found" instead of
+  opening it.
+- Clicking a popup from your own `notify.ps1` can do the same (see
+  [Your own popup hook](#your-own-popup-hook)).
+
+## Reminders
+
+- A session still waiting on a permission prompt or a question after 10 minutes gets its
+  `notify.ps1` popup once more ("Still waiting (12 min): …").
+- The setting `sessionInbox.renotifyMinutes` changes the minutes; `0` turns reminders off.
+- The reminder is sent only by a window that has the chat's folder open and isn't in front, and can
+  come up to ~30 s late.
+- Needs a desktop-popup hook of your own (see
+  [Your own popup hook](#your-own-popup-hook)). Without one, the first reminder that can't
+  be sent says so once per window, with a **Turn Off Reminders** button.
+
+## Tray icon (optional)
+
+Off by default: turn on the setting `sessionInbox.trayIcon`.
+
+- A Windows tray icon next to the clock shows the same count, also when no VS Code window is in
+  front, in the sidebar's colours: yellow if any session is waiting, green if only finished
+  replies are, grey when all clear. Hover for a summary.
+- Click it for the list of sessions that need you (dark when Windows apps are set to dark), each
+  with the sidebar's state icon and its project's icon. One opens its window and tab like a sidebar
+  click (this needs VS Code's `code` command on PATH).
+- It closes when the VS Code that started it quits, when the setting is turned off, or with
+  **Exit** in its menu. After Exit it comes back when a VS Code window starts or the setting is
+  turned off and on.
+- Turn the setting off before uninstalling; otherwise the icon stays until VS Code quits.
+
+## What Install Hooks does
+
+- Copies the status-writer (bundled in the extension from `hooks/session-status.ps1`) into
+  `~/.claude/hooks/` and adds it to `PermissionRequest`, `Stop`, `UserPromptSubmit`, `PostToolUse`
+  and `SessionEnd` in `~/.claude/settings.json`, next to any hooks already there.
+- Never changes other hooks or settings, and refuses a `settings.json` that isn't valid JSON.
+- Saves the original once as `settings.json.before-session-inbox`, and backs up a replaced hook to
+  `~/.claude/hooks/backups/`.
+- At startup the extension warns when the hook is missing, differs from its own copy, or isn't in
+  `settings.json` ("Install Hooks" / "Don't ask again", the latter until the bundled hook changes).
+
+## Your own popup hook
+
+Session Inbox doesn't ship a desktop-popup hook. Reminders, and clicking a popup to show its chat,
+work with one of your own at `~/.claude/hooks/notify.ps1` (a Windows PowerShell script; the author
+uses a personal one that isn't in this repo). What it needs to handle:
+
+- **Reminders:** the extension starts it as
+  `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ~/.claude/hooks/notify.ps1`, with
+  `CLAUDE_PROJECT_DIR` set to the chat's project folder and this JSON on stdin (UTF-8):
+  `{"hook_event_name":"SessionInboxReminder","session_id":"…","cwd":"<project folder>","message":"Still waiting (12 min): …"}`.
+  Show `message` in a popup. Details: [docs/research/hooks.md](research/hooks.md), "Re-notify".
+- **Click shows the chat's tab (optional):** on a click, write
+  `~/.claude/session-status/.reveal` as UTF-8 without BOM:
+  `{"session_id":"…","project_dir":"<project folder>","at":<milliseconds since 1970>}`. The window
+  that has that folder open shows the chat's own Claude tab if `at` is at most 15 s old. Details:
+  [docs/research/hooks.md](research/hooks.md), "Popup click shows the chat's own tab".

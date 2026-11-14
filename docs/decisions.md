@@ -3,6 +3,29 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-14 — A short README; each feature in detail in docs/guide.md (to-do #29)
+- Decision: README.md's Features becomes one bullet per feature (one or two lines, no edge cases
+  or numbers that change often; a default such as 10 minutes is fine), its bold name linking to that feature's section in the new docs/guide.md ("Session
+  Inbox user guide"). The guide holds the old Features subsections word for word (as `##`
+  headings, so the anchors keep their names), "What Install Hooks does" (README keeps a 3-line
+  summary) and "Your own popup hook" (the reminder's stdin JSON and the `.reveal` file; README's
+  "Optional: desktop popups" keeps its heading and 3 lines that link there). The Settings table
+  stays whole and links into the guide; Install and run keeps its steps and the by-hand
+  `<details>` block; How it works, Requirements, Development, Credits and License are unchanged.
+  `extension/README.md` links to the guide too, by absolute GitHub URL. No CHANGELOG line (only a
+  link changes in the `.vsix`). The guide doesn't explain How it works in more depth
+  (docs/research/hooks.md has that). Revises 2026-11-04 (the order stays; Features is shortened).
+- Reason: README.md was 286 lines, 123 of them Features, written like a manual with edge cases
+  ("45 minutes after the reply", `explorer.decorations.colors`); a visitor scrolled to line 153
+  to reach Install and run. After: 164 lines, Install and run at line 48 (both measured).
+- Decided by: the user, on Claude's suggestions.
+- Rejected: a root `GUIDE.md` (one more file at the top level); moving Development to
+  CONTRIBUTING.md (suggests outside contributions are wanted; it's 21 lines at the bottom, in no
+  one's way); a `<details>` block per feature (hides text, anchors into collapsed blocks are
+  awkward, the file stays as long); only moving Install and run above Features (cheapest, but
+  Features stays 123 lines); a hand-made contents list in the guide (the README's Features list
+  already is one, and it would be one more thing to keep in step).
+
 ## 2026-11-14 — A project with a status is parked: its done chats aren't counted (to-do #28 B)
 - Decision: a project with a hand-set status (any text) is parked. Its `done` chats don't count
   in the badge, the status bar or the tray (`countStates` counts them as `parked`). Its `waiting`
@@ -84,6 +107,8 @@ what was rejected and why.
   than a PostToolUse today, measured).
 
 ## 2026-11-04 — README order: Features, How it works, Install and run, Settings, popups, Development (to-do #26)
+(Revised 2026-11-14, to-do #29: the order stays, but Features is one line per feature and the
+details are in docs/guide.md; see "A short README" above.)
 - Decision: README.md goes pitch, pictures, **Features** (`###` subsections: status bar, sidebar,
   where a project stands, clicking a session, reminders, tray icon), **How it works** (the old
   "It has two parts" list without its feature bullets), Requirements (user only), **Install and

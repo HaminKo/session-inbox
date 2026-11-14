@@ -1,5 +1,16 @@
 # Tray icon (`tray/session-tray.ps1`)
 
+## Flaky unit test: "a tray started while the old one stops takes over" (2026-11-14)
+- Seen during to-do #29 (docs only, no code changed; tree clean at start). Measured: `npm test`
+  failed in 2 of 6 runs, 96/96 passing in the others. One failure was captured:
+  `test/unit/tray.test.ts:393`, "the new tray left instead of taking over" (the new copy exited
+  within 4 s); the other run's test name wasn't captured (also a `true !== false` assertion).
+- Possible causes, not tested (estimated from reading `session-tray.ps1:300-312`): the new copy
+  waits for the mutex only while the stop event is still set (`$quitting.WaitOne(0)`), so it
+  leaves if the old copy resets or closes that event before letting go of the mutex; or the old
+  copy takes longer than the 5 s `WaitOne(5000)` to let go when the machine is busy.
+- Not fixed: no user has seen it (it needs the setting turned off and on within ~2 s).
+
 ## The tray icon on other monitors (2026-11-14)
 Question: can the tray icon (a WinForms `NotifyIcon`) also show on the taskbars of other monitors?
 

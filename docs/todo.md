@@ -1,5 +1,5 @@
 ## Where we are
-- Now: To do 29 (shorter README, details in docs/guide.md)
+- Now: No to-dos open
 - Next: (none)
 - Updated: 2026-11-14
 
@@ -7,7 +7,7 @@
 Next number: 30. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
 
 ### Now
-- To do 29: Shorter README, feature details moved to docs/guide.md (medium; user 2026-11-13): docs/todo/29-shorter-readme.md
+(none)
 
 ### Bugs me
 (none)

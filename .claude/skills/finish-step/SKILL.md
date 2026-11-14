@@ -32,8 +32,8 @@ Only when the user has tested the whole step; if part of the test failed, fix th
   `Before a public release (no to-dos open)`), `- Next: To do A, B, C` (the Bugs me list in
   order), `- Updated: YYYY-MM-DD` (today). When a to-do is finished, its line leaves "### Now": ask
   the user which to-do goes there (suggest the first under Bugs me) and move that line up.
-- Update the docs the change affects (CLAUDE.md "Build specifics": Docs to update — README.md,
-  docs/research/hooks.md).
+- Update the docs the change affects (CLAUDE.md "Build specifics": Docs to update —
+  docs/guide.md, README.md, docs/research/hooks.md).
 - If CHANGELOG.md exists and users can see the change, add one plain-language line under Unreleased
   (not for refactors or tests).
 - Check that this step's findings, dead ends and decisions are written down: docs/research/ and
