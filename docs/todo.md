@@ -4,7 +4,7 @@
 - Updated: 2026-11-14
 
 ## To do
-Next number: 30. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
+Next number: 31. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
 
 ### Now
 (none)
@@ -13,7 +13,7 @@ Next number: 30. Numbers are permanent: never renumber or reuse one; to move a t
 (none)
 
 ### Someday
-(none)
+- To do 30: Flaky unit test: a tray started while the old one stops takes over (small; user 2026-11-14): docs/todo/30-flaky-tray-takeover.md
 
 ## Before a public release — done
 0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.
