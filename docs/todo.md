@@ -1,16 +1,16 @@
 ## Where we are
 - Now: To do 28, step B (a parked project's done chats not counted)
-- Next: none
-- Updated: 2026-11-12
+- Next: To do 29
+- Updated: 2026-11-13
 
 ## To do
-Next number: 29. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
+Next number: 30. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
 
 ### Now
 - To do 28: Set a project's status by hand, kept while it's closed (large; user 2026-11-11): docs/todo/28-project-status.md
 
 ### Bugs me
-(none)
+- To do 29: Shorter README, feature details moved to docs/guide.md (medium; user 2026-11-13): docs/todo/29-shorter-readme.md
 
 ### Someday
 (none)
