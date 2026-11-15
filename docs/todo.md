@@ -1,7 +1,7 @@
 ## Where we are
 - Now: No to-dos open
 - Next: (none)
-- Updated: 2026-11-14
+- Updated: 2026-11-15
 
 ## To do
 Next number: 31. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.

@@ -52,6 +52,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
   status-writer must stay fast (it runs on every PostToolUse).
 - **Review checklist:** none yet — use the built-in code-review skill. Add docs/review.md once
   the project has its own rules.
+- Release steps: docs/research/distribution.md, "Release steps (each version)"
 
 ## Status
 Now and next: the 'Where we are' block at the top of docs/todo.md.

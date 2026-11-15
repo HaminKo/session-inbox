@@ -7,6 +7,8 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
 ### Added
 - Set a project's status by hand: right-click a project (or run **Session Inbox: Set Status of
   This Project…**) for **Set Project Status…**: "On hold", "Come back later" or your own text. It
@@ -69,5 +71,6 @@ First version.
   count in the sidebar's colours, also when no VS Code window is in front. Click it for the
   sessions that need you; one opens its window and tab.
 
-[Unreleased]: https://github.com/HaminKo/session-inbox/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/HaminKo/session-inbox/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/HaminKo/session-inbox/releases/tag/v0.2.0
 [0.1.0]: https://github.com/HaminKo/session-inbox/releases/tag/v0.1.0

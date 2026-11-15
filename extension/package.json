@@ -2,7 +2,7 @@
   "name": "session-inbox",
   "displayName": "Session Inbox",
   "description": "A persistent \"waiting on you\" inbox for Claude Code sessions across VS Code windows.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "session-inbox",
   "license": "MIT",
   "repository": {

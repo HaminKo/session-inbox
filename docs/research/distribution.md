@@ -31,15 +31,23 @@ Source: https://code.visualstudio.com/api/working-with-extensions/publishing-ext
 ## Release steps (each version)
 First done for 0.1.0 on 2026-11-03 (release published 2026-11-04 03:12 UTC, the evening of the 3rd
 local time; tag `v0.1.0`, one asset `session-inbox-0.1.0.vsix`; measured with `gh release view`).
+Last: 0.2.0, prepared 2026-11-15 with the global `/release` skill, which follows these steps.
 1. CHANGELOG.md: the lines under `## [Unreleased]` become `## [x.y.z] - YYYY-MM-DD` (release day);
    add `[x.y.z]: …/releases/tag/vx.y.z` at the bottom and change `[Unreleased]` to compare from
    `vx.y.z`.
 2. `"version"` in `extension/package.json` (and `package-lock.json`, via
    `npm version x.y.z --no-git-tag-version` in `extension/`) to the same number, and the `.vsix`
    file name in README.md "Install and run" (it appears twice: `session-inbox-x.y.z.vsix`).
-3. Commit and push; then `npm run package`, tag `vx.y.z`, push the tag, `gh release create` with
-   the `.vsix` (copy-ready commands in docs/local.md, written for 0.1.0).
-4. Check: download the asset from the release page and install it.
+3. `npm run package` in `extension/`, with nothing else uncommitted (the `.vsix` is built from the
+   files on disk). Check it before committing: it is a zip; `extension.vsixmanifest` (`Identity
+   Version`), `extension/package.json` and `extension/changelog.md` show the new version, and
+   `extension/dist/session-status.ps1` equals `hooks/session-status.ps1`. Then the checks in
+   CLAUDE.md "Build specifics".
+4. Commit (`Release x.y.z`) and push; tag `vx.y.z` (a plain tag, as `v0.1.0`) on that commit and
+   push the tag; `gh release create` with the `.vsix` and a notes file (copy-ready commands in
+   docs/local.md). Notes: "Windows only.", then "run Install Hooks again" when the hook changed,
+   the install line, then the version's CHANGELOG section.
+5. Check: download the asset from the release page and install it.
 
 ## Open VSX (note only)
 Registry used by VSCodium, Cursor and similar editors; needs an Eclipse account and its publisher
