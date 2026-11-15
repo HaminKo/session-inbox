@@ -75,6 +75,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
   with `@types/vscode` pinned to the same version and `@types/node` to `~20.17` (not newer).
 - Distribution: a `.vsix` on a GitHub release, tagged `v<version>`; `repository` is set. The
   Marketplace (publisher id `session-inbox`, not created) is under Later.
+- A new version is made with the global `/release` skill; finish-step suggests it when a finished
+  to-do leaves user-visible lines under Unreleased. No release automation (CI) until asked.
 - Tests never read the real status folder: they set `SESSION_INBOX_STATUS_DIR` to a temp folder
   (and `SESSION_INBOX_SESSIONS_DIR` for `~/.claude/sessions/`).
 - A status file counts only while its chat process runs (`~/.claude/sessions/<pid>.json`);

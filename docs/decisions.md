@@ -3,6 +3,29 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-15 — Releases through a global `/release` skill, suggested by finish-step
+- Decision: a new version is made with the global `/release` skill (`~/.claude/skills/release/`,
+  used by every project that releases): it turns Unreleased into a version, changes the version
+  number everywhere it appears, builds and checks the release files, and gives the user the push,
+  tag and `gh release create` commands. Each project keeps its own release steps in one file,
+  named by a `Release steps:` line in its CLAUDE.md. finish-step (here and in the new-project
+  template) will suggest `/release` when a finished to-do leaves user-visible lines under
+  Unreleased in a project that has a release. The skill runs only when the user types it.
+  Next version of this project: 0.2.0.
+- Reason: README.md on `main` described features (project status, parked projects) that the
+  released 0.1.0 `.vsix` doesn't have: 16 commits and 4 user-visible changes since `v0.1.0`
+  (measured), and no step that asked "release now?". The steps were written down
+  (docs/research/distribution.md); nothing triggered them. Several of the user's projects
+  release, each with its steps in a different place.
+- Decided by: the user, on Claude's suggestions.
+- Rejected: release-please / semantic-release / a GitHub Actions workflow (for now; it writes the
+  changelog from commit messages instead of lines written for users, needs CI that no project has,
+  some builds need this PC's tools, and semantic-release publishes on every push; worth it once a
+  project releases monthly or more, gets outside pull requests, or publishes to a store through CI,
+  e.g. the Marketplace under Later); marking unreleased features in the README, or editing the
+  README only at release time (work at every step, stale again); a hook (can't judge whether a
+  change is worth a release); a reminder after every step (noise).
+
 ## 2026-11-14 — A short README; each feature in detail in docs/guide.md (to-do #29)
 - Decision: README.md's Features becomes one bullet per feature (one or two lines, no edge cases
   or numbers that change often; a default such as 10 minutes is fine), its bold name linking to that feature's section in the new docs/guide.md ("Session
