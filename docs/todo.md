@@ -1,7 +1,7 @@
 ## Where we are
 - Now: No to-dos open
 - Next: (none)
-- Updated: 2026-11-15
+- Updated: 2026-11-16
 
 ## To do
 Next number: 32. Numbers are permanent: never renumber or reuse one; to move a to-do, move its line.
@@ -13,7 +13,7 @@ Next number: 32. Numbers are permanent: never renumber or reuse one; to move a t
 (none)
 
 ### Someday
-- To do 31: Tray: the setting toggled faster than the tray can follow (small; user 2026-11-15): docs/todo/31-tray-fast-toggle.md
+(none)
 
 ## Before a public release — done
 0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.

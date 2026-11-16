@@ -56,10 +56,55 @@
   then the old copy stops: no tray. Replays that start the new copy N ms after `-Stop` is started
   (not after it ended), on a machine running other tests: N = 0, 1 failure in 12; N = 500, 0 in
   12. So only a toggle faster than about half a second (a double-click on the checkbox) can hit
-  it.
+  it. **Fixed 2026-11-15 (to-do #31)**, see below.
 - Also left (from the review, not measured, older than this fix; to-do #31): a `-Stop` that
   arrives while a new copy waits for the old one is lost, because the new copy resets the event
   once it takes over (off, on, off within ~2 s leaves a tray running with the setting off).
+  **Measured and fixed 2026-11-15 (to-do #31)**, see below.
+
+## Quick toggles of the setting (2026-11-15, to-do #31)
+- Two ways a quick toggle left the wrong tray state (both found by Claude, never seen by the user):
+  1. Off and on within ~0.5 s: no tray. The cause is measured above ("Still open").
+  2. Off, on, off within ~2 s: a tray kept running with the setting off. The second `-Stop` gets
+     lost in two ways:
+     - it comes while the new copy waits for the old one, and the new copy resets the stop event
+       once it takes over;
+     - it comes before the new copy has started, after the old copy has closed the event: nothing
+       to set, so the new copy starts unopposed.
+- Measured before the fix (case 2): old copy running → `-Stop` → new copy started once that
+  `-Stop` exited → a second `-Stop` G ms after the start → after 9 s the new copy still ran in 11 of
+  12 replays at G = 0 and 3 of 12 at G = 300. 12 replays ran at once (a busy machine). Method as
+  in to-do #30: a Node script in the session scratchpad, not in the repo.
+- Measured: `-Stop` needs ~0.38 s from spawn to exit (5 runs, quiet machine), so a starting copy
+  reaches its mutex check about as fast.
+- Fix, in the extension only (`trayFollower` in `extension/src/tray.ts`); the script is unchanged:
+  - "On" starts the tray only once every `-Stop` this window sent has exited, the second one
+    included (so the stop event is set when the new copy looks). It doesn't start at all if the
+    setting is off again by then or the window has closed.
+  - "Off" sends `-Stop`, and a second `-Stop` 15 s later if the setting is still off. A copy
+    started before then has taken over or left by then (≈0.4 s start + at most the 5 s wait).
+- Why case 2 can't be fixed in the script alone: a stop event can't tell a `-Stop` meant for the
+  old copy from one meant for the new copy, because PowerShell processes start in no fixed order.
+  Only the extension knows the order of the toggles.
+- Measured after the fix, through the real `trayFollower` and script (12 replays at once per
+  line):
+  - Case 1 (off, then on at 0 ms): 0 failures in 30, one tray running each time. Before the fix:
+    1 in 12, from to-do #30's measurement above.
+  - Case 2 (off, on, then off G ms later; checked after 20 s):
+    - G = 0, 300, 600 ms: 0 failures in 36. The start was skipped every time: the first `-Stop`
+      hadn't exited yet.
+    - G = 700, 900, 1100 ms with the second `-Stop` turned off: 9 failures in 36. This shows that
+      these gaps hit the lost `-Stop`.
+    - The same gaps with the second `-Stop`: 0 in 36.
+    - G = 1500 ms: 0 in 12, with or without the second `-Stop`.
+  - After the review fixes, run again: case 1, 0 in 30; case 2 at G = 900 and 1100 ms, 0 in 24.
+- Unit tests with fake processes: `tray.test.ts`, "following the tray setting".
+- Not covered by the GUI test: it toggles by writing `settings.json`, and VS Code merges writes
+  that close together, so it can't make a same-moment toggle. Its on/off step still runs the new
+  code.
+- Left: if PowerShell takes over ~10 s to start (a very slow machine), the second `-Stop` can
+  still arrive too early. Never measured; also, a 5 s wait that runs out is older than this fix
+  and leaves no tray with the setting on.
 
 ## The tray icon on other monitors (2026-11-14)
 Question: can the tray icon (a WinForms `NotifyIcon`) also show on the taskbars of other monitors?

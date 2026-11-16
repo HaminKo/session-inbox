@@ -3,6 +3,25 @@
 Newest first. Each entry: the date and decision as the heading; then the reason, who decided, and
 what was rejected and why.
 
+## 2026-11-15 — Quick tray toggles: the extension orders start and stop, and stops twice (to-do #31)
+- Decision: each window's extension (`trayFollower`, `extension/src/tray.ts`):
+  - starts the tray only once every `-Stop` it sent has exited, and skips the start if the
+    setting is off again by then;
+  - when the setting is turned off, sends `-Stop` and, if the setting is still off, a second
+    `-Stop` 15 s later.
+  The tray script and the one-copy rule are unchanged.
+- Reason: off and straight on could leave no tray, and off, on, off within ~2 s could leave a tray
+  running (both measured, docs/research/tray.md "Quick toggles"). Only the extension knows the
+  order of the toggles: the script's stop event can't tell which copy a `-Stop` was meant for.
+- Decided by: the user, on Claude's suggestions.
+- Rejected:
+  - A "wanted on/off" file that the tray reads every tick. It needs no timing, but it is about 3
+    times the code, a new file in the status folder, and a change to how stopping works.
+  - Having the starting copy report back over stdout. It risks a broken pipe once the window
+    that read it closes, because the tray outlives the window.
+  - A `-Stop` that keeps trying until the mutex is free. A start that is still waiting can take
+    over after it.
+
 ## 2026-11-15 — Releases through a global `/release` skill, suggested by finish-step
 - Decision: a new version is made with the global `/release` skill (`~/.claude/skills/release/`,
   used by every project that releases): it turns Unreleased into a version, changes the version

@@ -97,6 +97,8 @@ One line each; reasons, who decided and what was rejected: docs/decisions.md.
 - The tray icon (`tray/session-tray.ps1`) is started by the extension only while
   `sessionInbox.trayIcon` is on (default off), one copy by mutex, and ends with the VS Code that
   started it; its counting rules copy `statusFolder.ts`, kept equal by `test/unit/tray.test.ts`.
+- A window starts the tray only after every `-Stop` it sent has exited, and sends a second `-Stop`
+  15 s after the setting is turned off, if it's still off (`trayFollower`).
 - The tray draws the sidebar's codicons from VS Code's own `codicon.ttf`; the extension writes the
   names, characters and font path into `~/.claude/session-status/.tray-looks` (no `.json`, so no
   reader takes it for a status), and the script only looks them up.

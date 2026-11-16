@@ -31,6 +31,65 @@ export function stopTray(script: string): ChildProcess {
   return runTray(script, ["-Stop"]);
 }
 
+// When a second -Stop follows the first. A copy started before it has taken over or left by then:
+// PowerShell needs ~0.4 s to get there (measured 2026-11-15), then waits at most 5 s for a stopping copy.
+export const secondStopMs = 15_000;
+
+function exited(child: ChildProcess): Promise<void> {
+  return new Promise((resolve) => {
+    if (child.exitCode !== null || child.signalCode !== null) resolve();
+    child.once("exit", () => resolve());
+    child.once("error", () => resolve()); // never started
+  });
+}
+
+// Follows the setting sessionInbox.trayIcon in one window, so that quick toggles still end with the
+// tray matching the last value (to-do #31, docs/research/tray.md). `changed` runs on each change:
+// - On: the tray starts only once every -Stop this window sent has exited, so the new copy finds the
+//   stop event set and waits for the stopping copy instead of leaving. Skipped if off by then.
+// - Off: -Stop, and once more after `secondStopAfter` if still off. A -Stop that comes while a new
+//   copy starts up or waits to take over is lost: that copy resets the stop event when it takes over.
+// Every window does the same, so the copies they start settle on one.
+export function trayFollower(
+  enabled: () => boolean,
+  run: { start: () => ChildProcess; stop: () => ChildProcess },
+  secondStopAfter = secondStopMs,
+) {
+  let stopped = Promise.resolve(); // the last -Stop, until it has exited
+  let again: NodeJS.Timeout | undefined;
+  let disposed = false;
+  const stop = () => {
+    stopped = exited(run.stop());
+  };
+  // Also waits for a -Stop sent while waiting (the setting turned off and on again meanwhile).
+  async function stopsExited(): Promise<void> {
+    let last: Promise<void>;
+    do {
+      last = stopped;
+      await last;
+    } while (last !== stopped);
+  }
+  return {
+    // Resolves once the tray has been started, or skipped.
+    async changed(): Promise<void> {
+      clearTimeout(again);
+      if (!enabled()) {
+        stop();
+        again = setTimeout(() => {
+          if (!enabled()) stop();
+        }, secondStopAfter);
+        return;
+      }
+      await stopsExited();
+      if (enabled() && !disposed) run.start();
+    },
+    dispose(): void {
+      disposed = true;
+      clearTimeout(again);
+    },
+  };
+}
+
 // What the tray draws its menu icons with (to-do #17), in <status folder>/.tray-looks: not a .json,
 // so neither the extension nor the tray reads it as a status file. The extension works out every
 // name and character, so the script only looks them up: `projects` maps a project label (lowercase)

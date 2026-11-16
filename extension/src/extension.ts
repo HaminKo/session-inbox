@@ -12,7 +12,7 @@ import { pickProjectIcon, setProjectIcon, Sidebar, type Node } from "./sidebar.t
 import { clearProjectStatus, pickProjectStatus, pickProjectStatusColor, pickWindowProjectStatus } from "./projectStatus.ts";
 import { countStates, sessionsDir, statusDir, summarize, type SessionStatus } from "./statusFolder.ts";
 import { codiconFont, readCodicons } from "./codicons.ts";
-import { startTray, stopTray, trayLooks, writeTrayLooks } from "./tray.ts";
+import { startTray, stopTray, trayFollower, trayLooks, writeTrayLooks } from "./tray.ts";
 
 export function activate(context: vscode.ExtensionContext): void {
   const sidebar = new Sidebar("sessionInbox.sessions", context.globalState);
@@ -97,17 +97,18 @@ function trayIcon(context: vscode.ExtensionContext): void {
     writing = writing.then(async () => writeTrayLooks(statusDir(), trayLooks(font, await chars, settings().get("projects"))));
     return writing;
   };
+  const tray = trayFollower(enabled, { start: () => startTray(script, process.ppid), stop: () => stopTray(script) });
+  // Off at startup sends no -Stop: a tray running then is another VS Code's (Insiders has its own settings).
   if (enabled()) {
     void writeLooks();
-    startTray(script, process.ppid);
+    void tray.changed();
   }
   context.subscriptions.push(
+    tray,
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration("sessionInbox.trayIcon")) {
-        if (enabled()) {
-          void writeLooks();
-          startTray(script, process.ppid);
-        } else stopTray(script);
+        if (enabled()) void writeLooks();
+        void tray.changed();
       } else if (event.affectsConfiguration("sessionInbox.projects") && enabled()) void writeLooks();
     }),
   );

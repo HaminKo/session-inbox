@@ -3,10 +3,11 @@
 // copy that isn't made in the other fails here. Windows only (Windows PowerShell 5.1).
 import assert from "node:assert/strict";
 import { execFile, spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { suite, test } from "node:test";
+import { suite, test, type TestContext } from "node:test";
 import { promisify } from "node:util";
 import { readCodicons } from "../../src/codicons.ts";
 import { projectIcon, statusProjects } from "../../src/projectLook.ts";
@@ -19,7 +20,7 @@ import {
   readLiveSessions,
   readStatuses,
 } from "../../src/statusFolder.ts";
-import { startTray, stopTray, trayLooks, writeTrayLooks, type TrayLooks } from "../../src/tray.ts";
+import { secondStopMs, startTray, stopTray, trayFollower, trayLooks, writeTrayLooks, type TrayLooks } from "../../src/tray.ts";
 import { noFontSkip, pinnedFont } from "./pinnedFont.ts";
 
 const script = join(import.meta.dirname, "..", "..", "..", "tray", "session-tray.ps1");
@@ -184,6 +185,152 @@ void test("the looks file is written into a status folder no hook has made yet",
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// trayFollower with fake processes and fake timers: what it starts and stops, and when (to-do #31).
+void suite("following the tray setting", () => {
+  // A stand-in for a tray process that exits when told to.
+  function fakeProcess() {
+    const child = Object.assign(new EventEmitter(), { exitCode: null as number | null, signalCode: null });
+    return Object.assign(child as unknown as ChildProcess, {
+      exit: () => {
+        child.exitCode = 0;
+        child.emit("exit", 0, null);
+      },
+    });
+  }
+
+  // `on`: the setting; `stops`: the -Stop processes, in order; `starts`: how many starts. Timers are
+  // fake for the test (undone after it), so the second -Stop comes only on `tick`.
+  function follower(t: TestContext) {
+    t.mock.timers.enable({ apis: ["setTimeout"] });
+    const state = { on: false, stops: [] as ReturnType<typeof fakeProcess>[], starts: 0 };
+    const tray = trayFollower(() => state.on, {
+      start: () => {
+        state.starts++;
+        return fakeProcess();
+      },
+      stop: () => {
+        const stop = fakeProcess();
+        state.stops.push(stop);
+        return stop;
+      },
+    });
+    return { state, tray };
+  }
+
+  // Lets waiting promise callbacks run (setImmediate isn't faked).
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+  void test("on: starts at once with no -Stop before it", async (t) => {
+    const { state, tray } = follower(t);
+    state.on = true;
+    await tray.changed();
+    assert.deepEqual([state.starts, state.stops.length], [1, 0]);
+  });
+
+  void test("off and on again: the tray starts only once the -Stop has exited", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.on = true;
+    const started = tray.changed();
+    await settle();
+    assert.equal(state.starts, 0, "started before the -Stop exited");
+    state.stops[0]?.exit();
+    await started;
+    assert.equal(state.starts, 1);
+  });
+
+  void test("a -Stop that never ran doesn't hold up the start", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.on = true;
+    const started = tray.changed();
+    state.stops[0]?.emit("error", new Error("spawn failed"));
+    await started;
+    assert.equal(state.starts, 1);
+  });
+
+  void test("off, on, off before the -Stop exited: nothing starts", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.on = true;
+    const started = tray.changed();
+    state.on = false;
+    await tray.changed();
+    for (const stop of state.stops) stop.exit();
+    await started;
+    assert.equal(state.starts, 0);
+  });
+
+  void test("off, on, off, on: no start until every -Stop has exited", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.on = true;
+    const first = tray.changed();
+    state.on = false;
+    await tray.changed();
+    state.on = true;
+    const second = tray.changed();
+    state.stops[0]?.exit();
+    await settle();
+    assert.equal(state.starts, 0, "started while the second -Stop still ran");
+    state.stops[1]?.exit();
+    await Promise.all([first, second]);
+    assert.equal(state.starts, 2, "one per 'on': the script keeps one copy");
+  });
+
+  void test("off: a second -Stop after 15 s if still off", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    t.mock.timers.tick(secondStopMs - 1);
+    assert.equal(state.stops.length, 1, "too early");
+    t.mock.timers.tick(1);
+    assert.equal(state.stops.length, 2);
+  });
+
+  void test("on just after the second -Stop: the start waits for it", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.stops[0]?.exit();
+    t.mock.timers.tick(secondStopMs);
+    state.on = true;
+    const started = tray.changed();
+    await settle();
+    assert.equal(state.starts, 0, "started before the second -Stop exited");
+    state.stops[1]?.exit();
+    await started;
+    assert.equal(state.starts, 1);
+  });
+
+  void test("no second -Stop once it's on again", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.on = true;
+    state.stops[0]?.exit();
+    await tray.changed();
+    t.mock.timers.tick(secondStopMs);
+    assert.deepEqual([state.stops.length, state.starts], [1, 1]);
+  });
+
+  void test("a closed window sends no second -Stop", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    tray.dispose();
+    t.mock.timers.tick(secondStopMs);
+    assert.equal(state.stops.length, 1);
+  });
+
+  void test("a closed window starts nothing", async (t) => {
+    const { state, tray } = follower(t);
+    await tray.changed();
+    state.on = true;
+    const started = tray.changed();
+    tray.dispose();
+    state.stops[0]?.exit();
+    await started;
+    assert.equal(state.starts, 0);
+  });
 });
 
 const font = pinnedFont();
