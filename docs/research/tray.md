@@ -9,7 +9,57 @@
   waits for the mutex only while the stop event is still set (`$quitting.WaitOne(0)`), so it
   leaves if the old copy resets or closes that event before letting go of the mutex; or the old
   copy takes longer than the 5 s `WaitOne(5000)` to let go when the machine is busy.
-- Not fixed: no user has seen it (it needs the setting turned off and on within ~2 s).
+  **Partly right, partly wrong** (2026-11-15, to-do #30): see the measured cause below. The 5 s
+  wait was never the problem.
+- Not fixed then: no user has seen it (it needs the setting turned off and on within ~2 s).
+  Fixed on 2026-11-15, see "Fix" below; the rest is to-do #31.
+
+### Cause, measured 2026-11-15 (to-do #30)
+- Method: an instrumented copy of the script (a log line with time and pid at each step) and a
+  Node script that replays the test's steps (old copy, `-Stop`, new copy, the same 3 s / 4 s / 4 s
+  waits), several replays at once. Both lived in the session scratchpad, not in the repo.
+- Measured: quiet machine, 0 failures in 18 replays and 0 in 7 `npm test` runs. With every CPU
+  busy (one busy-loop thread per logical CPU, 32), 1 failure in 18 replays. The cause is a race
+  that only opens up when the machine is slow.
+- The failing replay's log (times in s, from the new copy's first log line, once PowerShell had
+  started):
+  - 0.067 the old copy notices the stop event; 0.091 closes the stop event; 0.122 releases the
+    mutex (its process is still ending, so its mutex handle is still open).
+  - 0.147 the new copy's `New-Object Mutex` returns `createdNew = False`: the mutex *name* still
+    exists, though no one owns it any more.
+  - 0.199 the new copy finds no stop event (closed at 0.091), so it leaves. Result: no tray.
+- So the script reads `createdNew = False` as "another copy owns the mutex", but it only means
+  "the mutex still exists". And the old copy closes its stop event before it lets go of the
+  mutex, so a new copy can find neither a stop event nor a free-looking mutex.
+- Ruled out (measured): `catch [System.Threading.AbandonedMutexException]` does catch an abandoned
+  mutex in Windows PowerShell 5.1 (a script that abandons a mutex in one process and `WaitOne`s it
+  in another: caught). Also ruled out: the old copy taking longer than the 5 s wait (it let go
+  within 0.2 s in every log).
+
+### Fix (2026-11-15, to-do #30)
+- A starting copy looks up the stop event first and keeps it open, then makes the mutex without
+  owning it and *tries* to take it: `WaitOne(5000)` if the stop event is set, else `WaitOne(0)`.
+  `createdNew` is no longer used. The old copy now lets go of the mutex before it closes the stop
+  event, and a copy that takes over keeps the old event open until it has made its own. So "no
+  stop event" means the mutex is free, or the other copy is still starting (then the new copy
+  leaves, as before).
+- The one-copy rule is unchanged: a running copy that wasn't told to stop still makes a new copy
+  leave at once.
+- Unit test for the exact moment that failed: `tray.test.ts`, "a tray takes over a mutex that was
+  let go but is still open" (a helper releases the mutex and keeps it open, with no stop event).
+  It failed on the old script every time (measured, 1 run: the tray left after 1.6 s) and passes
+  on the new one.
+- Measured after the fix: 0 failures in 54 replays with every CPU busy (before: 1 in 18).
+- Still open (found by the review, measured; to-do #31): the extension starts `-Stop` and the
+  new copy without waiting for one another (`extension.ts`, the `sessionInbox.trayIcon`
+  listener). If the new copy looks for the stop event before `-Stop` has set it, it leaves, and
+  then the old copy stops: no tray. Replays that start the new copy N ms after `-Stop` is started
+  (not after it ended), on a machine running other tests: N = 0, 1 failure in 12; N = 500, 0 in
+  12. So only a toggle faster than about half a second (a double-click on the checkbox) can hit
+  it.
+- Also left (from the review, not measured, older than this fix; to-do #31): a `-Stop` that
+  arrives while a new copy waits for the old one is lost, because the new copy resets the event
+  once it takes over (off, on, off within ~2 s leaves a tray running with the setting off).
 
 ## The tray icon on other monitors (2026-11-14)
 Question: can the tray icon (a WinForms `NotifyIcon`) also show on the taskbars of other monitors?

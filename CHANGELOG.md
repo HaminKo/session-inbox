@@ -7,6 +7,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+- Turning the tray icon off and straight back on could leave no tray icon.
+
 ## [0.2.0] - 2026-11-15
 
 ### Added

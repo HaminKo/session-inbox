@@ -297,21 +297,22 @@ if ($Stop) {
     exit 0
 }
 
-$createdNew = $false
-$mutex = New-Object System.Threading.Mutex($true, $mutexName, [ref]$createdNew)
-if (-not $createdNew) {
-    # Another copy shows the icon: leave it, unless it was just told to stop (the setting turned off
-    # and on again quickly). It notices on its next tick (2 s), so wait for it to let go.
-    $owned = $false
-    $quitting = $null
-    if ([System.Threading.EventWaitHandle]::TryOpenExisting($stopName, [ref]$quitting) -and $quitting.WaitOne(0)) {
-        try { $owned = $mutex.WaitOne(5000) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
-    }
-    if ($quitting) { $quitting.Dispose() }
-    if (-not $owned) { exit 0 }
-}
+# If another copy owns the mutex, it shows the icon: leave it, unless it was just told to stop (the
+# setting turned off and on again quickly). It notices on its next tick (2 s), so wait for it to let
+# go. The stop event is looked up first and held, so it can't vanish between the two checks; and a
+# copy that owns the mutex keeps the event open until it has let go, so no event means the mutex is
+# free or its owner is still starting. Ownership is tried, not read from `createdNew`: a copy that
+# has let go but is still ending keeps the mutex open, so it isn't new (to-do #30,
+# docs/research/tray.md).
+$quitting = $null
+$stopping = [System.Threading.EventWaitHandle]::TryOpenExisting($stopName, [ref]$quitting) -and $quitting.WaitOne(0)
+$mutex = New-Object System.Threading.Mutex($false, $mutexName)
+$owned = $false
+try { $owned = $mutex.WaitOne($(if ($stopping) { 5000 } else { 0 })) } catch [System.Threading.AbandonedMutexException] { $owned = $true }
+if (-not $owned) { exit 0 }
 $script:stopEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::ManualReset, $stopName)
 [void]$script:stopEvent.Reset()  # still set if this copy waited for a stopping one
+if ($quitting) { $quitting.Dispose() }  # only now: held until here, the event never vanishes in between
 
 # A handle to the VS Code that started the tray, held from the start so a PID that Windows reuses
 # later can't keep the tray alive. Gone already: nothing to show for.
@@ -543,6 +544,7 @@ if (-not $script:exited) {
 }
 
 if ($script:iconHandle -ne [IntPtr]::Zero) { [void][SessionInbox.Native]::DestroyIcon($script:iconHandle) }
-$script:stopEvent.Dispose()
+# The mutex before the stop event: a copy starting now that finds no event can then take the mutex.
 $mutex.ReleaseMutex()
+$script:stopEvent.Dispose()
 $mutex.Dispose()

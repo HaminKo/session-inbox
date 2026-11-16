@@ -114,12 +114,33 @@ function withTestEnv<T>(env: NodeJS.ProcessEnv, run: () => T): T {
   }
 }
 
+function trayMutex(test: string): string {
+  return `Local\\SessionInboxTray${test}-${process.pid}`;
+}
+
 function trayEnv(statusDir: string, sessionsDir: string, test: string): NodeJS.ProcessEnv {
   return {
     SESSION_INBOX_STATUS_DIR: statusDir,
     SESSION_INBOX_SESSIONS_DIR: sessionsDir,
-    SESSION_INBOX_TRAY_MUTEX: `Local\\SessionInboxTray${test}-${process.pid}`,
+    SESSION_INBOX_TRAY_MUTEX: trayMutex(test),
   };
+}
+
+// A PowerShell helper that keeps the mutex open for 20 s, as another tray copy would: owning it (a
+// running tray), or with `letGo` released but still open (a tray whose process is still ending).
+async function holdMutex(mutex: string, letGo = false): Promise<ChildProcess> {
+  const release = letGo ? "$m.ReleaseMutex(); " : "";
+  const holder = spawn("powershell.exe", [
+    "-NoProfile",
+    "-Command",
+    `$m = New-Object System.Threading.Mutex($true, '${mutex}'); ${release}'held'; Start-Sleep 20`,
+  ]);
+  await new Promise<void>((resolve, reject) => {
+    holder.stdout.once("data", () => resolve());
+    holder.once("exit", () => reject(new Error("the mutex holder exited early")));
+    holder.once("error", reject);
+  });
+  return holder;
 }
 
 // True if the process exits within `ms`.
@@ -398,20 +419,31 @@ void suite("tray script", { skip, concurrency: true }, () => {
     }
   });
 
+  // The moment the "takes over" test above was flaky on (to-do #30, docs/research/tray.md): the
+  // stopping copy has let go of the mutex and closed its stop event, but its process is still
+  // ending, so the mutex is still open. The new copy takes over instead of leaving.
+  void test("a tray takes over a mutex that was let go but is still open", async () => {
+    const { root, statusDir, sessionsDir } = folders();
+    const env = trayEnv(statusDir, sessionsDir, "LetGo");
+    let holder: ChildProcess | undefined;
+    let tray: ChildProcess | undefined;
+    try {
+      holder = await holdMutex(trayMutex("LetGo"), true);
+      tray = withTestEnv(env, () => startTray(script, process.pid));
+      assert.equal(await exitsWithin(tray, 3_000), false, "the tray left as if another copy were running");
+    } finally {
+      tray?.kill();
+      holder?.kill();
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   // A PowerShell helper holds the mutex, as a running tray would; a second tray must exit at once
   // without showing an icon.
   void test("a second copy exits", async () => {
-    const mutex = `Local\\SessionInboxTrayTest-${process.pid}`;
-    const holder = spawn("powershell.exe", [
-      "-NoProfile",
-      "-Command",
-      `$m = New-Object System.Threading.Mutex($true, '${mutex}'); 'held'; Start-Sleep 20`,
-    ]);
+    const mutex = trayMutex("Test");
+    const holder = await holdMutex(mutex);
     try {
-      await new Promise<void>((resolve, reject) => {
-        holder.stdout.once("data", () => resolve());
-        holder.once("exit", () => reject(new Error("the mutex holder exited early")));
-      });
       const { root, statusDir, sessionsDir } = folders();
       try {
         const started = Date.now();
