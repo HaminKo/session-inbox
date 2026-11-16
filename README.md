@@ -47,9 +47,9 @@ Every feature in detail: the [user guide](docs/guide.md).
 
 ## Install and run
 
-1. **Extension:** download the `.vsix` file (such as `session-inbox-0.2.0.vsix`) from the
+1. **Extension:** download the `.vsix` file (such as `session-inbox-0.2.1.vsix`) from the
    [latest release](https://github.com/HaminKo/session-inbox/releases/latest) and install it with
-   `code --install-extension session-inbox-0.2.0.vsix` (or Extensions view → `…` → Install from
+   `code --install-extension session-inbox-0.2.1.vsix` (or Extensions view → `…` → Install from
    VSIX…).
 2. **Hooks:** run **Session Inbox: Install Hooks** from the Command Palette (`Ctrl+Shift+P`).
 3. New chats pick up the hook; restart chats already running. Each session then keeps a status file

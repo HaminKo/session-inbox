@@ -31,7 +31,7 @@ Source: https://code.visualstudio.com/api/working-with-extensions/publishing-ext
 ## Release steps (each version)
 First done for 0.1.0 on 2026-11-03 (release published 2026-11-04 03:12 UTC, the evening of the 3rd
 local time; tag `v0.1.0`, one asset `session-inbox-0.1.0.vsix`; measured with `gh release view`).
-Last: 0.2.0, prepared 2026-11-15 with the global `/release` skill, which follows these steps.
+Last: 0.2.1, prepared 2026-11-16 with the global `/release` skill, which follows these steps.
 1. CHANGELOG.md: the lines under `## [Unreleased]` become `## [x.y.z] - YYYY-MM-DD` (release day);
    add `[x.y.z]: …/releases/tag/vx.y.z` at the bottom and change `[Unreleased]` to compare from
    `vx.y.z`.
@@ -41,7 +41,8 @@ Last: 0.2.0, prepared 2026-11-15 with the global `/release` skill, which follows
 3. `npm run package` in `extension/`, with nothing else uncommitted (the `.vsix` is built from the
    files on disk). Check it before committing: it is a zip; `extension.vsixmanifest` (`Identity
    Version`), `extension/package.json` and `extension/changelog.md` show the new version, and
-   `extension/dist/session-status.ps1` equals `hooks/session-status.ps1`. Then the checks in
+   `extension/dist/session-status.ps1` equals `hooks/session-status.ps1` and
+   `extension/dist/session-tray.ps1` equals `tray/session-tray.ps1`. Then the checks in
    CLAUDE.md "Build specifics".
 4. Commit (`Release x.y.z`) and push; tag `vx.y.z` (a plain tag, as `v0.1.0`) on that commit and
    push the tag; `gh release create` with the `.vsix` and a notes file (copy-ready commands in

@@ -7,6 +7,8 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-16
+
 ### Fixed
 - Turning the tray icon off and straight back on could leave no tray icon.
 - Turning the tray icon off, on and off again within a few seconds could leave it running.
@@ -75,6 +77,7 @@ First version.
   count in the sidebar's colours, also when no VS Code window is in front. Click it for the
   sessions that need you; one opens its window and tab.
 
-[Unreleased]: https://github.com/HaminKo/session-inbox/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/HaminKo/session-inbox/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/HaminKo/session-inbox/releases/tag/v0.2.1
 [0.2.0]: https://github.com/HaminKo/session-inbox/releases/tag/v0.2.0
 [0.1.0]: https://github.com/HaminKo/session-inbox/releases/tag/v0.1.0
