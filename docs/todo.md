@@ -16,9 +16,9 @@ Next number: 32. Numbers are permanent: never renumber or reuse one; to move a t
 (none)
 
 ## Before a public release — done
-0.1.0 released on 2026-11-03: tag `v0.1.0`, `session-inbox-0.1.0.vsix` on the GitHub release page.
-What was done: to-dos #20–#25 (docs/archive/) and docs/decisions.md; the license is MIT. Steps for
-the next release: docs/research/distribution.md, "Release steps".
+First public release: 0.1.0 on 2026-11-03 (tag `v0.1.0` on the GitHub release page). What was
+done: to-dos #20–#25 (docs/archive/) and docs/decisions.md; the license is MIT. Later versions:
+CHANGELOG.md. Release steps: docs/research/distribution.md, "Release steps (each version)".
 
 ## Later, only if the user asks
 - VS Code Marketplace too (from to-do #25): create the `session-inbox` publisher, add a 128×128

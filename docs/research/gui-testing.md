@@ -56,7 +56,8 @@ docs/decisions.md (2026-11-01, "GUI test: Playwright drives a pinned VS Code").
 - `locator.evaluateAll((el) => ...)` fails lint here: tsconfig has no DOM lib, so `el` is
   unresolved (`no-unsafe-member-access`). Use `locator.all()` with `innerText` / `getAttribute`.
 - Measured: `npm run test:gui` 16–25 s for 9 tests (two VS Code launches, one per `.gui.ts` file;
-  the first launch took 5.5 s in one run, 12.9 s in the next).
+  the first launch took 5.5 s in one run, 12.9 s in the next). Later: 114 s for 26 tests
+  (2026-11-16, before release 0.2.1).
   `sidebar.png` 522×389 px; estimated ≈ 270 tokens. (Out of date since to-do #23: the shot widens
   the sidebar, now 747×389 px, ≈ 390 tokens; see "README pictures" below.)
 

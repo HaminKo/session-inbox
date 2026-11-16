@@ -37,7 +37,7 @@ Don't build what's under "Later" in docs/todo.md until asked.
     extensions, so anything that needs Claude Code is tested from the installed `.vsix`.
   - Hooks have no build; verify by piping a fake payload and checking the written file
     (see docs/research/hooks.md).
-  - GUI test, every step (~16–25 s): `npm run test:gui` (`test/gui/*.gui.ts`; opens a VS Code window
+  - GUI test, every step (~2 min, 26 tests): `npm run test:gui` (`test/gui/*.gui.ts`; opens a VS Code window
     briefly). A UI change gets a step in it. Details: docs/research/gui-testing.md.
   - Screenshots: `npm run screenshots` (or `-- statusbar` / `-- sidebar` / `-- window`) → PNGs in
     `$env:TEMP\session-inbox-shots\`, paths printed. Estimated cost: statusbar ~25 tokens,
